@@ -1,12 +1,10 @@
-import { getServerSession } from "next-auth"
-import { authOptions } from "@/lib/auth-options"
+"use client"
+
 import { GmailConnectButton } from "./gmail-connect-button"
 import { ProtectedRoute } from "@/components/auth/protected-route"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 
-export default async function SettingsPage() {
-    const session = await getServerSession(authOptions)
-
+export default function SettingsPage() {
     return (
         <ProtectedRoute>
             <div className="container mx-auto p-4 max-w-4xl">
@@ -28,7 +26,7 @@ export default async function SettingsPage() {
                                         約定メールを自動で取り込み、トレード履歴に「Real」バッジを付与します。
                                     </p>
                                 </div>
-                                <GmailConnectButton session={session} />
+                                <GmailConnectButton />
                             </div>
                         </CardContent>
                     </Card>

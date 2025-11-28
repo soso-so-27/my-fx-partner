@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Noto_Sans_JP, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import { MobileNav } from "@/components/ui/mobile-nav";
+import { UserMenu } from "@/components/ui/user-menu";
 import { Toaster } from "@/components/ui/toaster";
 import { AuthProvider } from "@/contexts/auth-context";
 
@@ -40,6 +41,9 @@ export default function RootLayout({
           disableTransitionOnChange
         >
           <AuthProvider>
+            <div className="hidden md:block fixed top-4 right-4 z-50">
+              <UserMenu />
+            </div>
             {children}
             <MobileNav />
             <Toaster />

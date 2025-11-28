@@ -1,13 +1,14 @@
 "use client"
 
 import { Button } from "@/components/ui/button"
-import { signIn, signOut } from "next-auth/react"
+import { signIn, signOut, useSession } from "next-auth/react"
 import { Badge } from "@/components/ui/badge"
 import { CheckCircle2, Mail, RefreshCw } from "lucide-react"
 import { useState } from "react"
 import { useToast } from "@/components/ui/use-toast"
 
-export function GmailConnectButton({ session }: { session: any }) {
+export function GmailConnectButton() {
+    const { data: session } = useSession()
     const [syncing, setSyncing] = useState(false)
     const { toast } = useToast()
 
