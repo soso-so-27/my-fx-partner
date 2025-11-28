@@ -23,7 +23,7 @@ export const TAG_COLORS = {
 
 export function getTagCategory(tag: string): TagCategory | null {
     for (const [category, { tags }] of Object.entries(PREDEFINED_TAGS)) {
-        if (tags.includes(tag)) {
+        if ((tags as readonly string[]).includes(tag)) {
             return category as TagCategory
         }
     }

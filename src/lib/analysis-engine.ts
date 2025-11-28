@@ -14,7 +14,7 @@ export interface AnalysisStats {
 
 export const analysisEngine = {
     calculateStats(trades: Trade[]): AnalysisStats {
-        const closedTrades = trades.filter(t => t.status === 'Closed' && t.pnl !== undefined);
+        const closedTrades = trades.filter(t => t.exitTime !== undefined && t.pnl !== undefined);
         const totalTrades = closedTrades.length;
 
         if (totalTrades === 0) {
