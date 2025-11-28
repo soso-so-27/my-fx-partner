@@ -9,13 +9,13 @@ import { createClient as createSupabaseClient } from "@supabase/supabase-js"
 export async function POST() {
     const session = await getServerSession(authOptions)
 
-    if (!session || !session.accessToken) {
+    if (!session || !(session as any).accessToken) {
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
     try {
         // 1. Get recent emails
-        const messages = await gmailService.getRecentEmails(session.accessToken)
+        const messages = await gmailService.getRecentEmails((session as any).accessToken)
 
         // 2. Parse emails
         const newTrades = []
