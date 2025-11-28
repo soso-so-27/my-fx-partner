@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server"
+// FORCE DEPLOY FIX
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth-options"
 import { gmailService } from "@/lib/gmail-service"
@@ -6,16 +7,26 @@ import { emailParser } from "@/lib/email-parser"
 import { createClient } from "@/lib/supabase/server"
 import { createClient as createSupabaseClient } from "@supabase/supabase-js"
 
-export async function POST() {
-    const session = await getServerSession(authOptions)
+// Define interface locally to avoid build errors
+interface SessionWithToken {
+    accessToken?: string
+    user?: {
+        name?: string | null
+        email?: string | null
+        image?: string | null
+    }
+}
 
-    if (!session || !(session as any).accessToken) {
+export async function POST() {
+    const session = await getServerSession(authOptions) as unknown as SessionWithToken
+
+    if (!session || !session.accessToken) {
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
     try {
         // 1. Get recent emails
-        const messages = await gmailService.getRecentEmails((session as any).accessToken)
+        const messages = await gmailService.getRecentEmails(session.accessToken)
 
         // 2. Parse emails
         const newTrades = []

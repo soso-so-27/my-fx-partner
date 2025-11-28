@@ -24,6 +24,7 @@ export interface CreateTradeInput {
     direction: 'BUY' | 'SELL'
     entryPrice: number
     entryTime?: string
+    exitTime?: string
     exitPrice?: number
     stopLoss?: number
     takeProfit?: number
