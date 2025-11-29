@@ -11,7 +11,7 @@ export function FABButton() {
         <>
             <button
                 onClick={() => setOpen(true)}
-                className="absolute left-1/2 -translate-x-1/2 -top-6 w-14 h-14 rounded-full bg-primary text-primary-foreground shadow-lg hover:shadow-xl transition-all hover:scale-110 flex items-center justify-center z-50"
+                className="absolute left-1/2 -translate-x-1/2 -top-6 w-14 h-14 rounded-full bg-solo-gold text-solo-black shadow-lg hover:shadow-xl transition-all hover:scale-110 flex items-center justify-center z-50 border-4 border-background"
                 aria-label="クイック記録"
             >
                 <Plus className="h-6 w-6" />
