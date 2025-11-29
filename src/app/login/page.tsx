@@ -55,8 +55,8 @@ export default function LoginPage() {
         <div className="min-h-screen flex items-center justify-center p-4 bg-background">
             <Card className="w-full max-w-md">
                 <CardHeader className="text-center">
-                    <CardTitle className="text-2xl font-bold text-gold">My FX Partner</CardTitle>
-                    <CardDescription>トレード記録・分析アプリ</CardDescription>
+                    <CardTitle className="text-3xl font-bold text-solo-gold">SOLO</CardTitle>
+                    <CardDescription className="text-muted-foreground">個人投資家の成長OS</CardDescription>
                 </CardHeader>
                 <CardContent>
                     <Tabs defaultValue="login" className="w-full">
@@ -94,7 +94,7 @@ export default function LoginPage() {
                                 )}
                                 <Button
                                     type="submit"
-                                    className="w-full bg-gold hover:bg-gold/80 text-black"
+                                    className="w-full bg-solo-gold hover:bg-solo-gold/90 text-solo-black font-medium"
                                     disabled={loading}
                                 >
                                     {loading ? "処理中..." : "ログイン"}
@@ -135,7 +135,7 @@ export default function LoginPage() {
                                 )}
                                 <Button
                                     type="submit"
-                                    className="w-full bg-gold hover:bg-gold/80 text-black"
+                                    className="w-full bg-solo-gold hover:bg-solo-gold/90 text-solo-black font-medium"
                                     disabled={loading}
                                 >
                                     {loading ? "処理中..." : "新規登録"}

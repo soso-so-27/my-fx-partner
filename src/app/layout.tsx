@@ -20,8 +20,8 @@ const jetBrainsMono = JetBrains_Mono({
 import { ThemeProvider } from "@/components/theme-provider";
 
 export const metadata: Metadata = {
-  title: "My FX Partner",
-  description: "AI搭載のトレード記録・分析アプリ",
+  title: "SOLO - 個人投資家の成長OS",
+  description: "自分と向き合い、成長を積み上げるためのトレード記録アプリ",
 };
 
 export default function RootLayout({

@@ -32,7 +32,7 @@ export function UserMenu() {
         <DropdownMenu>
             <DropdownMenuTrigger asChild>
                 <Button variant="ghost" size="icon" className="rounded-full">
-                    <UserIcon className="h-5 w-5 text-gold" />
+                    <UserIcon className="h-5 w-5 text-solo-gold" />
                 </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-56">

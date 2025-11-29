@@ -17,7 +17,7 @@ export function SocialCard({ stats, period = "週間レポート" }: SocialCardP
                 <div>
                     <div className="flex justify-between items-start border-b border-[#d4af37] pb-3 mb-6">
                         <div>
-                            <h3 className="text-xs font-medium text-[#888] uppercase tracking-wider mb-1">My FX Partner</h3>
+                            <h3 className="text-xs font-medium text-[#888] uppercase tracking-wider mb-1">SOLO</h3>
                             <h2 className="text-2xl font-bold text-white">{period}</h2>
                         </div>
                         <div className="h-10 w-10 rounded-sm bg-[#d4af37]/20 border border-[#d4af37] flex items-center justify-center">

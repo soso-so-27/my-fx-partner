@@ -27,7 +27,7 @@ export default function Home() {
   return (
     <ProtectedRoute>
       <div className="container mx-auto p-4">
-        <h1 className="text-3xl font-bold mb-8">My FX Partner ダッシュボード</h1>
+        <h1 className="text-3xl font-bold mb-8 text-solo-black dark:text-solo-white">SOLO ダッシュボード</h1>
 
         {stats && (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">

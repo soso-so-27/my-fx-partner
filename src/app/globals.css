@@ -42,94 +42,133 @@
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
 
-  /* FX Trader Custom Colors */
+  /* SOLO Brand Colors */
+  --color-solo-black: #0F1117;
+  --color-solo-navy: #121C36;
+  --color-solo-gold: #C8A85F;
+  --color-solo-white: #F8F8FA;
+
+  /* Legacy FX Trader Colors (mapped to SOLO) */
   --color-profit: #ff4444;
-  /* Japanese red for profit/up */
   --color-loss: #4444ff;
-  /* Japanese blue for loss/down */
-  --color-gold: #d4af37;
-  /* Gold accent */
+  --color-gold: #C8A85F;
 }
 
 :root {
-  --radius: 0.375rem;
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
-  --chart-1: oklch(0.646 0.222 41.116);
-  --chart-2: oklch(0.6 0.118 184.704);
-  --chart-3: oklch(0.398 0.07 227.392);
-  --chart-4: oklch(0.828 0.189 84.429);
-  --chart-5: oklch(0.769 0.188 70.08);
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.205 0 0);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
+  --radius: 0.5rem;
+  /* SOLO Brand Colors */
+  --solo-black: #0F1117;
+  --solo-navy: #121C36;
+  --solo-gold: #C8A85F;
+  --solo-white: #F8F8FA;
+
+  /* Base Theme Mapping */
+  --background: #F8F8FA;
+  /* Calm White */
+  --foreground: #0F1117;
+  /* SOLO Black */
+
+  --card: #ffffff;
+  --card-foreground: #0F1117;
+
+  --popover: #ffffff;
+  --popover-foreground: #0F1117;
+
+  --primary: #0F1117;
+  /* SOLO Black */
+  --primary-foreground: #F8F8FA;
+
+  --secondary: #121C36;
+  /* SOLO Navy */
+  --secondary-foreground: #F8F8FA;
+
+  --muted: #f1f5f9;
+  --muted-foreground: #64748b;
+
+  --accent: #C8A85F;
+  /* SOLO Gold */
+  --accent-foreground: #0F1117;
+
+  --destructive: #ef4444;
+  --destructive-foreground: #F8F8FA;
+
+  --border: #e2e8f0;
+  --input: #e2e8f0;
+  --ring: #C8A85F;
+  /* SOLO Gold */
+
+  --chart-1: #C8A85F;
+  /* Gold */
+  --chart-2: #121C36;
+  /* Navy */
+  --chart-3: #0F1117;
+  /* Black */
+  --chart-4: #94a3b8;
+  --chart-5: #cbd5e1;
+
+  --sidebar: #F8F8FA;
+  --sidebar-foreground: #0F1117;
+  --sidebar-primary: #0F1117;
+  --sidebar-primary-foreground: #F8F8FA;
+  --sidebar-accent: #f1f5f9;
+  --sidebar-accent-foreground: #0F1117;
+  --sidebar-border: #e2e8f0;
+  --sidebar-ring: #C8A85F;
 }
 
 .dark {
-  /* MT4-inspired dark theme for FX traders */
-  --background: #0a0a0a;
-  /* Almost black background */
-  --foreground: #e8e8e8;
-  /* Light text */
-  --card: #1a1a1a;
-  /* Dark gray cards */
-  --card-foreground: #e8e8e8;
-  --popover: #1a1a1a;
-  --popover-foreground: #e8e8e8;
-  --primary: #d4af37;
-  /* Gold primary */
-  --primary-foreground: #0a0a0a;
-  --secondary: #2a2a2a;
-  --secondary-foreground: #e8e8e8;
-  --muted: #2a2a2a;
-  --muted-foreground: #888888;
-  --accent: #d4af37;
-  /* Gold accent */
-  --accent-foreground: #0a0a0a;
-  --destructive: #4444ff;
-  /* Blue for loss (Japanese style) */
-  --border: #333333;
-  --input: #2a2a2a;
-  --ring: #d4af37;
-  --chart-1: #ff4444;
-  /* Red for profit */
-  --chart-2: #4444ff;
-  /* Blue for loss */
-  --chart-3: #d4af37;
+  /* SOLO Dark Theme (Main) */
+  --background: #0F1117;
+  /* SOLO Black */
+  --foreground: #F8F8FA;
+  /* Calm White */
+
+  --card: #121C36;
+  /* SOLO Navy */
+  --card-foreground: #F8F8FA;
+
+  --popover: #121C36;
+  --popover-foreground: #F8F8FA;
+
+  --primary: #C8A85F;
+  /* SOLO Gold */
+  --primary-foreground: #0F1117;
+
+  --secondary: #1a2c5b;
+  /* Slightly lighter Navy */
+  --secondary-foreground: #F8F8FA;
+
+  --muted: #1e293b;
+  --muted-foreground: #94a3b8;
+
+  --accent: #C8A85F;
+  /* SOLO Gold */
+  --accent-foreground: #0F1117;
+
+  --destructive: #7f1d1d;
+  --destructive-foreground: #F8F8FA;
+
+  --border: #1e293b;
+  --input: #1e293b;
+  --ring: #C8A85F;
+
+  --chart-1: #C8A85F;
   /* Gold */
-  --chart-4: #888888;
-  /* Gray */
-  --chart-5: #555555;
-  /* Dark gray */
-  --sidebar: #1a1a1a;
-  --sidebar-foreground: #e8e8e8;
-  --sidebar-primary: #d4af37;
-  --sidebar-primary-foreground: #0a0a0a;
-  --sidebar-accent: #2a2a2a;
-  --sidebar-accent-foreground: #e8e8e8;
-  --sidebar-border: #333333;
-  --sidebar-ring: #d4af37;
+  --chart-2: #3b82f6;
+  /* Blue */
+  --chart-3: #10b981;
+  /* Green */
+  --chart-4: #94a3b8;
+  --chart-5: #64748b;
+
+  --sidebar: #0F1117;
+  --sidebar-foreground: #F8F8FA;
+  --sidebar-primary: #C8A85F;
+  --sidebar-primary-foreground: #0F1117;
+  --sidebar-accent: #121C36;
+  --sidebar-accent-foreground: #F8F8FA;
+  --sidebar-border: #1e293b;
+  --sidebar-ring: #C8A85F;
 }
 
 @layer base {
