@@ -3,8 +3,17 @@
 import { GmailConnectButton } from "./gmail-connect-button"
 import { ProtectedRoute } from "@/components/auth/protected-route"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { useState, useEffect } from "react"
 
 export default function SettingsPage() {
+    const [mounted, setMounted] = useState(false)
+
+    useEffect(() => {
+        setMounted(true)
+    }, [])
+
+    if (!mounted) return null
+
     return (
         <ProtectedRoute>
             <div className="container mx-auto p-4 max-w-4xl">

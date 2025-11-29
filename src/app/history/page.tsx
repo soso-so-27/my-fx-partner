@@ -82,7 +82,7 @@ export default function HistoryPage() {
     return (
         <ProtectedRoute>
             <div className="container mx-auto p-4 h-screen flex flex-col">
-                <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center justify-between mb-4 pr-16">
                     <h1 className="text-2xl font-bold">トレード履歴</h1>
                     <ExportControls trades={filteredTrades} />
                 </div>
