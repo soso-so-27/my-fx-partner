@@ -4,6 +4,7 @@ import { useState } from "react"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { MessageBubble } from "./message-bubble"
 import { ChatInput } from "./chat-input"
+import { ChatModeSelector } from "./chat-mode-selector"
 import { analyzeTrade, reviewTrade } from "@/lib/ai-service"
 import { analyzeChartImage } from "@/lib/image-analysis"
 import { tradeService } from "@/lib/trade-service"
@@ -19,15 +20,32 @@ interface Message {
 
 export function ChatInterface() {
     const { user } = useAuth()
-    const [messages, setMessages] = useState<Message[]>([
-        {
-            id: '1',
-            role: 'ai',
-            content: 'こんにちは！あなたのFXパートナーです。スクリーンショットをアップロードするか、今日のトレードについて教えてください。',
-            timestamp: new Date().toLocaleTimeString()
-        }
-    ])
+    const [messages, setMessages] = useState<Message[]>([])
     const [isProcessing, setIsProcessing] = useState(false)
+
+    const handleModeSelect = (mode: 'pre-trade' | 'post-trade' | 'review') => {
+        let initialMessage = ""
+        switch (mode) {
+            case 'pre-trade':
+                initialMessage = "エントリー前チェックですね。\n監視中の「通貨ペア」と「根拠（セットアップ）」を教えてください。\nあなたのルールに適合しているか一緒に確認しましょう。"
+                break
+            case 'post-trade':
+                initialMessage = "トレードお疲れ様でした。\nまずはチャート画像をアップロードするか、トレードの結果と、今の「感情」を率直に教えてください。"
+                break
+            case 'review':
+                initialMessage = "振り返りを行いましょう。\n最近のトレードで「うまくいったこと」や「課題」だと感じていることはありますか？"
+                break
+        }
+
+        setMessages([
+            {
+                id: '1',
+                role: 'ai',
+                content: initialMessage,
+                timestamp: new Date().toLocaleTimeString()
+            }
+        ])
+    }
 
     const handleSend = async (content: string, files?: File[]) => {
         const newMessage: Message = {
@@ -107,26 +125,32 @@ export function ChatInterface() {
     return (
         <div className="flex flex-col h-[calc(100vh-4rem)] max-w-3xl mx-auto border rounded-xl overflow-hidden bg-background shadow-sm">
             <div className="bg-muted/50 p-4 border-b">
-                <h2 className="font-semibold">トレードセッション</h2>
-                <p className="text-xs text-muted-foreground">AIがあなたのトレードを分析し、ルール遵守をチェックします。</p>
+                <h2 className="font-semibold">トレードノート</h2>
+                <p className="text-xs text-muted-foreground">AIパートナーとの対話で、思考を整理・客観視します。</p>
             </div>
 
             <ScrollArea className="flex-1 p-4">
-                <div className="flex flex-col gap-4">
-                    {messages.map((msg) => (
-                        <MessageBubble
-                            key={msg.id}
-                            role={msg.role}
-                            content={msg.content}
-                            timestamp={msg.timestamp}
-                        />
-                    ))}
-                    {isProcessing && (
-                        <div className="flex items-center gap-2 text-sm text-muted-foreground p-4">
-                            <span className="animate-pulse">考え中...</span>
-                        </div>
-                    )}
-                </div>
+                {messages.length === 0 ? (
+                    <div className="h-full flex flex-col justify-center">
+                        <ChatModeSelector onSelectMode={handleModeSelect} />
+                    </div>
+                ) : (
+                    <div className="flex flex-col gap-4">
+                        {messages.map((msg) => (
+                            <MessageBubble
+                                key={msg.id}
+                                role={msg.role}
+                                content={msg.content}
+                                timestamp={msg.timestamp}
+                            />
+                        ))}
+                        {isProcessing && (
+                            <div className="flex items-center gap-2 text-sm text-muted-foreground p-4">
+                                <span className="animate-pulse">考え中...</span>
+                            </div>
+                        )}
+                    </div>
+                )}
             </ScrollArea>
 
             <ChatInput onSend={handleSend} disabled={isProcessing} />
