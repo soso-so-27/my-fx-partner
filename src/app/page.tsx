@@ -149,7 +149,7 @@ export default function Home() {
             <Link href="/chat">
               <Button size="lg" className="bg-solo-gold hover:bg-solo-gold/80 text-solo-black w-full font-medium">
                 <Plus className="mr-2 h-5 w-5" />
-                トレードノート
+                AIパートナー
               </Button>
             </Link>
           </div>

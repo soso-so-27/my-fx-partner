@@ -125,8 +125,8 @@ export function ChatInterface() {
     return (
         <div className="flex flex-col h-[calc(100vh-4rem)] max-w-3xl mx-auto border rounded-xl overflow-hidden bg-background shadow-sm">
             <div className="bg-muted/50 p-4 border-b">
-                <h2 className="font-semibold">トレードノート</h2>
-                <p className="text-xs text-muted-foreground">AIパートナーとの対話で、思考を整理・客観視します。</p>
+                <h2 className="font-semibold">AIパートナー</h2>
+                <p className="text-xs text-muted-foreground">あなたの専属コーチとして、トレードの悩みや分析をサポートします。</p>
             </div>
 
             <ScrollArea className="flex-1 p-4">
