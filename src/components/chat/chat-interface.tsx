@@ -10,6 +10,9 @@ import { analyzeChartImage } from "@/lib/image-analysis"
 import { tradeService } from "@/lib/trade-service"
 import { tradeRuleService } from "@/lib/trade-rule-service"
 import { useAuth } from "@/contexts/auth-context"
+import { insightService } from "@/lib/insight-service"
+import { InsightMode } from "@/types/insight"
+import { useToast } from "@/components/ui/use-toast"
 
 interface Message {
     id: string
@@ -20,10 +23,13 @@ interface Message {
 
 export function ChatInterface() {
     const { user } = useAuth()
+    const { toast } = useToast()
     const [messages, setMessages] = useState<Message[]>([])
     const [isProcessing, setIsProcessing] = useState(false)
+    const [currentMode, setCurrentMode] = useState<InsightMode | null>(null)
 
     const handleModeSelect = (mode: 'pre-trade' | 'post-trade' | 'review') => {
+        setCurrentMode(mode)
         let initialMessage = ""
         switch (mode) {
             case 'pre-trade':
@@ -45,6 +51,23 @@ export function ChatInterface() {
                 timestamp: new Date().toLocaleTimeString()
             }
         ])
+    }
+
+    const handleSaveInsight = async (content: string, mode: InsightMode) => {
+        if (!user) return
+        try {
+            await insightService.createInsight(content, mode, user.id)
+            toast({
+                title: "気づきを保存しました",
+                description: "ジャーナルページで確認できます。",
+            })
+        } catch (error) {
+            toast({
+                title: "保存に失敗しました",
+                description: "もう一度お試しください。",
+                variant: "destructive"
+            })
+        }
     }
 
     const handleSend = async (content: string, files?: File[]) => {
@@ -131,7 +154,7 @@ export function ChatInterface() {
 
             <ScrollArea className="flex-1 p-4">
                 {messages.length === 0 ? (
-                    <div className="h-full flex flex-col justify-center">
+                    <div className="flex flex-col">
                         <ChatModeSelector onSelectMode={handleModeSelect} />
                     </div>
                 ) : (
@@ -142,6 +165,8 @@ export function ChatInterface() {
                                 role={msg.role}
                                 content={msg.content}
                                 timestamp={msg.timestamp}
+                                mode={currentMode || undefined}
+                                onSaveInsight={handleSaveInsight}
                             />
                         ))}
                         {isProcessing && (

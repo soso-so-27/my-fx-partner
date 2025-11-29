@@ -2,16 +2,17 @@ import { cn } from "@/lib/utils"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { Bookmark } from "lucide-react"
-import { useToast } from "@/components/ui/use-toast"
+import { InsightMode } from "@/types/insight"
 
 interface MessageBubbleProps {
     role: 'user' | 'ai'
     content: string
     timestamp?: string
+    mode?: InsightMode
+    onSaveInsight?: (content: string, mode: InsightMode) => void
 }
 
-export function MessageBubble({ role, content, timestamp }: MessageBubbleProps) {
-    const { toast } = useToast()
+export function MessageBubble({ role, content, timestamp, mode, onSaveInsight }: MessageBubbleProps) {
     return (
         <div className={cn(
             "flex w-full gap-3 p-4",
@@ -50,17 +51,12 @@ export function MessageBubble({ role, content, timestamp }: MessageBubbleProps) 
                             {timestamp}
                         </span>
                     )}
-                    {role === 'ai' && (
+                    {role === 'ai' && mode && onSaveInsight && (
                         <Button
                             variant="ghost"
                             size="sm"
                             className="h-6 px-2 text-xs text-muted-foreground hover:text-solo-gold"
-                            onClick={() => {
-                                toast({
-                                    title: "気づきを保存しました",
-                                    description: "トレードノートに記録されました。",
-                                })
-                            }}
+                            onClick={() => onSaveInsight(content, mode)}
                         >
                             <Bookmark className="h-3 w-3 mr-1" />
                             気づきを保存

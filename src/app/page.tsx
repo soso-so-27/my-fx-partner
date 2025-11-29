@@ -6,27 +6,46 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { cn } from "@/lib/utils"
 import { tradeService } from "@/lib/trade-service"
-import { analysisEngine, AnalysisStats } from "@/lib/analysis-engine"
-import { BarChart2, Activity, TrendingUp, Plus } from "lucide-react"
+import { analysisEngine } from "@/lib/analysis-engine"
+import { Activity, TrendingUp, Plus } from "lucide-react"
 import { useAuth } from "@/contexts/auth-context"
 import { ProtectedRoute } from "@/components/auth/protected-route"
+import { insightService } from "@/lib/insight-service"
+import { Insight } from "@/types/insight"
 
 export default function Home() {
   const { user } = useAuth()
-  const [stats, setStats] = useState<AnalysisStats | null>(null)
+  const [stats, setStats] = useState<{ winRate: number; profitFactor: number; totalTrades: number } | null>(null)
   const [recentTrade, setRecentTrade] = useState<any>(null)
+  const [insights, setInsights] = useState<Insight[]>([])
 
   useEffect(() => {
     const loadData = async () => {
       if (!user) return
-      const trades = await tradeService.getTrades(user.id)
-      const computedStats = analysisEngine.calculateStats(trades)
-      setStats(computedStats)
+      const trades = await tradeService.getTrades()
+
+      const last30Days = trades.filter(t => {
+        const tradeDate = new Date(t.entryTime)
+        const thirtyDaysAgo = new Date()
+        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
+        return tradeDate >= thirtyDaysAgo
+      })
+
+      const computedStats = analysisEngine.calculateStats(last30Days)
+      setStats({
+        winRate: computedStats.winRate,
+        profitFactor: computedStats.profitFactor,
+        totalTrades: trades.length
+      })
 
       // Get most recent trade
       if (trades.length > 0) {
         setRecentTrade(trades[0])
       }
+
+      // Load recent insights
+      const userInsights = await insightService.getInsightsByUser(user.id, 2)
+      setInsights(userInsights)
     }
     loadData()
   }, [user])
@@ -129,6 +148,32 @@ export default function Home() {
             </Card>
           )}
         </section>
+
+        {/* Recent Insights Section */}
+        {insights.length > 0 && (
+          <section className="space-y-3">
+            <div className="flex items-center justify-between">
+              <h2 className="text-sm font-bold">最近の気づき</h2>
+              <Link href="/journal">
+                <Button variant="ghost" size="sm" className="text-xs h-7">
+                  すべて表示
+                </Button>
+              </Link>
+            </div>
+            <div className="space-y-2">
+              {insights.slice(0, 2).map((insight) => (
+                <Card key={insight.id} className="bg-card border-none shadow-sm">
+                  <CardContent className="p-3">
+                    <p className="text-xs text-muted-foreground mb-1">
+                      {new Date(insight.createdAt).toLocaleDateString('ja-JP')}
+                    </p>
+                    <p className="text-sm line-clamp-2">{insight.content}</p>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </section>
+        )}
 
         {/* Quick Actions */}
         <section>

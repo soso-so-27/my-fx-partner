@@ -1,11 +1,10 @@
 "use client"
 
+import { Home, MessageSquare, History, TrendingUp, BookText } from "lucide-react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { Home, MessageSquare, History, TrendingUp } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { FABButton } from "./fab-button"
-import { UserMenu } from "./user-menu"
 
 export function MobileNav() {
     const pathname = usePathname()
@@ -14,7 +13,7 @@ export function MobileNav() {
         { href: '/', icon: Home, label: 'ホーム' },
         { href: '/chat', icon: MessageSquare, label: 'パートナー' },
         { href: null, icon: null, label: null }, // Spacer for FAB
-        { href: '/history', icon: History, label: '履歴' },
+        { href: '/journal', icon: BookText, label: 'ジャーナル' },
         { href: '/analysis', icon: TrendingUp, label: '分析' },
     ]
 
