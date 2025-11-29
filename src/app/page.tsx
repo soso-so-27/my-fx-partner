@@ -96,7 +96,7 @@ export default function Home() {
           <section className="grid grid-cols-3 gap-2">
             <Card className="bg-card border-none shadow-sm">
               <CardContent className="p-3">
-                <p className="text-[11px] text-muted-foreground mb-1">勝率 (30日)</p>
+                <div className="text-sm text-muted-foreground mb-1">勝率 (30日)</div>
                 <div className="text-2xl font-bold font-numbers text-solo-navy dark:text-solo-white">
                   {stats.winRate}<span className="text-xs text-solo-gold">%</span>
                 </div>
@@ -104,7 +104,7 @@ export default function Home() {
             </Card>
             <Card className="bg-card border-none shadow-sm">
               <CardContent className="p-3">
-                <p className="text-[11px] text-muted-foreground mb-1">PF</p>
+                <div className="text-sm text-muted-foreground mb-1">PF</div>
                 <div className="text-2xl font-bold font-numbers text-solo-navy dark:text-solo-white">
                   {stats.profitFactor}
                 </div>
@@ -112,7 +112,7 @@ export default function Home() {
             </Card>
             <Card className="bg-card border-none shadow-sm">
               <CardContent className="p-3">
-                <p className="text-[11px] text-muted-foreground mb-1">継続日数</p>
+                <div className="text-sm text-muted-foreground mb-1">継続日数</div>
                 <div className="text-2xl font-bold font-numbers text-solo-navy dark:text-solo-white">
                   {stats.totalTrades > 0 ? Math.min(stats.totalTrades, 5) : 0}<span className="text-xs text-muted-foreground">日</span>
                 </div>
@@ -124,7 +124,7 @@ export default function Home() {
         {/* Recent Trade Section */}
         <section>
           <div className="flex items-center justify-between mb-3">
-            <h2 className="text-xl font-bold">直近のトレード</h2>
+            <h2 className="text-lg font-bold">直近のトレード</h2>
             <Link href="/history" className="text-xs text-solo-gold hover:underline">
               すべて見る
             </Link>
@@ -182,7 +182,7 @@ export default function Home() {
         {insights.length > 0 && (
           <section className="space-y-2">
             <div className="flex items-center justify-between">
-              <h2 className="text-base font-bold">最近の気づき</h2>
+              <h2 className="text-lg font-bold">最近の気づき</h2>
               <Link href="/journal">
                 <Button variant="ghost" size="sm" className="text-xs h-7">
                   すべて表示
@@ -206,7 +206,7 @@ export default function Home() {
 
         {/* Quick Actions */}
         <section className="space-y-2">
-          <h2 className="text-base font-bold">クイックアクション</h2>
+          <h2 className="text-lg font-bold">クイックアクション</h2>
           <div className="grid grid-cols-2 gap-2">
             <Link href="/chat">
               <Card className="bg-gradient-to-br from-solo-gold/10 to-solo-gold/5 border-solo-gold/20 hover:border-solo-gold/40 transition-colors h-full">
@@ -216,7 +216,7 @@ export default function Home() {
                   </div>
                   <div>
                     <div className="font-bold text-sm">AIパートナー</div>
-                    <div className="text-[11px] text-muted-foreground">思考を整理</div>
+                    <div className="text-xs text-muted-foreground">思考を整理</div>
                   </div>
                 </CardContent>
               </Card>
@@ -229,7 +229,7 @@ export default function Home() {
                   </div>
                   <div>
                     <div className="font-bold text-sm">分析レポート</div>
-                    <div className="text-[11px] text-muted-foreground">パフォーマンス確認</div>
+                    <div className="text-xs text-muted-foreground">パフォーマンス確認</div>
                   </div>
                 </CardContent>
               </Card>
