@@ -66,7 +66,8 @@ export default function AnalysisPage() {
                             <CardTitle className="text-sm font-medium text-muted-foreground">勝率</CardTitle>
                         </CardHeader>
                         <CardContent>
-                            <div className={`text-3xl font-bold font-numbers ${stats.winRate >= 50 ? 'text-profit' : 'text-loss'}`}>{stats.winRate}%</div>
+                            <div className={`text-3xl font-bold font-numbers ${stats.winRate === 0 ? '' : stats.winRate >= 50 ? 'text-profit' : 'text-loss'
+                                }`}>{stats.winRate}%</div>
                         </CardContent>
                     </Card>
                     <Card>
@@ -74,7 +75,8 @@ export default function AnalysisPage() {
                             <CardTitle className="text-sm font-medium text-muted-foreground">PF</CardTitle>
                         </CardHeader>
                         <CardContent>
-                            <div className={`text-3xl font-bold font-numbers ${stats.profitFactor >= 1 ? 'text-profit' : 'text-loss'}`}>{stats.profitFactor}</div>
+                            <div className={`text-3xl font-bold font-numbers ${stats.profitFactor === 0 ? '' : stats.profitFactor >= 1 ? 'text-profit' : 'text-loss'
+                                }`}>{stats.profitFactor}</div>
                         </CardContent>
                     </Card>
                     <Card>
@@ -82,7 +84,8 @@ export default function AnalysisPage() {
                             <CardTitle className="text-sm font-medium text-muted-foreground">合計損益</CardTitle>
                         </CardHeader>
                         <CardContent>
-                            <div className={`text-3xl font-bold font-numbers ${stats.totalPnl >= 0 ? 'text-profit' : 'text-loss'}`}>
+                            <div className={`text-3xl font-bold font-numbers ${stats.totalPnl === 0 ? '' : stats.totalPnl > 0 ? 'text-profit' : 'text-loss'
+                                }`}>
                                 {stats.totalPnl > 0 ? '+' : ''}{stats.totalPnl}
                             </div>
                         </CardContent>

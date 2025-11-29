@@ -67,28 +67,19 @@ export default function Home() {
 
         {/* Gmail Connection Banner */}
         {!gmailConnected && (
-          <Card className="bg-gradient-to-r from-blue-500/10 to-blue-600/10 border-blue-500/20">
-            <CardContent className="p-4">
-              <div className="flex items-start gap-3">
-                <div className="h-10 w-10 rounded-full bg-blue-500/20 flex items-center justify-center flex-shrink-0">
-                  <svg className="h-5 w-5 text-blue-600 dark:text-blue-400" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z" />
-                  </svg>
-                </div>
-                <div className="flex-1">
-                  <h3 className="font-bold text-sm mb-1">Gmail連携で自動記録</h3>
-                  <p className="text-xs text-muted-foreground mb-2">
-                    約定メールを自動取り込み。手入力不要で記録が残ります。
-                  </p>
-                  <Link href="/settings">
-                    <Button size="sm" variant="outline" className="text-xs h-7">
-                      設定する
-                    </Button>
-                  </Link>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+          <div className="flex items-center gap-2 p-2 bg-blue-500/5 border border-blue-500/10 rounded-lg">
+            <svg className="h-4 w-4 text-blue-600 dark:text-blue-400 flex-shrink-0" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z" />
+            </svg>
+            <p className="text-xs text-muted-foreground flex-1">
+              Gmail連携で約定メールを自動取り込み
+            </p>
+            <Link href="/settings">
+              <Button size="sm" variant="ghost" className="h-7 text-xs text-blue-600 hover:text-blue-700 dark:text-blue-400">
+                設定
+              </Button>
+            </Link>
+          </div>
         )}
 
         {/* Key Metrics Section */}
