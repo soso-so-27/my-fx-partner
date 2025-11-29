@@ -12,7 +12,7 @@ export function MobileNav() {
 
     const navItems = [
         { href: '/', icon: Home, label: 'ホーム' },
-        { href: '/chat', icon: MessageSquare, label: '記録' },
+        { href: '/chat', icon: MessageSquare, label: 'ノート' },
         { href: null, icon: null, label: null }, // Spacer for FAB
         { href: '/history', icon: History, label: '履歴' },
         { href: '/analysis', icon: TrendingUp, label: '分析' },

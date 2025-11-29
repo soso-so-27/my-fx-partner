@@ -5,6 +5,7 @@ import { MobileNav } from "@/components/ui/mobile-nav";
 import { UserMenu } from "@/components/ui/user-menu";
 import { Toaster } from "@/components/ui/toaster";
 import { AuthProvider } from "@/contexts/auth-context";
+import { NextAuthProvider } from "@/components/auth/next-auth-provider";
 
 const notoSansJP = Noto_Sans_JP({
   variable: "--font-noto-sans-jp",
@@ -40,14 +41,16 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          <AuthProvider>
-            <div className="fixed top-4 right-4 z-50">
-              <UserMenu />
-            </div>
-            {children}
-            <MobileNav />
-            <Toaster />
-          </AuthProvider>
+          <NextAuthProvider>
+            <AuthProvider>
+              <div className="fixed top-4 right-4 z-50">
+                <UserMenu />
+              </div>
+              {children}
+              <MobileNav />
+              <Toaster />
+            </AuthProvider>
+          </NextAuthProvider>
         </ThemeProvider>
       </body>
     </html>

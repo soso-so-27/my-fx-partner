@@ -45,20 +45,28 @@ export default function Home() {
 
         {/* Key Metrics Section */}
         {stats && (
-          <section className="grid grid-cols-2 gap-4">
+          <section className="grid grid-cols-3 gap-3">
             <Card className="bg-card border-none shadow-sm">
-              <CardContent className="p-4">
-                <p className="text-xs text-muted-foreground mb-1">勝率 (30日)</p>
-                <div className="text-2xl font-bold font-numbers text-solo-gold">
-                  {stats.winRate}%
+              <CardContent className="p-3">
+                <p className="text-[10px] text-muted-foreground mb-1">勝率 (30日)</p>
+                <div className="text-xl font-bold font-numbers text-solo-navy dark:text-solo-white">
+                  {stats.winRate}<span className="text-xs text-solo-gold">%</span>
                 </div>
               </CardContent>
             </Card>
             <Card className="bg-card border-none shadow-sm">
-              <CardContent className="p-4">
-                <p className="text-xs text-muted-foreground mb-1">PF</p>
-                <div className="text-2xl font-bold font-numbers text-solo-gold">
+              <CardContent className="p-3">
+                <p className="text-[10px] text-muted-foreground mb-1">PF</p>
+                <div className="text-xl font-bold font-numbers text-solo-navy dark:text-solo-white">
                   {stats.profitFactor}
+                </div>
+              </CardContent>
+            </Card>
+            <Card className="bg-card border-none shadow-sm">
+              <CardContent className="p-3">
+                <p className="text-[10px] text-muted-foreground mb-1">継続日数</p>
+                <div className="text-xl font-bold font-numbers text-solo-navy dark:text-solo-white">
+                  {stats.totalTrades > 0 ? Math.min(stats.totalTrades, 5) : 0}<span className="text-xs text-muted-foreground">日</span>
                 </div>
               </CardContent>
             </Card>
@@ -136,6 +144,12 @@ export default function Home() {
               <Button variant="outline" className="w-full h-auto py-4 flex flex-col gap-2">
                 <Activity className="h-5 w-5 text-solo-gold" />
                 <span className="text-xs">ルール確認</span>
+              </Button>
+            </Link>
+            <Link href="/chat">
+              <Button size="lg" className="bg-solo-gold hover:bg-solo-gold/80 text-solo-black w-full font-medium">
+                <Plus className="mr-2 h-5 w-5" />
+                トレードノート
               </Button>
             </Link>
           </div>
