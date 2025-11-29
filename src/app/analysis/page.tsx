@@ -60,21 +60,21 @@ export default function AnalysisPage() {
                 </div>
 
                 {/* Stats Cards */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
                     <Card>
                         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                             <CardTitle className="text-sm font-medium text-muted-foreground">勝率</CardTitle>
                         </CardHeader>
                         <CardContent>
-                            <div className="text-3xl font-bold font-numbers text-gold">{stats.winRate}%</div>
+                            <div className={`text-3xl font-bold font-numbers ${stats.winRate >= 50 ? 'text-profit' : 'text-loss'}`}>{stats.winRate}%</div>
                         </CardContent>
                     </Card>
                     <Card>
                         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                            <CardTitle className="text-sm font-medium text-muted-foreground">プロフィットファクター</CardTitle>
+                            <CardTitle className="text-sm font-medium text-muted-foreground">PF</CardTitle>
                         </CardHeader>
                         <CardContent>
-                            <div className="text-3xl font-bold font-numbers text-gold">{stats.profitFactor}</div>
+                            <div className={`text-3xl font-bold font-numbers ${stats.profitFactor >= 1 ? 'text-profit' : 'text-loss'}`}>{stats.profitFactor}</div>
                         </CardContent>
                     </Card>
                     <Card>

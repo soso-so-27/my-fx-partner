@@ -146,7 +146,7 @@ export function ChatInterface() {
     }
 
     return (
-        <div className="flex flex-col h-[calc(100vh-4rem)] max-w-3xl mx-auto border rounded-xl overflow-hidden bg-background shadow-sm">
+        <div className="flex flex-col h-[calc(100vh-4rem)] max-w-3xl mx-auto rounded-xl overflow-hidden bg-muted/20 border-2 shadow-lg">
             <div className="bg-muted/50 p-4 border-b">
                 <h2 className="font-semibold">AIパートナー</h2>
                 <p className="text-xs text-muted-foreground">あなたの専属コーチとして、トレードの悩みや分析をサポートします。</p>

@@ -15,6 +15,7 @@ export default function JournalPage() {
     const { toast } = useToast()
     const [insights, setInsights] = useState<Insight[]>([])
     const [loading, setLoading] = useState(true)
+    const [filterMode, setFilterMode] = useState<string>('all')
 
     useEffect(() => {
         const loadInsights = async () => {
@@ -88,9 +89,45 @@ export default function JournalPage() {
         <ProtectedRoute>
             <div className="container mx-auto p-4 max-w-3xl">
                 <h1 className="text-2xl font-bold mb-6">ジャーナル</h1>
-                <p className="text-sm text-muted-foreground mb-6">
+                <p className="text-sm text-muted-foreground mb-4">
                     AIパートナーとの会話で保存した気づきを振り返りましょう。
                 </p>
+
+                {/* Mode Filter */}
+                <div className="flex gap-2 mb-6 overflow-x-auto pb-2">
+                    <Button
+                        variant={filterMode === 'all' ? 'default' : 'outline'}
+                        size="sm"
+                        onClick={() => setFilterMode('all')}
+                        className="flex-shrink-0"
+                    >
+                        すべて
+                    </Button>
+                    <Button
+                        variant={filterMode === 'pre-trade' ? 'default' : 'outline'}
+                        size="sm"
+                        onClick={() => setFilterMode('pre-trade')}
+                        className="flex-shrink-0"
+                    >
+                        エントリー前
+                    </Button>
+                    <Button
+                        variant={filterMode === 'post-trade' ? 'default' : 'outline'}
+                        size="sm"
+                        onClick={() => setFilterMode('post-trade')}
+                        className="flex-shrink-0"
+                    >
+                        トレード記録
+                    </Button>
+                    <Button
+                        variant={filterMode === 'review' ? 'default' : 'outline'}
+                        size="sm"
+                        onClick={() => setFilterMode('review')}
+                        className="flex-shrink-0"
+                    >
+                        振り返り
+                    </Button>
+                </div>
 
                 {insights.length === 0 ? (
                     <Card>
@@ -103,36 +140,38 @@ export default function JournalPage() {
                     </Card>
                 ) : (
                     <div className="space-y-4">
-                        {insights.map((insight) => (
-                            <Card key={insight.id} className="relative">
-                                <CardContent className="p-4">
-                                    <div className="flex items-start justify-between gap-4">
-                                        <div className="flex-1 space-y-2">
-                                            <div className="flex items-center gap-2">
-                                                {getModeIcon(insight.mode)}
-                                                <span className="text-xs font-medium text-muted-foreground">
-                                                    {getModeLabel(insight.mode)}
-                                                </span>
-                                                <span className="text-xs text-muted-foreground">
-                                                    {new Date(insight.createdAt).toLocaleDateString('ja-JP')}
-                                                </span>
+                        {insights
+                            .filter(i => filterMode === 'all' || i.mode === filterMode)
+                            .map((insight) => (
+                                <Card key={insight.id} className="relative">
+                                    <CardContent className="p-4">
+                                        <div className="flex items-start justify-between gap-4">
+                                            <div className="flex-1 space-y-2">
+                                                <div className="flex items-center gap-2">
+                                                    {getModeIcon(insight.mode)}
+                                                    <span className="text-xs font-medium text-muted-foreground">
+                                                        {getModeLabel(insight.mode)}
+                                                    </span>
+                                                    <span className="text-xs text-muted-foreground">
+                                                        {new Date(insight.createdAt).toLocaleDateString('ja-JP')}
+                                                    </span>
+                                                </div>
+                                                <p className="text-sm whitespace-pre-wrap">
+                                                    {insight.content}
+                                                </p>
                                             </div>
-                                            <p className="text-sm whitespace-pre-wrap">
-                                                {insight.content}
-                                            </p>
+                                            <Button
+                                                variant="ghost"
+                                                size="sm"
+                                                onClick={() => handleDelete(insight.id)}
+                                                className="text-muted-foreground hover:text-destructive flex-shrink-0"
+                                            >
+                                                <Trash2 className="h-4 w-4" />
+                                            </Button>
                                         </div>
-                                        <Button
-                                            variant="ghost"
-                                            size="sm"
-                                            onClick={() => handleDelete(insight.id)}
-                                            className="text-muted-foreground hover:text-destructive flex-shrink-0"
-                                        >
-                                            <Trash2 className="h-4 w-4" />
-                                        </Button>
-                                    </div>
-                                </CardContent>
-                            </Card>
-                        ))}
+                                    </CardContent>
+                                </Card>
+                            ))}
                     </div>
                 )}
             </div>

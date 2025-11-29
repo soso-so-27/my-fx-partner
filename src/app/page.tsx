@@ -18,6 +18,7 @@ export default function Home() {
   const [stats, setStats] = useState<{ winRate: number; profitFactor: number; totalTrades: number } | null>(null)
   const [recentTrade, setRecentTrade] = useState<any>(null)
   const [insights, setInsights] = useState<Insight[]>([])
+  const [gmailConnected, setGmailConnected] = useState(false)
 
   useEffect(() => {
     const loadData = async () => {
@@ -46,6 +47,10 @@ export default function Home() {
       // Load recent insights
       const userInsights = await insightService.getInsightsByUser(user.id, 2)
       setInsights(userInsights)
+
+      // Check Gmail connection
+      const session = await fetch('/api/auth/session').then(r => r.json())
+      setGmailConnected(!!session?.provider)
     }
     loadData()
   }, [user])
@@ -53,14 +58,38 @@ export default function Home() {
   return (
     <ProtectedRoute>
       <div className="container mx-auto p-4 pb-24 space-y-6">
-        <header className="mb-8">
-          <h1 className="text-2xl font-bold text-solo-black dark:text-solo-white">
-            Hello, {user?.email?.split('@')[0]}
+        {/* SOLO Branding */}
+        <section>
+          <h1 className="text-3xl font-bold text-solo-navy dark:text-solo-gold tracking-tight">
+            SOLO
           </h1>
-          <p className="text-muted-foreground text-sm">
-            今日の成長を積み上げましょう
-          </p>
-        </header>
+        </section>
+
+        {/* Gmail Connection Banner */}
+        {!gmailConnected && (
+          <Card className="bg-gradient-to-r from-blue-500/10 to-blue-600/10 border-blue-500/20">
+            <CardContent className="p-4">
+              <div className="flex items-start gap-3">
+                <div className="h-10 w-10 rounded-full bg-blue-500/20 flex items-center justify-center flex-shrink-0">
+                  <svg className="h-5 w-5 text-blue-600 dark:text-blue-400" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z" />
+                  </svg>
+                </div>
+                <div className="flex-1">
+                  <h3 className="font-bold text-sm mb-1">Gmail連携で自動記録</h3>
+                  <p className="text-xs text-muted-foreground mb-2">
+                    約定メールを自動取り込み。手入力不要で記録が残ります。
+                  </p>
+                  <Link href="/settings">
+                    <Button size="sm" variant="outline" className="text-xs h-7">
+                      設定する
+                    </Button>
+                  </Link>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Key Metrics Section */}
         {stats && (
@@ -176,26 +205,34 @@ export default function Home() {
         )}
 
         {/* Quick Actions */}
-        <section>
-          <h2 className="text-lg font-semibold mb-3">クイックアクション</h2>
-          <div className="grid grid-cols-2 gap-3">
-            <Link href="/analysis">
-              <Button variant="outline" className="w-full h-auto py-4 flex flex-col gap-2">
-                <TrendingUp className="h-5 w-5 text-solo-gold" />
-                <span className="text-xs">分析レポート</span>
-              </Button>
+        <section className="space-y-3">
+          <h2 className="text-sm font-bold">クイックアクション</h2>
+          <div className="space-y-2">
+            <Link href="/chat" className="block">
+              <Card className="bg-gradient-to-br from-solo-gold/10 to-solo-gold/5 border-solo-gold/20 hover:border-solo-gold/40 transition-colors">
+                <CardContent className="p-4 flex items-center gap-3">
+                  <div className="h-10 w-10 rounded-full bg-solo-gold/20 flex items-center justify-center">
+                    <Plus className="h-5 w-5 text-solo-gold" />
+                  </div>
+                  <div>
+                    <div className="font-bold text-sm">AIパートナー</div>
+                    <div className="text-xs text-muted-foreground">思考を整理する</div>
+                  </div>
+                </CardContent>
+              </Card>
             </Link>
-            <Link href="/settings/rules">
-              <Button variant="outline" className="w-full h-auto py-4 flex flex-col gap-2">
-                <Activity className="h-5 w-5 text-solo-gold" />
-                <span className="text-xs">ルール確認</span>
-              </Button>
-            </Link>
-            <Link href="/chat">
-              <Button size="lg" className="bg-solo-gold hover:bg-solo-gold/80 text-solo-black w-full font-medium">
-                <Plus className="mr-2 h-5 w-5" />
-                AIパートナー
-              </Button>
+            <Link href="/analysis" className="block">
+              <Card className="bg-card hover:bg-accent/50 transition-colors">
+                <CardContent className="p-4 flex items-center gap-3">
+                  <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center">
+                    <TrendingUp className="h-5 w-5 text-solo-gold" />
+                  </div>
+                  <div>
+                    <div className="font-bold text-sm">分析レポート</div>
+                    <div className="text-xs text-muted-foreground">パフォーマンスを確認</div>
+                  </div>
+                </CardContent>
+              </Card>
             </Link>
           </div>
         </section>
