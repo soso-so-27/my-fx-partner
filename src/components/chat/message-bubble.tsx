@@ -1,5 +1,4 @@
 import { cn } from "@/lib/utils"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { Bookmark } from "lucide-react"
 import { InsightMode } from "@/types/insight"
@@ -15,37 +14,23 @@ interface MessageBubbleProps {
 export function MessageBubble({ role, content, timestamp, mode, onSaveInsight }: MessageBubbleProps) {
     return (
         <div className={cn(
-            "flex w-full gap-3 p-4",
-            role === 'user' ? "flex-row-reverse" : "flex-row"
+            "flex w-full p-3",
+            role === 'user' ? "justify-end" : "justify-start"
         )}>
-            <Avatar className="h-8 w-8">
-                {role === 'ai' ? (
-                    <>
-                        <AvatarImage src="/ai-avatar.png" alt="AI" />
-                        <AvatarFallback>AI</AvatarFallback>
-                    </>
-                ) : (
-                    <>
-                        <AvatarImage src="/user-avatar.png" alt="User" />
-                        <AvatarFallback>ME</AvatarFallback>
-                    </>
-                )}
-            </Avatar>
-
             <div className={cn(
-                "flex flex-col max-w-[80%]",
+                "flex flex-col max-w-[85%]",
                 role === 'user' ? "items-end" : "items-start"
             )}>
                 <div className={cn(
-                    "rounded-lg px-4 py-2 text-sm whitespace-pre-wrap",
+                    "rounded-2xl px-4 py-3 text-sm whitespace-pre-wrap",
                     role === 'user'
-                        ? "bg-primary text-primary-foreground"
-                        : "bg-muted text-muted-foreground"
+                        ? "bg-solo-gold text-solo-black"
+                        : "bg-muted text-foreground"
                 )}>
                     {content}
                 </div>
 
-                <div className="flex items-center gap-2 mt-1">
+                <div className="flex items-center gap-2 mt-1 px-2">
                     {timestamp && (
                         <span className="text-xs text-muted-foreground">
                             {timestamp}

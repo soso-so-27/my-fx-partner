@@ -57,10 +57,10 @@ export default function Home() {
 
   return (
     <ProtectedRoute>
-      <div className="container mx-auto p-4 pb-24 space-y-6">
+      <div className="container mx-auto p-4 pb-24 space-y-4">
         {/* SOLO Branding */}
-        <section>
-          <h1 className="text-3xl font-bold text-solo-navy dark:text-solo-gold tracking-tight">
+        <section className="mb-2">
+          <h1 className="text-4xl font-bold text-solo-navy dark:text-solo-gold tracking-tight">
             SOLO
           </h1>
         </section>
@@ -93,27 +93,27 @@ export default function Home() {
 
         {/* Key Metrics Section */}
         {stats && (
-          <section className="grid grid-cols-3 gap-3">
+          <section className="grid grid-cols-3 gap-2">
             <Card className="bg-card border-none shadow-sm">
               <CardContent className="p-3">
-                <p className="text-[10px] text-muted-foreground mb-1">勝率 (30日)</p>
-                <div className="text-xl font-bold font-numbers text-solo-navy dark:text-solo-white">
+                <p className="text-[11px] text-muted-foreground mb-1">勝率 (30日)</p>
+                <div className="text-2xl font-bold font-numbers text-solo-navy dark:text-solo-white">
                   {stats.winRate}<span className="text-xs text-solo-gold">%</span>
                 </div>
               </CardContent>
             </Card>
             <Card className="bg-card border-none shadow-sm">
               <CardContent className="p-3">
-                <p className="text-[10px] text-muted-foreground mb-1">PF</p>
-                <div className="text-xl font-bold font-numbers text-solo-navy dark:text-solo-white">
+                <p className="text-[11px] text-muted-foreground mb-1">PF</p>
+                <div className="text-2xl font-bold font-numbers text-solo-navy dark:text-solo-white">
                   {stats.profitFactor}
                 </div>
               </CardContent>
             </Card>
             <Card className="bg-card border-none shadow-sm">
               <CardContent className="p-3">
-                <p className="text-[10px] text-muted-foreground mb-1">継続日数</p>
-                <div className="text-xl font-bold font-numbers text-solo-navy dark:text-solo-white">
+                <p className="text-[11px] text-muted-foreground mb-1">継続日数</p>
+                <div className="text-2xl font-bold font-numbers text-solo-navy dark:text-solo-white">
                   {stats.totalTrades > 0 ? Math.min(stats.totalTrades, 5) : 0}<span className="text-xs text-muted-foreground">日</span>
                 </div>
               </CardContent>
@@ -124,7 +124,7 @@ export default function Home() {
         {/* Recent Trade Section */}
         <section>
           <div className="flex items-center justify-between mb-3">
-            <h2 className="text-lg font-semibold">直近のトレード</h2>
+            <h2 className="text-xl font-bold">直近のトレード</h2>
             <Link href="/history" className="text-xs text-solo-gold hover:underline">
               すべて見る
             </Link>
@@ -180,9 +180,9 @@ export default function Home() {
 
         {/* Recent Insights Section */}
         {insights.length > 0 && (
-          <section className="space-y-3">
+          <section className="space-y-2">
             <div className="flex items-center justify-between">
-              <h2 className="text-sm font-bold">最近の気づき</h2>
+              <h2 className="text-base font-bold">最近の気づき</h2>
               <Link href="/journal">
                 <Button variant="ghost" size="sm" className="text-xs h-7">
                   すべて表示
@@ -205,31 +205,31 @@ export default function Home() {
         )}
 
         {/* Quick Actions */}
-        <section className="space-y-3">
-          <h2 className="text-sm font-bold">クイックアクション</h2>
-          <div className="space-y-2">
-            <Link href="/chat" className="block">
-              <Card className="bg-gradient-to-br from-solo-gold/10 to-solo-gold/5 border-solo-gold/20 hover:border-solo-gold/40 transition-colors">
-                <CardContent className="p-4 flex items-center gap-3">
-                  <div className="h-10 w-10 rounded-full bg-solo-gold/20 flex items-center justify-center">
-                    <Plus className="h-5 w-5 text-solo-gold" />
+        <section className="space-y-2">
+          <h2 className="text-base font-bold">クイックアクション</h2>
+          <div className="grid grid-cols-2 gap-2">
+            <Link href="/chat">
+              <Card className="bg-gradient-to-br from-solo-gold/10 to-solo-gold/5 border-solo-gold/20 hover:border-solo-gold/40 transition-colors h-full">
+                <CardContent className="p-4 flex flex-col items-center text-center gap-2">
+                  <div className="h-12 w-12 rounded-full bg-solo-gold/20 flex items-center justify-center">
+                    <Plus className="h-6 w-6 text-solo-gold" />
                   </div>
                   <div>
                     <div className="font-bold text-sm">AIパートナー</div>
-                    <div className="text-xs text-muted-foreground">思考を整理する</div>
+                    <div className="text-[11px] text-muted-foreground">思考を整理</div>
                   </div>
                 </CardContent>
               </Card>
             </Link>
-            <Link href="/analysis" className="block">
-              <Card className="bg-card hover:bg-accent/50 transition-colors">
-                <CardContent className="p-4 flex items-center gap-3">
-                  <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center">
-                    <TrendingUp className="h-5 w-5 text-solo-gold" />
+            <Link href="/analysis">
+              <Card className="bg-card hover:bg-accent/50 transition-colors h-full">
+                <CardContent className="p-4 flex flex-col items-center text-center gap-2">
+                  <div className="h-12 w-12 rounded-full bg-muted flex items-center justify-center">
+                    <TrendingUp className="h-6 w-6 text-solo-gold" />
                   </div>
                   <div>
                     <div className="font-bold text-sm">分析レポート</div>
-                    <div className="text-xs text-muted-foreground">パフォーマンスを確認</div>
+                    <div className="text-[11px] text-muted-foreground">パフォーマンス確認</div>
                   </div>
                 </CardContent>
               </Card>
