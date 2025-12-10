@@ -17,16 +17,16 @@ import {
 import { Loader2 } from "lucide-react"
 
 const PERSONA_LABELS: Record<MarketingPersona, string> = {
-    'GAMBLER': 'The Gambler (Exness/Gold/HighRisk)',
-    'BONUS_HUNTER': 'The Bonus Hunter (XM/Stagnant)',
-    'SCALPER': 'The Scalper (Titan/HighFreq)',
-    'SWAP_LOVER': 'The Swap Lover (OANDA/LongTerm)',
-    'ANALYST': 'The Analyst (Axiory/Analysis)',
-    'CHALLENGE': 'The Challenge (Fintokei/Prop)',
-    'CRYPTO_DEG': 'The Crypto Deg (Bybit/Weekend)',
-    'DOMESTIC': 'The Domestic (DMM/Manual)',
-    'CLICKER': 'The Clicker (GMO/Scalp)',
-    'POINT_MASTER': 'The Point Master (Rakuten/Points)'
+    'GAMBLER': '💀 ギャンブラー (Exness / ハイレバ・ゴールド)',
+    'BONUS_HUNTER': '🎁 ボーナスハンター (XM / 入金ボーナス頼み)',
+    'SCALPER': '⚡ 秒速スキャルパー (Titan / 手数料負け予備軍)',
+    'SWAP_LOVER': '🐢 スワップ生活 (OANDA / 長期保有)',
+    'ANALYST': '📊 分析好き (Axiory / 勝てそうで勝てない)',
+    'CHALLENGE': '🔥 プロップ挑戦者 (Fintokei / 合格祈願)',
+    'CRYPTO_DEG': '💎 週末クリプト (Bybit / 土日も休まない)',
+    'DOMESTIC': '🏠 堅実な兼業 (DMM FX / ドル円スイング)',
+    'CLICKER': '👆 連打スキャル (GMO / 無駄打ち多め)',
+    'POINT_MASTER': '🐼 ポイント勢 (楽天 / 資産管理)'
 }
 
 export function MarketingSeedButton() {
@@ -81,8 +81,9 @@ export function MarketingSeedButton() {
             }
 
             toast({
-                title: "生成完了",
-                description: `${successCount}件の取引データを生成しました。`,
+                title: "生成完了！🎉",
+                description: `${successCount}件のデータを追加しました。ジャーナルや履歴ページで確認してください。（直近30日間のデータが含まれます）`,
+                duration: 5000,
             })
         } catch (error) {
             console.error(error)
