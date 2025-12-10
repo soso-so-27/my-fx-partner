@@ -15,6 +15,7 @@ export default function JournalPage() {
     const { user } = useAuth()
     const [trades, setTrades] = useState<Trade[]>([])
     const [activeTab, setActiveTab] = useState("notes")
+    const [refreshTrigger, setRefreshTrigger] = useState(0)
 
     useEffect(() => {
         const loadTrades = async () => {
@@ -23,7 +24,9 @@ export default function JournalPage() {
         loadTrades()
     }, [user, refreshTrigger])
 
-    // ...
+    const handleRefresh = () => {
+        setRefreshTrigger(prev => prev + 1)
+    }
 
     return (
         <ProtectedRoute>
