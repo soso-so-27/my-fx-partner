@@ -13,6 +13,15 @@ import { profileService } from "@/lib/profile-service"
 import { UserProfile } from "@/types/user-profile"
 import { useToast } from "@/components/ui/use-toast"
 import { User, Upload } from "lucide-react"
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select"
+import { RULE_TEMPLATES } from "@/lib/rule-templates"
+import { tradeRuleService } from "@/lib/trade-rule-service"
 
 export default function SettingsPage() {
     const [mounted, setMounted] = useState(false)
@@ -23,6 +32,8 @@ export default function SettingsPage() {
     const [bio, setBio] = useState("")
     const [avatarUrl, setAvatarUrl] = useState("")
     const [saving, setSaving] = useState(false)
+    const [selectedTemplateId, setSelectedTemplateId] = useState<string>("")
+    const [applyingTemplate, setApplyingTemplate] = useState(false)
 
     useEffect(() => {
         setMounted(true)
@@ -53,9 +64,15 @@ export default function SettingsPage() {
             return
         }
 
+        if (!user) return
+
         try {
-            const dataUrl = await profileService.uploadAvatar(file)
-            setAvatarUrl(dataUrl)
+            const dataUrl = await profileService.uploadAvatar(user.id, file)
+            if (dataUrl) {
+                setAvatarUrl(dataUrl)
+            } else {
+                throw new Error("Upload failed")
+            }
         } catch (error) {
             toast({
                 title: "アップロードに失敗しました",
@@ -87,6 +104,39 @@ export default function SettingsPage() {
             })
         } finally {
             setSaving(false)
+        }
+    }
+
+    const handleApplyTemplate = async () => {
+        if (!user || !selectedTemplateId) return
+        setApplyingTemplate(true)
+        try {
+            const template = RULE_TEMPLATES.find(t => t.id === selectedTemplateId)
+            if (!template) return
+
+            // Create rules from template
+            for (const rule of template.rules) {
+                await tradeRuleService.createRule({
+                    title: rule.title,
+                    category: rule.category,
+                    description: rule.description,
+                    isActive: true
+                }, user.id)
+            }
+
+            toast({
+                title: "ルールを適用しました",
+                description: `${template.name}のルールを追加しました。`
+            })
+            setSelectedTemplateId("")
+        } catch (error) {
+            toast({
+                title: "適用に失敗しました",
+                description: "もう一度お試しください。",
+                variant: "destructive"
+            })
+        } finally {
+            setApplyingTemplate(false)
         }
     }
 
@@ -174,6 +224,51 @@ export default function SettingsPage() {
                         </CardContent>
                     </Card>
 
+                    {/* Trade Rules */}
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>トレードルール設定</CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                            <div className="space-y-2">
+                                <Label>テンプレートから一括登録</Label>
+                                <p className="text-sm text-muted-foreground">
+                                    スタイルに合わせたルールを自動で設定します。
+                                    <span className="text-red-500 text-xs ml-1">※既存のルールは上書きされます</span>
+                                </p>
+                                <div className="flex gap-2">
+                                    <Select
+                                        value={selectedTemplateId}
+                                        onValueChange={setSelectedTemplateId}
+                                    >
+                                        <SelectTrigger className="w-full">
+                                            <SelectValue placeholder="スタイルを選択..." />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {RULE_TEMPLATES.map((template) => (
+                                                <SelectItem key={template.id} value={template.id}>
+                                                    {template.name}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                    <Button
+                                        onClick={handleApplyTemplate}
+                                        disabled={!selectedTemplateId || applyingTemplate}
+                                        variant="outline"
+                                    >
+                                        {applyingTemplate ? "適用中..." : "適用"}
+                                    </Button>
+                                </div>
+                                {selectedTemplateId && (
+                                    <div className="bg-muted/50 p-3 rounded-md text-sm text-muted-foreground">
+                                        {RULE_TEMPLATES.find(t => t.id === selectedTemplateId)?.description}
+                                    </div>
+                                )}
+                            </div>
+                        </CardContent>
+                    </Card>
+
                     {/* External Services */}
                     <Card>
                         <CardHeader>
@@ -192,6 +287,28 @@ export default function SettingsPage() {
                                 </div>
                                 <GmailConnectButton />
                             </div>
+                        </CardContent>
+                    </Card>
+
+                    {/* Account Actions */}
+                    <Card className="border-destructive/20">
+                        <CardHeader>
+                            <CardTitle>アカウント</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            <Button
+                                variant="outline"
+                                className="w-full text-destructive border-destructive/30 hover:bg-destructive/10"
+                                onClick={async () => {
+                                    const { signOut } = await import("@/contexts/auth-context").then(m => ({ signOut: () => { } }))
+                                    // Direct sign out
+                                    const supabase = (await import("@/lib/supabase")).supabase
+                                    await supabase.auth.signOut()
+                                    window.location.href = "/login"
+                                }}
+                            >
+                                ログアウト
+                            </Button>
                         </CardContent>
                     </Card>
                 </div>

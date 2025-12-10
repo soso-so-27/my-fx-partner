@@ -1,7 +1,6 @@
-import { createClient } from '@/lib/supabase/client'
+import { supabase } from '@/lib/supabase/client'
 import { TradeRule, CreateRuleInput } from '@/types/trade-rule'
 
-const supabase = createClient()
 
 export const tradeRuleService = {
     async getRules(userId?: string): Promise<TradeRule[]> {

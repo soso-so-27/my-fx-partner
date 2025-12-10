@@ -1,41 +1,54 @@
+import { supabase } from '@/lib/supabase/client'
 import { Insight, InsightMode } from "@/types/insight"
 
-const STORAGE_KEY = 'solo_insights'
-
 class InsightService {
-    private getInsights(): Insight[] {
-        if (typeof window === 'undefined') return []
-        const stored = localStorage.getItem(STORAGE_KEY)
-        return stored ? JSON.parse(stored) : []
-    }
-
-    private saveInsights(insights: Insight[]): void {
-        if (typeof window === 'undefined') return
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(insights))
-    }
-
     async createInsight(
-        content: string,
-        mode: InsightMode,
+        input: {
+            content: string
+            mode: InsightMode
+            userNote?: string
+            tags?: string[]
+        },
         userId: string
     ): Promise<Insight> {
-        const insights = this.getInsights()
-        const newInsight: Insight = {
-            id: Date.now().toString(),
-            userId,
-            content,
-            mode,
-            createdAt: new Date().toISOString(),
+        const dbInput = {
+            user_id: userId,
+            content: input.content,
+            mode: input.mode,
+            user_note: input.userNote,
+            tags: input.tags || []
+            // created_at is default
         }
-        insights.unshift(newInsight) // Add to beginning
-        this.saveInsights(insights)
-        return newInsight
+
+        const { data, error } = await supabase
+            .from('insights')
+            .insert(dbInput)
+            .select()
+            .single()
+
+        if (error) throw error
+        return this.mapDbInsightToInsight(data)
     }
 
     async getInsightsByUser(userId: string, limit?: number): Promise<Insight[]> {
-        const insights = this.getInsights()
-        const userInsights = insights.filter(i => i.userId === userId)
-        return limit ? userInsights.slice(0, limit) : userInsights
+        let query = supabase
+            .from('insights')
+            .select('*')
+            .eq('user_id', userId)
+            .order('created_at', { ascending: false })
+
+        if (limit) {
+            query = query.limit(limit)
+        }
+
+        const { data, error } = await query
+
+        if (error) {
+            console.error('Error fetching insights:', error)
+            return []
+        }
+
+        return (data || []).map(this.mapDbInsightToInsight)
     }
 
     async getAllInsights(userId: string): Promise<Insight[]> {
@@ -43,17 +56,45 @@ class InsightService {
     }
 
     async deleteInsight(id: string): Promise<void> {
-        const insights = this.getInsights()
-        const filtered = insights.filter(i => i.id !== id)
-        this.saveInsights(filtered)
+        const { error } = await supabase
+            .from('insights')
+            .delete()
+            .eq('id', id)
+
+        if (error) console.error('Error deleting insight:', error)
     }
 
     async updateInsightNote(id: string, userNote: string): Promise<void> {
-        const insights = this.getInsights()
-        const insight = insights.find(i => i.id === id)
-        if (insight) {
-            insight.userNote = userNote
-            this.saveInsights(insights)
+        const { error } = await supabase
+            .from('insights')
+            .update({ user_note: userNote })
+            .eq('id', id)
+
+        if (error) console.error('Error updating insight note:', error)
+    }
+
+    async updateInsight(id: string, updates: { userNote?: string, tags?: string[] }): Promise<void> {
+        const dbUpdates: any = {}
+        if (updates.userNote !== undefined) dbUpdates.user_note = updates.userNote
+        if (updates.tags !== undefined) dbUpdates.tags = updates.tags
+
+        const { error } = await supabase
+            .from('insights')
+            .update(dbUpdates)
+            .eq('id', id)
+
+        if (error) throw error
+    }
+
+    private mapDbInsightToInsight(dbInsight: any): Insight {
+        return {
+            id: dbInsight.id,
+            userId: dbInsight.user_id,
+            content: dbInsight.content,
+            mode: dbInsight.mode,
+            userNote: dbInsight.user_note,
+            createdAt: dbInsight.created_at,
+            tags: dbInsight.tags || []
         }
     }
 }

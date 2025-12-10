@@ -10,12 +10,12 @@ interface PairPerformanceChartProps {
 export function PairPerformanceChart({ trades }: PairPerformanceChartProps) {
     // Group trades by pair and calculate total PnL
     const pairData = trades
-        .filter(t => t.pnl !== undefined)
+        .filter(t => t.pnl?.amount !== undefined)
         .reduce((acc, trade) => {
             if (!acc[trade.pair]) {
                 acc[trade.pair] = { pair: trade.pair, totalPnL: 0, count: 0 }
             }
-            acc[trade.pair].totalPnL += trade.pnl || 0
+            acc[trade.pair].totalPnL += trade.pnl?.amount || 0
             acc[trade.pair].count += 1
             return acc
         }, {} as Record<string, { pair: string, totalPnL: number, count: number }>)

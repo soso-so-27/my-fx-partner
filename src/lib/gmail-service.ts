@@ -10,15 +10,37 @@ export interface GmailMessage {
 }
 
 export const gmailService = {
-    async getRecentEmails(accessToken: string, query: string = 'subject:(order OR trade OR position OR 約定 OR XMTrading OR Test) after:2024/01/01'): Promise<GmailMessage[]> {
-        const response = await fetch(`https://gmail.googleapis.com/gmail/v1/users/me/messages?q=${encodeURIComponent(query)}&maxResults=10`, {
+    // 汎用的な検索クエリ - 日本・海外のFXブローカーに幅広く対応
+    // 約定通知で一般的に使われるキーワードを網羅
+    defaultQuery: [
+        // 日本語キーワード
+        '約定', '取引', '決済', '注文確定', 'FX',
+        // 英語キーワード  
+        'order executed', 'trade confirmation', 'position opened', 'position closed',
+        // ブローカー名
+        'GMOクリック証券', 'XMTrading', 'Exness', 'OANDA', 'DMM FX', 'SBI FX',
+        'IC Markets', 'Pepperstone', 'FXCM', 'IG証券', 'みんなのFX', 'LION FX'
+    ].map(k => `"${k}"`).join(' OR '),
+
+    async getRecentEmails(accessToken: string, query?: string): Promise<GmailMessage[]> {
+        const searchQuery = query || `(${this.defaultQuery}) after:2024/01/01`
+
+        console.log("=== Gmail Service Debug ===")
+        console.log("Access token provided:", !!accessToken)
+        console.log("Search query:", searchQuery.substring(0, 100) + "...")
+
+        const response = await fetch(`https://gmail.googleapis.com/gmail/v1/users/me/messages?q=${encodeURIComponent(searchQuery)}&maxResults=100`, {
             headers: {
                 Authorization: `Bearer ${accessToken}`,
             },
         })
 
+        console.log("Gmail API Response Status:", response.status)
+
         if (!response.ok) {
-            throw new Error('Failed to fetch messages')
+            const errorBody = await response.text()
+            console.error(`Gmail API Error: ${response.status} ${response.statusText}`, errorBody)
+            throw new Error(`Failed to fetch messages: ${response.status} ${response.statusText}`)
         }
 
         const data = await response.json()

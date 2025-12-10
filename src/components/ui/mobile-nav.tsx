@@ -1,20 +1,22 @@
 "use client"
 
-import { Home, MessageSquare, History, TrendingUp, BookText } from "lucide-react"
+import { Home, BookOpen, MessageSquare, BarChart3 } from "lucide-react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { cn } from "@/lib/utils"
-import { FABButton } from "./fab-button"
+import { SyncFAB } from "./sync-fab"
 
 export function MobileNav() {
     const pathname = usePathname()
 
+    // ナビ構成:
+    // ホーム(ダッシュボード) / 相談(AI) / ジャーナル(ノート+ルール) / 分析(統計+記録)
     const navItems = [
         { href: '/', icon: Home, label: 'ホーム' },
-        { href: '/chat', icon: MessageSquare, label: 'パートナー' },
-        { href: null, icon: null, label: null }, // Spacer for FAB
-        { href: '/journal', icon: BookText, label: 'ジャーナル' },
-        { href: '/analysis', icon: TrendingUp, label: '分析' },
+        { href: '/chat', icon: MessageSquare, label: '相談' },
+        { href: null, icon: null, label: null }, // Sync FAB
+        { href: '/journal', icon: BookOpen, label: 'ジャーナル' },
+        { href: '/analysis', icon: BarChart3, label: '分析' },
     ]
 
     // Don't show nav on login page
@@ -23,9 +25,9 @@ export function MobileNav() {
     return (
         <div className="fixed bottom-0 left-0 right-0 border-t bg-background/80 backdrop-blur-lg md:hidden z-50 pb-safe">
             <nav className="relative grid grid-cols-5 h-16 items-center">
-                <FABButton />
+                <SyncFAB />
                 {navItems.map((item, index) => {
-                    // Spacer for FAB (Center item)
+                    // Spacer for Sync FAB (Center item)
                     if (index === 2) {
                         return <div key="spacer" className="w-full h-full" />
                     }
@@ -43,7 +45,7 @@ export function MobileNav() {
                             )}
                         >
                             <Icon className="h-5 w-5" />
-                            <span className="text-[10px] font-medium">{item.label}</span>
+                            <span className="text-[11px] font-medium">{item.label}</span>
                         </Link>
                     )
                 })}
@@ -51,3 +53,6 @@ export function MobileNav() {
         </div>
     )
 }
+
+
+

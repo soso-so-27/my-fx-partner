@@ -1,8 +1,6 @@
 "use client"
 
-import { useTheme } from "next-themes"
-import { LogOut, User as UserIcon, Moon, Sun, Laptop, BookOpen, Settings } from "lucide-react"
-import Link from "next/link"
+import { LogOut, User as UserIcon } from "lucide-react"
 import { useAuth } from "@/contexts/auth-context"
 import { Button } from "@/components/ui/button"
 import { useState, useEffect } from "react"
@@ -15,14 +13,10 @@ import {
     DropdownMenuLabel,
     DropdownMenuSeparator,
     DropdownMenuTrigger,
-    DropdownMenuSub,
-    DropdownMenuSubTrigger,
-    DropdownMenuSubContent,
 } from "@/components/ui/dropdown-menu"
 
 export function UserMenu() {
     const { user, signOut } = useAuth()
-    const { setTheme } = useTheme()
     const [profile, setProfile] = useState<UserProfile | null>(null)
 
     useEffect(() => {
@@ -63,44 +57,6 @@ export function UserMenu() {
                         </p>
                     </div>
                 </DropdownMenuLabel>
-                <DropdownMenuSeparator />
-
-                <Link href="/settings">
-                    <DropdownMenuItem className="cursor-pointer">
-                        <Settings className="mr-2 h-4 w-4" />
-                        設定
-                    </DropdownMenuItem>
-                </Link>
-
-                <Link href="/settings/rules">
-                    <DropdownMenuItem className="cursor-pointer">
-                        <BookOpen className="mr-2 h-4 w-4" />
-                        トレードルール
-                    </DropdownMenuItem>
-                </Link>
-
-                <DropdownMenuSub>
-                    <DropdownMenuSubTrigger>
-                        <Sun className="mr-2 h-4 w-4 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
-                        <Moon className="absolute mr-2 h-4 w-4 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
-                        <span className="ml-2">テーマ切替</span>
-                    </DropdownMenuSubTrigger>
-                    <DropdownMenuSubContent>
-                        <DropdownMenuItem onClick={() => setTheme("light")}>
-                            <Sun className="mr-2 h-4 w-4" />
-                            ライト
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => setTheme("dark")}>
-                            <Moon className="mr-2 h-4 w-4" />
-                            ダーク
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => setTheme("system")}>
-                            <Laptop className="mr-2 h-4 w-4" />
-                            システム
-                        </DropdownMenuItem>
-                    </DropdownMenuSubContent>
-                </DropdownMenuSub>
-
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={handleSignOut} className="text-destructive cursor-pointer">
                     <LogOut className="mr-2 h-4 w-4" />

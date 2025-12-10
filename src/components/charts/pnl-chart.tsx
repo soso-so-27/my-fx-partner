@@ -10,17 +10,17 @@ interface PnLChartProps {
 export function PnLChart({ trades }: PnLChartProps) {
     // Calculate cumulative PnL over time
     const data = trades
-        .filter(t => t.pnl !== undefined)
+        .filter(t => t.pnl?.amount !== undefined)
         .sort((a, b) => new Date(a.entryTime).getTime() - new Date(b.entryTime).getTime())
         .reduce((acc, trade, index) => {
             const cumulative = index === 0
-                ? (trade.pnl || 0)
-                : acc[index - 1].cumulative + (trade.pnl || 0)
+                ? (trade.pnl.amount || 0)
+                : acc[index - 1].cumulative + (trade.pnl.amount || 0)
 
             acc.push({
                 date: new Date(trade.entryTime).toLocaleDateString('ja-JP', { month: 'short', day: 'numeric' }),
                 cumulative,
-                pnl: trade.pnl || 0
+                pnl: trade.pnl.amount || 0
             })
             return acc
         }, [] as { date: string, cumulative: number, pnl: number }[])

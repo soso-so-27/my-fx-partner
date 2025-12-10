@@ -1,48 +1,88 @@
+import { supabase } from '@/lib/supabase/client'
 import { UserProfile } from "@/types/user-profile"
 
-const STORAGE_KEY = 'solo_user_profile'
 
 class ProfileService {
-    private getProfile(userId: string): UserProfile | null {
-        if (typeof window === 'undefined') return null
-        const stored = localStorage.getItem(`${STORAGE_KEY}_${userId}`)
-        return stored ? JSON.parse(stored) : null
-    }
-
-    private saveProfile(profile: UserProfile): void {
-        if (typeof window === 'undefined') return
-        localStorage.setItem(`${STORAGE_KEY}_${profile.userId}`, JSON.stringify(profile))
-    }
-
     async getUserProfile(userId: string): Promise<UserProfile | null> {
-        return this.getProfile(userId)
+        const { data, error } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('id', userId)
+            .single()
+
+        if (error) {
+            // PGRST116: Not found - expected for new users
+            // Empty error object: RLS restriction or no access
+            const isExpectedError =
+                error.code === 'PGRST116' ||
+                !error.code ||
+                Object.keys(error).length === 0
+
+            if (!isExpectedError) {
+                console.error('Error fetching profile:', error)
+            }
+            return null
+        }
+
+        return {
+            userId: data.id,
+            displayName: data.display_name,
+            bio: data.bio,
+            avatarUrl: data.avatar_url,
+            updatedAt: data.updated_at
+        }
     }
 
     async updateProfile(
         userId: string,
         updates: Partial<Omit<UserProfile, 'userId'>>
-    ): Promise<UserProfile> {
-        const existing = this.getProfile(userId)
-        const updated: UserProfile = {
-            userId,
-            ...existing,
-            ...updates,
-            updatedAt: new Date().toISOString()
+    ): Promise<UserProfile | null> {
+        const dbUpdates: any = {
+            updated_at: new Date().toISOString()
         }
-        this.saveProfile(updated)
-        return updated
+        if (updates.displayName !== undefined) dbUpdates.display_name = updates.displayName
+        if (updates.bio !== undefined) dbUpdates.bio = updates.bio
+        if (updates.avatarUrl !== undefined) dbUpdates.avatar_url = updates.avatarUrl
+
+        const { data, error } = await supabase
+            .from('profiles')
+            .upsert({ id: userId, ...dbUpdates })
+            .select()
+            .single()
+
+        if (error) {
+            console.error('Error updating profile:', error)
+            return null
+        }
+
+        return {
+            userId: data.id,
+            displayName: data.display_name,
+            bio: data.bio,
+            avatarUrl: data.avatar_url,
+            updatedAt: data.updated_at
+        }
     }
 
-    async uploadAvatar(file: File): Promise<string> {
-        // For now, convert to base64 data URL
-        return new Promise((resolve, reject) => {
-            const reader = new FileReader()
-            reader.onloadend = () => {
-                resolve(reader.result as string)
-            }
-            reader.onerror = reject
-            reader.readAsDataURL(file)
-        })
+    async uploadAvatar(userId: string, file: File): Promise<string | null> {
+        const fileExt = file.name.split('.').pop()
+        const fileName = `${userId}-${Math.random()}.${fileExt}`
+        const filePath = `${fileName}`
+
+        const { error: uploadError } = await supabase.storage
+            .from('avatars')
+            .upload(filePath, file)
+
+        if (uploadError) {
+            console.error('Error uploading avatar:', uploadError)
+            return null
+        }
+
+        const { data } = supabase.storage
+            .from('avatars')
+            .getPublicUrl(filePath)
+
+        return data.publicUrl
     }
 }
 

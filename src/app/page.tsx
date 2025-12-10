@@ -1,114 +1,350 @@
 "use client"
 
 import Link from 'next/link'
-import { useEffect, useState } from "react"
+import { useEffect, useState, useRef } from "react"
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { cn } from "@/lib/utils"
 import { tradeService } from "@/lib/trade-service"
 import { analysisEngine } from "@/lib/analysis-engine"
-import { Activity, TrendingUp, Plus } from "lucide-react"
+import { Activity, TrendingUp, Plus, Loader2, Sparkles, AlertTriangle, RefreshCw, Settings } from "lucide-react"
 import { useAuth } from "@/contexts/auth-context"
 import { ProtectedRoute } from "@/components/auth/protected-route"
 import { insightService } from "@/lib/insight-service"
 import { Insight } from "@/types/insight"
+import { demoDataService } from "@/lib/demo-data-service"
+import { tradeRuleService } from "@/lib/trade-rule-service"
+import { useToast } from "@/components/ui/use-toast"
+import { SyncButton } from "@/components/ui/sync-button"
+import { OnboardingCard } from "@/components/ui/onboarding-card"
+import { WeeklyCalendar } from "@/components/ui/weekly-calendar"
+import { MonthlyCalendar } from "@/components/ui/monthly-calendar"
+import { GoalCard } from "@/components/home/goal-card"
+import { Trade } from "@/types/trade"
+import { Lightbulb, PenSquare, Share2 } from "lucide-react"
+import { startOfDay, startOfWeek, startOfMonth, format } from "date-fns"
+import { ja } from "date-fns/locale"
+import html2canvas from "html2canvas"
 
 export default function Home() {
   const { user } = useAuth()
-  const [stats, setStats] = useState<{ winRate: number; profitFactor: number; totalTrades: number } | null>(null)
+  const { toast } = useToast()
+  const [stats, setStats] = useState<{ winRate: number; profitFactor: number; totalTrades: number; verifiedRate: number; totalPnl: number; totalPnlPips: number; monthlyPnl: number } | null>(null)
+  const [trades, setTrades] = useState<Trade[]>([])
   const [recentTrade, setRecentTrade] = useState<any>(null)
   const [insights, setInsights] = useState<Insight[]>([])
   const [gmailConnected, setGmailConnected] = useState(false)
+  const [isLoadingDemo, setIsLoadingDemo] = useState(false)
+  const [hasRules, setHasRules] = useState<boolean | null>(null)
+  const [period, setPeriod] = useState<'today' | 'week' | 'month'>('month')
+  const [pnlUnit, setPnlUnit] = useState<'pips' | 'amount'>('pips')
+  const [isCapturing, setIsCapturing] = useState(false)
+  const dashboardRef = useRef<HTMLDivElement>(null)
+
+  const handleCaptureDashboard = async () => {
+    if (!dashboardRef.current) return
+
+    setIsCapturing(true)
+    try {
+      const canvas = await html2canvas(dashboardRef.current, {
+        backgroundColor: null,
+        scale: 2, // Higher resolution
+        logging: false,
+      })
+
+      // Convert to blob and download
+      canvas.toBlob((blob) => {
+        if (!blob) return
+        const url = URL.createObjectURL(blob)
+        const link = document.createElement('a')
+        link.href = url
+        const periodLabel = period === 'today' ? '今日' : period === 'week' ? '今週' : '今月'
+        link.download = `SOLO_${periodLabel}_${format(new Date(), 'yyyyMMdd')}.png`
+        link.click()
+        URL.revokeObjectURL(url)
+
+        toast({
+          title: "画像を保存しました！",
+          description: "SNSでシェアしてみましょう 📲",
+        })
+      }, 'image/png')
+    } catch (error) {
+      console.error('Capture failed:', error)
+      toast({
+        title: "キャプチャに失敗しました",
+        variant: "destructive",
+      })
+    } finally {
+      setIsCapturing(false)
+    }
+  }
+
+  const loadData = async () => {
+    if (!user) return
+    const allTrades = await tradeService.getTrades(user.id)
+
+    // Filter by period
+    const now = new Date()
+    let periodStart: Date
+    if (period === 'today') {
+      periodStart = startOfDay(now)
+    } else if (period === 'week') {
+      periodStart = startOfWeek(now, { weekStartsOn: 1 })
+    } else {
+      periodStart = startOfMonth(now)
+    }
+
+    const periodTrades = allTrades.filter(t => new Date(t.entryTime) >= periodStart)
+
+    // Calculate Monthly PnL for Goal Tracking
+    const monthStart = startOfMonth(now)
+    const monthlyTrades = allTrades.filter(t => new Date(t.entryTime) >= monthStart)
+    const monthlyStats = analysisEngine.calculateStats(monthlyTrades)
+
+    const computedStats = analysisEngine.calculateStats(periodTrades)
+    setStats({
+      winRate: computedStats.winRate,
+      profitFactor: computedStats.profitFactor,
+      totalTrades: periodTrades.length,
+      verifiedRate: computedStats.verifiedRate,
+      totalPnl: computedStats.totalPnl,
+      totalPnlPips: computedStats.totalPnlPips,
+      monthlyPnl: monthlyStats.totalPnl
+    })
+    setTrades(allTrades)
+
+    // Get most recent trade
+    if (allTrades.length > 0) {
+      setRecentTrade(allTrades[0])
+    }
+
+    // Load recent insights
+    const userInsights = await insightService.getInsightsByUser(user.id, 2)
+    setInsights(userInsights)
+
+    // Check Gmail connection
+    const session = await fetch('/api/auth/session').then(r => r.json())
+    setGmailConnected(!!session?.provider)
+
+    // Check rules
+    const rules = await tradeRuleService.getRules(user.id)
+    setHasRules(rules.length > 0)
+  }
 
   useEffect(() => {
-    const loadData = async () => {
-      if (!user) return
-      const trades = await tradeService.getTrades()
+    loadData()
+  }, [user, period])
 
-      const last30Days = trades.filter(t => {
-        const tradeDate = new Date(t.entryTime)
-        const thirtyDaysAgo = new Date()
-        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
-        return tradeDate >= thirtyDaysAgo
-      })
+  const handleLoadDemoData = async () => {
+    if (!user) return
+    setIsLoadingDemo(true)
+    try {
+      const demoTrades = demoDataService.getDemoTrades(user.id)
+      const demoInsights = demoDataService.getDemoInsights(user.id)
+      const demoRules = demoDataService.getDemoRules(user.id)
 
-      const computedStats = analysisEngine.calculateStats(last30Days)
-      setStats({
-        winRate: computedStats.winRate,
-        profitFactor: computedStats.profitFactor,
-        totalTrades: trades.length
-      })
-
-      // Get most recent trade
-      if (trades.length > 0) {
-        setRecentTrade(trades[0])
+      // Insert trades
+      for (const trade of demoTrades) {
+        await tradeService.createTrade({
+          pair: trade.pair,
+          direction: trade.direction,
+          entryPrice: trade.entryPrice,
+          exitPrice: trade.exitPrice,
+          stopLoss: trade.stopLoss,
+          takeProfit: trade.takeProfit,
+          entryTime: trade.entryTime,
+          exitTime: trade.exitTime,
+          timezone: trade.timezone,
+          lotSize: trade.lotSize,
+          pnl: trade.pnl,
+          pnlSource: trade.pnlSource,
+          notes: trade.notes,
+          tags: trade.tags,
+          isVerified: trade.isVerified
+        }, user.id)
       }
 
-      // Load recent insights
-      const userInsights = await insightService.getInsightsByUser(user.id, 2)
-      setInsights(userInsights)
+      // Insert insights
+      for (const insight of demoInsights) {
+        await insightService.createInsight({
+          content: insight.content,
+          mode: insight.mode,
+          userNote: insight.userNote,
+          tags: insight.tags
+        }, user.id)
+      }
 
-      // Check Gmail connection
-      const session = await fetch('/api/auth/session').then(r => r.json())
-      setGmailConnected(!!session?.provider)
+      // Insert rules
+      for (const rule of demoRules) {
+        await tradeRuleService.createRule({
+          title: rule.title,
+          category: rule.category,
+          description: rule.description,
+          isActive: rule.isActive
+        }, user.id)
+      }
+
+      toast({
+        title: "デモデータを読み込みました",
+        description: "アプリの使用感を体験してください。",
+      })
+
+      await loadData()
+    } catch (error) {
+      console.error("Failed to load demo data", error)
+      toast({
+        title: "エラーが発生しました",
+        description: "デモデータの読み込みに失敗しました。",
+        variant: "destructive"
+      })
+    } finally {
+      setIsLoadingDemo(false)
     }
-    loadData()
-  }, [user])
+  }
 
   return (
     <ProtectedRoute>
       <div className="container mx-auto p-4 pb-24 space-y-4">
-        {/* SOLO Branding */}
-        <section className="mb-2">
+        {/* SOLO Branding with Quick Actions */}
+        <section className="mb-2 flex items-center justify-between">
           <h1 className="text-4xl font-bold text-solo-navy dark:text-solo-gold tracking-tight">
             SOLO
           </h1>
-        </section>
-
-        {/* Gmail Connection Banner */}
-        {!gmailConnected && (
-          <div className="flex items-center gap-2 p-2 bg-blue-500/5 border border-blue-500/10 rounded-lg">
-            <svg className="h-4 w-4 text-blue-600 dark:text-blue-400 flex-shrink-0" fill="currentColor" viewBox="0 0 24 24">
-              <path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z" />
-            </svg>
-            <p className="text-xs text-muted-foreground flex-1">
-              Gmail連携で約定メールを自動取り込み
-            </p>
+          <div className="flex items-center gap-1">
             <Link href="/settings">
-              <Button size="sm" variant="ghost" className="h-7 text-xs text-blue-600 hover:text-blue-700 dark:text-blue-400">
-                設定
+              <Button variant="ghost" size="icon" className="h-9 w-9 text-muted-foreground">
+                <Settings className="h-5 w-5" />
               </Button>
             </Link>
+            <SyncButton variant="compact" onSyncComplete={loadData} />
           </div>
+        </section>
+
+        {/* Onboarding for new users - covers Gmail & Rules setup */}
+        <OnboardingCard />
+
+        {/* Goal Tracking */}
+        {stats && (
+          <GoalCard currentProfit={stats.monthlyPnl} />
         )}
 
-        {/* Key Metrics Section */}
+        {/* Main Dashboard - P&L Focus */}
         {stats && (
-          <section className="grid grid-cols-3 gap-2">
-            <Card className="bg-card border-none shadow-sm">
-              <CardContent className="p-3">
-                <div className="text-sm text-muted-foreground mb-1">勝率 (30日)</div>
-                <div className="text-2xl font-bold font-numbers text-solo-navy dark:text-solo-white">
-                  {stats.winRate}<span className="text-xs text-solo-gold">%</span>
-                </div>
-              </CardContent>
-            </Card>
-            <Card className="bg-card border-none shadow-sm">
-              <CardContent className="p-3">
-                <div className="text-sm text-muted-foreground mb-1">PF</div>
-                <div className="text-2xl font-bold font-numbers text-solo-navy dark:text-solo-white">
-                  {stats.profitFactor}
-                </div>
-              </CardContent>
-            </Card>
-            <Card className="bg-card border-none shadow-sm">
-              <CardContent className="p-3">
-                <div className="text-sm text-muted-foreground mb-1">継続日数</div>
-                <div className="text-2xl font-bold font-numbers text-solo-navy dark:text-solo-white">
-                  {stats.totalTrades > 0 ? Math.min(stats.totalTrades, 5) : 0}<span className="text-xs text-muted-foreground">日</span>
-                </div>
-              </CardContent>
-            </Card>
+          <section className="space-y-4">
+            {/* Capture target area */}
+            <div ref={dashboardRef} className="space-y-4 bg-background p-4 -m-4 rounded-lg">
+              {/* Unified Dashboard Card - Clean Minimal Design */}
+              <Card className="bg-card shadow-md rounded-xl overflow-hidden">
+                <CardContent className="p-0">
+                  {/* Period selector header */}
+                  <div className="flex justify-center gap-1 p-4 pb-3">
+                    <Button
+                      variant={period === 'today' ? 'default' : 'ghost'}
+                      size="sm"
+                      className="h-7 text-xs px-3"
+                      onClick={() => setPeriod('today')}
+                    >
+                      今日
+                    </Button>
+                    <Button
+                      variant={period === 'week' ? 'default' : 'ghost'}
+                      size="sm"
+                      className="h-7 text-xs px-3"
+                      onClick={() => setPeriod('week')}
+                    >
+                      今週
+                    </Button>
+                    <Button
+                      variant={period === 'month' ? 'default' : 'ghost'}
+                      size="sm"
+                      className="h-7 text-xs px-3"
+                      onClick={() => setPeriod('month')}
+                    >
+                      今月
+                    </Button>
+                  </div>
+
+                  {/* Main P&L - tap to toggle pips/amount */}
+                  <div
+                    className="text-center px-4 cursor-pointer"
+                    onClick={() => setPnlUnit(pnlUnit === 'pips' ? 'amount' : 'pips')}
+                  >
+                    <p className="text-sm text-muted-foreground mb-1">
+                      {period === 'today' ? '今日' : period === 'week' ? '今週' : '今月'}の損益
+                    </p>
+                    <p className={cn(
+                      "text-4xl font-bold font-numbers",
+                      (pnlUnit === 'pips' ? stats.totalPnlPips : stats.totalPnl) >= 0 ? "text-profit" : "text-loss"
+                    )}>
+                      {(pnlUnit === 'pips' ? stats.totalPnlPips : stats.totalPnl) >= 0 ? '+' : ''}
+                      {(pnlUnit === 'pips' ? stats.totalPnlPips : stats.totalPnl).toLocaleString()}
+                      <span className="text-lg ml-1">{pnlUnit === 'pips' ? 'pips' : '円'}</span>
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      タップで {pnlUnit === 'pips' ? '金額' : 'pips'}表示
+                    </p>
+                  </div>
+
+                  {/* Sub stats */}
+                  <div className="grid grid-cols-3 gap-2 mt-4 mx-4 pt-3 border-t border-border/30">
+                    <div className="text-center">
+                      <p className="text-[10px] text-muted-foreground uppercase">勝率</p>
+                      <p className={cn(
+                        "text-lg font-bold font-numbers",
+                        stats.winRate >= 50 ? "text-profit" : "text-loss"
+                      )}>{stats.winRate}%</p>
+                    </div>
+                    <div className="text-center">
+                      <p className="text-[10px] text-muted-foreground uppercase">PF</p>
+                      <p className={cn(
+                        "text-lg font-bold font-numbers",
+                        stats.profitFactor >= 1 ? "text-profit" : "text-loss"
+                      )}>{stats.profitFactor}</p>
+                    </div>
+                    <div className="text-center">
+                      <p className="text-[10px] text-green-600 dark:text-green-400 uppercase flex items-center justify-center gap-1">
+                        Real
+                      </p>
+                      <p className="text-lg font-bold font-numbers text-green-600 dark:text-green-400">{stats.verifiedRate}%</p>
+                    </div>
+                  </div>
+
+                  {/* Weekly Calendar - Always Visible for Context */}
+                  <div className="mt-4 px-4 pt-4 border-t border-border/30">
+                    <div className="flex items-center justify-between mb-2">
+                      <h3 className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Weekly Flow</h3>
+                      {period !== 'week' && (
+                        <span className="text-[10px] text-muted-foreground">
+                          {/* Optional: Show week total PnL here if logic permits, but keep simple for now */}
+                        </span>
+                      )}
+                    </div>
+                    <WeeklyCalendar trades={trades} />
+                  </div>
+
+                  {/* Monthly Calendar - Only for Month View */}
+                  {period === 'month' && (
+                    <div className="mt-4 pt-4 px-4 pb-4 border-t border-border bg-muted/30">
+                      <MonthlyCalendar trades={trades} />
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Share button - outside capture area */}
+            <Button
+              className="w-full bg-solo-gold hover:bg-solo-gold/90 text-white"
+              onClick={handleCaptureDashboard}
+              disabled={isCapturing}
+            >
+              {isCapturing ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <Share2 className="mr-2 h-4 w-4" />
+              )}
+              {isCapturing ? '保存中...' : '保存してシェア'}
+            </Button>
           </section>
         )}
 
@@ -144,12 +380,12 @@ export default function Home() {
                 </div>
                 <div className="flex justify-between items-end">
                   <div className="text-sm text-muted-foreground">
-                    {recentTrade.pnl ? (
+                    {recentTrade.pnl?.pips != null ? (
                       <span className={cn(
                         "font-bold font-numbers text-lg",
-                        recentTrade.pnl > 0 ? "text-profit" : "text-loss"
+                        recentTrade.pnl.pips > 0 ? "text-profit" : "text-loss"
                       )}>
-                        {recentTrade.pnl > 0 ? "+" : ""}{recentTrade.pnl} pips
+                        {recentTrade.pnl.pips > 0 ? "+" : ""}{recentTrade.pnl.pips} pips
                       </span>
                     ) : (
                       <span className="text-xs bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded">
@@ -161,9 +397,33 @@ export default function Home() {
               </CardContent>
             </Card>
           ) : (
-            <Card className="border-dashed">
-              <CardContent className="p-6 text-center text-muted-foreground text-sm">
-                まだトレード記録がありません
+            <Card className="border-dashed border-2 bg-muted/30">
+              <CardContent className="p-6 flex flex-col items-center text-center gap-4">
+                <div className="h-12 w-12 rounded-full bg-solo-gold/10 flex items-center justify-center">
+                  <Sparkles className="h-6 w-6 text-solo-gold" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-solo-navy dark:text-solo-white mb-1">
+                    まずは使ってみましょう
+                  </h3>
+                  <p className="text-xs text-muted-foreground max-w-[200px] mx-auto">
+                    デモデータを読み込んで、SOLOの分析機能やAIパートナーを体験できます。
+                  </p>
+                </div>
+                <Button
+                  onClick={handleLoadDemoData}
+                  disabled={isLoadingDemo}
+                  className="bg-solo-gold hover:bg-solo-gold/90 text-white"
+                >
+                  {isLoadingDemo ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      読み込み中...
+                    </>
+                  ) : (
+                    "デモデータを読み込む"
+                  )}
+                </Button>
               </CardContent>
             </Card>
           )}
@@ -175,7 +435,7 @@ export default function Home() {
             <div className="flex items-center justify-between">
               <h2 className="text-lg font-bold">最近の気づき</h2>
               <Link href="/journal">
-                <Button variant="ghost" size="sm" className="text-xs h-7">
+                <Button variant="ghost" size="sm" className="text-sm h-9">
                   すべて表示
                 </Button>
               </Link>
@@ -195,38 +455,7 @@ export default function Home() {
           </section>
         )}
 
-        {/* Quick Actions */}
-        <section className="space-y-2">
-          <h2 className="text-lg font-bold">クイックアクション</h2>
-          <div className="grid grid-cols-2 gap-2">
-            <Link href="/chat">
-              <Card className="bg-gradient-to-br from-solo-gold/10 to-solo-gold/5 border-solo-gold/20 hover:border-solo-gold/40 transition-colors h-full">
-                <CardContent className="p-4 flex flex-col items-center text-center gap-2">
-                  <div className="h-12 w-12 rounded-full bg-solo-gold/20 flex items-center justify-center">
-                    <Plus className="h-6 w-6 text-solo-gold" />
-                  </div>
-                  <div>
-                    <div className="font-bold text-sm">AIパートナー</div>
-                    <div className="text-xs text-muted-foreground">思考を整理</div>
-                  </div>
-                </CardContent>
-              </Card>
-            </Link>
-            <Link href="/analysis">
-              <Card className="bg-card hover:bg-accent/50 transition-colors h-full">
-                <CardContent className="p-4 flex flex-col items-center text-center gap-2">
-                  <div className="h-12 w-12 rounded-full bg-muted flex items-center justify-center">
-                    <TrendingUp className="h-6 w-6 text-solo-gold" />
-                  </div>
-                  <div>
-                    <div className="font-bold text-sm">分析レポート</div>
-                    <div className="text-xs text-muted-foreground">パフォーマンス確認</div>
-                  </div>
-                </CardContent>
-              </Card>
-            </Link>
-          </div>
-        </section>
+
       </div>
     </ProtectedRoute>
   )
