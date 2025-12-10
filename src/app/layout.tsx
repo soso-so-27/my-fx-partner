@@ -53,7 +53,7 @@ export default function RootLayout({
   return (
     <html lang="ja" suppressHydrationWarning>
       <body
-        className={`${notoSansJP.variable} ${jetBrainsMono.variable} antialiased pb-16 md:pb-0 md:pt-16`}
+        className={`${notoSansJP.variable} ${jetBrainsMono.variable} antialiased pb-16 md:pb-0 md:pt-16 pt-[env(safe-area-inset-top)]`}
       >
         <ThemeProvider
           attribute="class"
