@@ -14,7 +14,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select"
-import { Loader2 } from "lucide-react"
+import { Loader2, Trash2 } from "lucide-react"
 
 const PERSONA_LABELS: Record<MarketingPersona, string> = {
     'GAMBLER': '💀 ギャンブラー (Exness / ハイレバ・ゴールド)',
@@ -33,6 +33,7 @@ export function MarketingSeedButton() {
     const { user } = useAuth()
     const { toast } = useToast()
     const [loading, setLoading] = useState(false)
+    const [cleaning, setCleaning] = useState(false)
     const [selectedPersona, setSelectedPersona] = useState<MarketingPersona | "">("")
 
     const handleGenerate = async () => {
@@ -52,11 +53,6 @@ export function MarketingSeedButton() {
             let successCount = 0
             for (const trade of trades) {
                 try {
-                    // Convert to correct input format for createTrade
-                    // Note: tradeService.createTrade expects CreateTradeInput, but we have full Trade objects.
-                    // We need to map or skip validation if we use a direct insert service (not exposed currently).
-                    // For now, we reuse tradeService.createTrade which is safer but slower.
-
                     await tradeService.createTrade({
                         pair: trade.pair,
                         direction: trade.direction,
@@ -97,6 +93,39 @@ export function MarketingSeedButton() {
         }
     }
 
+    const handleCleanup = async () => {
+        if (!user) return
+        if (!confirm("デモデータ（#DEMOタグ付き）を全て削除しますか？\n※この操作は取り消せません。")) return
+        setCleaning(true)
+
+        try {
+            const trades = await tradeService.getTrades(user.id)
+            const demoTrades = trades.filter(t => t.tags?.includes("#DEMO"))
+
+            let deletedCount = 0
+            // Delete one by one (could be optimized but safe)
+            for (const t of demoTrades) {
+                await tradeService.deleteTrade(t.id)
+                deletedCount++
+            }
+
+            toast({
+                title: "削除完了 🗑️",
+                description: `${deletedCount}件のデモデータを削除しました。`,
+            })
+        } catch (error) {
+            console.error(error)
+            toast({
+                title: "エラー",
+                description: "削除に失敗しました。",
+                variant: "destructive"
+            })
+        } finally {
+            setCleaning(false)
+            setLoading(false) // Just in case
+        }
+    }
+
     const getWinRate = (persona: MarketingPersona): number => {
         switch (persona) {
             case 'GAMBLER': return 0.2;
@@ -125,29 +154,44 @@ export function MarketingSeedButton() {
     }
 
     return (
-        <div className="flex gap-2 items-end">
-            <div className="grid gap-2 flex-1">
-                <Select value={selectedPersona} onValueChange={(v) => setSelectedPersona(v as MarketingPersona)}>
-                    <SelectTrigger className="w-[280px]">
-                        <SelectValue placeholder="ペルソナを選択 (デモデータ)" />
-                    </SelectTrigger>
-                    <SelectContent>
-                        {Object.entries(PERSONA_LABELS).map(([key, label]) => (
-                            <SelectItem key={key} value={key}>
-                                {label}
-                            </SelectItem>
-                        ))}
-                    </SelectContent>
-                </Select>
+        <div className="flex flex-col gap-4">
+            <div className="flex gap-2 items-end">
+                <div className="grid gap-2 flex-1">
+                    <Select value={selectedPersona} onValueChange={(v) => setSelectedPersona(v as MarketingPersona)}>
+                        <SelectTrigger className="w-full">
+                            <SelectValue placeholder="ペルソナを選択 (デモデータ)" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            {Object.entries(PERSONA_LABELS).map(([key, label]) => (
+                                <SelectItem key={key} value={key}>
+                                    {label}
+                                </SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+                </div>
+                <Button
+                    onClick={handleGenerate}
+                    disabled={loading || !selectedPersona}
+                    className="bg-solo-gold text-solo-black hover:bg-solo-gold/90"
+                >
+                    {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    生成
+                </Button>
             </div>
-            <Button
-                onClick={handleGenerate}
-                disabled={loading || !selectedPersona}
-                variant="outline"
-            >
-                {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                生成する
-            </Button>
+
+            <div className="flex justify-end">
+                <Button
+                    onClick={handleCleanup}
+                    disabled={cleaning}
+                    variant="ghost"
+                    size="sm"
+                    className="text-muted-foreground hover:text-destructive text-xs flex items-center gap-1"
+                >
+                    {cleaning ? <Loader2 className="h-3 w-3 animate-spin" /> : <Trash2 className="h-3 w-3" />}
+                    デモデータを削除 (#DEMO)
+                </Button>
+            </div>
         </div>
     )
 }
