@@ -1,6 +1,7 @@
 "use client"
 
 import { GmailConnectButton } from "./gmail-connect-button"
+import { MarketingSeedButton } from "@/components/debug/marketing-seed-button"
 import { ProtectedRoute } from "@/components/auth/protected-route"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -290,6 +291,25 @@ export default function SettingsPage() {
                             </div>
                         </CardContent>
                     </Card>
+
+                    {/* Marketing Demo Data (Debug) - Only for Admin/Demo users */}
+                    {(user?.email === "nakanishisoya@gmail.com" || user?.email === "demo@example.com") && (
+                        <Card className="border-solo-gold/20 bg-solo-gold/5">
+                            <CardHeader>
+                                <CardTitle className="text-solo-gold">Marketing Data Generator 🛠️</CardTitle>
+                            </CardHeader>
+                            <CardContent>
+                                <div className="space-y-4">
+                                    <p className="text-sm text-muted-foreground">
+                                        集客用ランディングページやデモアカウント用のデータを生成します。
+                                        <br />
+                                        ※既存のデータに追加されます。
+                                    </p>
+                                    <MarketingSeedButton />
+                                </div>
+                            </CardContent>
+                        </Card>
+                    )}
 
                     {/* App Settings */}
                     <Card>
