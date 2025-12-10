@@ -1,9 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import OpenAI from 'openai'
 
-const openai = new OpenAI({
-    apiKey: process.env.OPENAI_API_KEY,
-})
 
 const IMAGE_ANALYSIS_PROMPT = `あなたはFXチャートを分析するテクニカルアナリストです。
 
@@ -29,6 +26,10 @@ const IMAGE_ANALYSIS_PROMPT = `あなたはFXチャートを分析するテク�
 
 export async function POST(request: NextRequest) {
     try {
+        const openai = new OpenAI({
+            apiKey: process.env.OPENAI_API_KEY,
+        })
+
         const { imageBase64, imageUrl, context = '' } = await request.json()
 
         if (!imageBase64 && !imageUrl) {

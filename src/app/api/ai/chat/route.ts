@@ -1,10 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import OpenAI from 'openai'
 
-const openai = new OpenAI({
-    apiKey: process.env.OPENAI_API_KEY,
-})
-
 // System prompts for different modes
 const SYSTEM_PROMPTS: Record<string, string> = {
     'pre-trade': `あなたはFXトレーダーの専属コーチです。
@@ -81,6 +77,10 @@ const SYSTEM_PROMPTS: Record<string, string> = {
 
 export async function POST(request: NextRequest) {
     try {
+        const openai = new OpenAI({
+            apiKey: process.env.OPENAI_API_KEY,
+        })
+
         const { message, mode = 'default', conversationHistory = [] } = await request.json()
 
         if (!message) {

@@ -2,10 +2,6 @@ import { NextRequest, NextResponse } from 'next/server'
 import OpenAI from 'openai'
 import { Trade } from '@/types/trade'
 
-const openai = new OpenAI({
-    apiKey: process.env.OPENAI_API_KEY,
-})
-
 const ANALYSIS_SYSTEM_PROMPT = `あなたはFXトレードの分析を行うAIアシスタントです。
 
 【あなたの役割】
@@ -34,6 +30,9 @@ const ANALYSIS_SYSTEM_PROMPT = `あなたはFXトレードの分析を行うAI�
 
 export async function POST(request: NextRequest) {
     try {
+        const openai = new OpenAI({
+            apiKey: process.env.OPENAI_API_KEY,
+        })
         const { trades, period = '全期間' } = await request.json()
 
         if (!trades || !Array.isArray(trades) || trades.length === 0) {
