@@ -22,6 +22,7 @@ import {
 } from "@/components/ui/select"
 import { RULE_TEMPLATES } from "@/lib/rule-templates"
 import { tradeRuleService } from "@/lib/trade-rule-service"
+import { ModeToggle } from "@/components/ui/mode-toggle"
 
 export default function SettingsPage() {
     const [mounted, setMounted] = useState(false)
@@ -286,6 +287,24 @@ export default function SettingsPage() {
                                     </p>
                                 </div>
                                 <GmailConnectButton />
+                            </div>
+                        </CardContent>
+                    </Card>
+
+                    {/* App Settings */}
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>アプリ設定</CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                            <div className="flex items-center justify-between">
+                                <div className="space-y-1">
+                                    <Label>テーマ設定</Label>
+                                    <p className="text-sm text-muted-foreground">
+                                        画面の明るさを切り替えます
+                                    </p>
+                                </div>
+                                <ModeToggle />
                             </div>
                         </CardContent>
                     </Card>
