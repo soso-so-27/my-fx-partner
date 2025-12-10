@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Noto_Sans_JP, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import { MobileNav } from "@/components/ui/mobile-nav";
@@ -25,22 +25,24 @@ export const metadata: Metadata = {
   title: "SOLO - 個人投資家の成長OS",
   description: "自分と向き合い、成長を積み上げるためのトレード記録アプリ",
   manifest: "/manifest.json",
-  themeColor: "#C8A85F",
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
     title: "SOLO",
   },
-  viewport: {
-    width: "device-width",
-    initialScale: 1,
-    maximumScale: 1,
-    userScalable: false,
-  },
   icons: {
     icon: "/icon-192.png",
     apple: "/icon-192.png",
   },
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+  viewportFit: "cover",
+  themeColor: "#C8A85F",
 };
 
 export default function RootLayout({

@@ -176,8 +176,17 @@
     @apply border-border outline-ring/50;
   }
 
+  html {
+    height: 100dvh;
+    overscroll-behavior: none;
+  }
+
   body {
     @apply bg-background text-foreground;
+    height: 100dvh;
+    overflow: hidden;
+    /* Prevent body scroll, use inner scroll areas */
+    overscroll-behavior: none;
   }
 }
 
