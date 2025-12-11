@@ -21,7 +21,7 @@ export function MobileNav() {
     if (pathname === '/login') return null
 
     return (
-        <nav className="fixed bottom-0 left-0 right-0 border-t bg-background/95 backdrop-blur-lg md:hidden z-50">
+        <nav className="fixed bottom-0 left-0 right-0 border-t border-border bg-background md:hidden z-50">
             {/* iOS Tab Bar: 49pt content + safe area */}
             <div className="grid grid-cols-4 h-12 items-center pb-[env(safe-area-inset-bottom)]">
                 {navItems.map((item) => {

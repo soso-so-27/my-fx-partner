@@ -8,7 +8,7 @@ export default function ChatPage() {
     return (
         <ProtectedRoute>
             <div className="container mx-auto p-4 h-[100dvh] pb-20 flex flex-col">
-                <header className="sticky top-0 z-50 -mx-4 px-4 h-11 pt-[env(safe-area-inset-top)] bg-background border-b border-border/20 flex items-center gap-2 shrink-0">
+                <header className="sticky top-0 z-50 -mx-4 px-4 pt-[env(safe-area-inset-top)] pb-2 bg-background border-b border-border flex items-center gap-2 shrink-0">
                     <div className="h-7 w-7 rounded-full bg-solo-gold/10 flex items-center justify-center">
                         <MessageSquare className="h-4 w-4 text-solo-gold" />
                     </div>

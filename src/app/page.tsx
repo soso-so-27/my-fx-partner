@@ -206,8 +206,8 @@ export default function Home() {
   return (
     <ProtectedRoute>
       <div className="container mx-auto p-4 pb-24 space-y-6">
-        {/* iOS Navigation Bar: 44pt height + safe area */}
-        <header className="sticky top-0 z-50 -mx-4 px-4 h-11 pt-[env(safe-area-inset-top)] bg-background border-b border-border/20 flex items-center justify-between">
+        {/* iOS Navigation Bar: Opaque background, content below safe area */}
+        <header className="sticky top-0 z-50 -mx-4 px-4 pt-[env(safe-area-inset-top)] pb-2 bg-background border-b border-border flex items-center justify-between">
           <div className="flex items-center gap-2">
             <div className="h-7 w-7 rounded-full bg-solo-navy flex items-center justify-center">
               <span className="text-solo-gold font-bold text-[10px]">S</span>
