@@ -25,9 +25,6 @@ export const gmailService = {
     async getRecentEmails(accessToken: string, query?: string): Promise<GmailMessage[]> {
         const searchQuery = query || `(${this.defaultQuery}) after:2024/01/01`
 
-        console.log("=== Gmail Service Debug ===")
-        console.log("Access token provided:", !!accessToken)
-        console.log("Search query:", searchQuery.substring(0, 100) + "...")
 
         const response = await fetch(`https://gmail.googleapis.com/gmail/v1/users/me/messages?q=${encodeURIComponent(searchQuery)}&maxResults=100`, {
             headers: {
@@ -35,7 +32,6 @@ export const gmailService = {
             },
         })
 
-        console.log("Gmail API Response Status:", response.status)
 
         if (!response.ok) {
             const errorBody = await response.text()

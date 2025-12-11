@@ -1,6 +1,23 @@
 import { supabase } from '@/lib/supabase/client'
 import { Trade, CreateTradeInput } from '@/types/trade'
 
+// Calculate trading session based on Tokyo time
+function calculateSession(entryTime: string): 'Tokyo' | 'London' | 'NewYork' | 'Sydney' {
+    const date = new Date(entryTime)
+    // Convert to Tokyo time (UTC+9)
+    const tokyoHour = (date.getUTCHours() + 9) % 24
+
+    // Session times (in Tokyo time):
+    // Tokyo: 9:00-15:00 (0900-1500)
+    // London: 16:00-24:00 (1600-2400)
+    // NewYork: 21:00-6:00 (2100-0600 next day)
+    // Sydney: 6:00-9:00 (0600-0900)
+
+    if (tokyoHour >= 9 && tokyoHour < 15) return 'Tokyo'
+    if (tokyoHour >= 16 && tokyoHour < 24) return 'London'
+    if (tokyoHour >= 21 || tokyoHour < 6) return 'NewYork'
+    return 'Sydney'
+}
 
 export const tradeService = {
     async getTrades(userId?: string): Promise<Trade[]> {
@@ -42,7 +59,7 @@ export const tradeService = {
             exit_price: input.exitPrice,
             exit_time: input.exitTime,
             timezone: input.timezone || 'Asia/Tokyo',
-            session: null, // TODO: Calculate session based on time
+            session: calculateSession(input.entryTime || new Date().toISOString()),
             stop_loss: input.stopLoss,
             take_profit: input.takeProfit,
             lot_size: input.lotSize,

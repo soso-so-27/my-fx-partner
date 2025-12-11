@@ -348,14 +348,11 @@ export const emailParser = {
     // ===================
     parseGMO(body: string, emailId: string): ParsedTrade | null {
         try {
-            console.log("=== GMO Parser Debug ===")
-            console.log("Body preview:", body.substring(0, 500))
 
             // 約定内容セクションから情報を抽出
             // 通貨ペアの検出
             const pairMatch = body.match(/通貨ペア[：:]\s*([A-Z]{3}\/[A-Z]{3})/i)
             if (!pairMatch) {
-                console.log("GMO Parser: No pair found")
                 return null
             }
             const pair = pairMatch[1].replace('/', '')
@@ -363,12 +360,10 @@ export const emailParser = {
             // 取引種類の検出（新規 or 決済）
             const tradeTypeMatch = body.match(/取引種類[：:]\s*(新規|決済)/i)
             const isSettlement = tradeTypeMatch && tradeTypeMatch[1] === '決済'
-            console.log("GMO Parser: Trade type =", tradeTypeMatch?.[1] || 'unknown', "isSettlement =", isSettlement)
 
             // 売買区分の検出
             const directionMatch = body.match(/売買区分[：:]\s*(買|売)/i)
             if (!directionMatch) {
-                console.log("GMO Parser: No direction found")
                 return null
             }
             const direction: 'BUY' | 'SELL' = directionMatch[1] === '買' ? 'BUY' : 'SELL'
@@ -376,7 +371,6 @@ export const emailParser = {
             // 約定レートの検出
             const rateMatch = body.match(/約定レート[：:]\s*([0-9.]+)/i)
             if (!rateMatch) {
-                console.log("GMO Parser: No rate found")
                 return null
             }
             const rate = parseFloat(rateMatch[1])
@@ -422,25 +416,15 @@ export const emailParser = {
                             amount,
                             currency: 'JPY'
                         }
-                        console.log("GMO Parser: Found PnL =", amount)
                         break
                     }
                 }
 
                 // 決済の場合でも pnl が見つからない場合がある（スワップのみなど）
                 if (!pnl) {
-                    console.log("GMO Parser: Settlement but no PnL found")
                 }
             }
 
-            console.log("GMO Parser: Successfully parsed", {
-                pair,
-                direction,
-                rate,
-                lotSize,
-                isSettlement,
-                pnl: pnl?.amount
-            })
 
             // 新規注文の場合はエントリー情報として保存
             // 決済注文の場合はexitPriceとpnlを含める

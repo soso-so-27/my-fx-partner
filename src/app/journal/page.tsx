@@ -19,7 +19,13 @@ export default function JournalPage() {
 
     useEffect(() => {
         const loadTrades = async () => {
-            // ... (keep existing load logic)
+            if (!user) return
+            try {
+                const userTrades = await tradeService.getTrades(user.id)
+                setTrades(userTrades)
+            } catch (error) {
+                console.error('Failed to load trades:', error)
+            }
         }
         loadTrades()
     }, [user, refreshTrigger])

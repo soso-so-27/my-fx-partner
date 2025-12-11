@@ -20,29 +20,19 @@ interface SessionWithToken {
 export async function POST() {
     const session = await getServerSession(authOptions) as unknown as SessionWithToken
 
-    console.log("=== Sync API Debug ===")
-    console.log("Session exists:", !!session)
-    console.log("Session keys:", session ? Object.keys(session) : 'no session')
-    console.log("Access token exists:", !!session?.accessToken)
-    console.log("Access token length:", session?.accessToken?.length || 0)
-    console.log("Session error:", (session as any)?.error)
 
     if (!session) {
-        console.error("Sync API: No session found")
         return NextResponse.json({ error: "No session - please reconnect Gmail" }, { status: 401 })
     }
 
     if ((session as any)?.error === "RefreshAccessTokenError") {
-        console.error("Sync API: Refresh token error - user needs to re-authenticate")
         return NextResponse.json({ error: "Token expired - please disconnect and reconnect Gmail" }, { status: 401 })
     }
 
     if (!session.accessToken) {
-        console.error("Sync API: No access token in session")
         return NextResponse.json({ error: "No access token - try disconnecting and reconnecting Gmail" }, { status: 401 })
     }
 
-    console.log("Sync API: Proceeding with token...")
 
     try {
         // 1. Get recent emails
@@ -77,7 +67,6 @@ export async function POST() {
 
         // Process emails in chronological order (oldest first) so entries are saved before settlements
         const sortedMessages = [...messages].reverse()
-        console.log(`Processing ${sortedMessages.length} emails in chronological order`)
 
         for (const msg of sortedMessages) {
             const subject = msg.payload.headers.find(h => h.name === 'Subject')?.value || ''
@@ -107,7 +96,6 @@ export async function POST() {
             // Simple HTML tag stripping for robustness
             const body = rawBody.replace(/<[^>]*>/g, ' ')
 
-            console.log(`Processing email: ${subject}`, { bodyPreview: body.substring(0, 100) })
 
             const parsedTrade = emailParser.parse(subject, body, msg.id)
 
@@ -142,7 +130,6 @@ export async function POST() {
                             console.error("Error finding open trades:", findError)
                         }
 
-                        console.log(`Settlement: Looking for ${oppositeDirection} ${parsedTrade.pair}, found ${openTrades?.length || 0} open trades`)
 
                         if (openTrades && openTrades.length > 0) {
                             // Match with the oldest open position (FIFO)
@@ -178,7 +165,6 @@ export async function POST() {
                                 // 1 lot = 100,000 units, 1 pip for JPY pair ≈ 1000 JPY per lot
                                 pnlAmount = pnlPips * matchedLotSize * (isJPYPair ? 1000 : 10)
 
-                                console.log(`Matching trade: entry=${entryPrice}, exit=${exitPrice}, pips=${pnlPips.toFixed(1)}, amount=${pnlAmount.toFixed(0)}`)
 
                                 // Update the open trade with exit info
                                 const { error: updateError } = await authenticatedSupabase
@@ -198,7 +184,6 @@ export async function POST() {
                                 if (updateError) {
                                     console.error("Error updating trade:", updateError)
                                 } else {
-                                    console.log(`Updated trade ${openTrade.id} with exit info`)
                                     newTrades.push({ ...openTrade, matched: true })
                                 }
 
@@ -207,13 +192,11 @@ export async function POST() {
 
                             // If there's remaining quantity, it might be a partial close without matching entry
                             if (remainingQuantity > 0) {
-                                console.log(`Note: ${remainingQuantity} lots could not be matched to an entry`)
                             }
 
                             continue // Don't insert the settlement as a new trade
                         } else {
                             // No matching open trade found, insert settlement as new record
-                            console.log("No matching open trade found for settlement, inserting as new record")
                         }
                     }
 
