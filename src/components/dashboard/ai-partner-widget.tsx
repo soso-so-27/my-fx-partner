@@ -51,50 +51,50 @@ export function AIPartnerWidget({ userName, winRate, verifiedRate }: AIPartnerWi
             <CardContent className="p-6">
                 <div className="flex items-start gap-4">
                     <div className="relative">
-                        <Avatar className="h-14 w-14 border-2 border-solo-gold/50 shadow-gold-glow">
+                        <Avatar className="h-14 w-14 lg:h-16 lg:w-16 border-2 border-solo-gold/50 shadow-gold-glow">
                             <AvatarImage src="/ai-avatar.png" alt="AI Agent" />
                             <AvatarFallback className="bg-solo-navy text-solo-gold">
-                                <Bot className="h-8 w-8" />
+                                <Bot className="h-8 w-8 lg:h-9 lg:w-9" />
                             </AvatarFallback>
                         </Avatar>
-                        <div className="absolute -bottom-1 -right-1 bg-green-500 w-3 h-3 rounded-full border-2 border-slate-900"></div>
+                        <div className="absolute -bottom-1 -right-1 bg-green-500 w-3 h-3 lg:w-4 lg:h-4 rounded-full border-2 border-slate-900"></div>
                     </div>
 
                     <div className="flex-1 space-y-3">
-                        <div className="bg-white/10 rounded-2xl p-4 rounded-tl-none relative backdrop-blur-sm border border-white/5">
-                            <p className="text-sm md:text-base leading-relaxed">
-                                {userName && <span className="font-bold block mb-1">{userName}さん</span>}
+                        <div className="bg-white/10 rounded-2xl p-4 lg:p-5 rounded-tl-none relative backdrop-blur-sm border border-white/5">
+                            <p className="text-base lg:text-lg leading-relaxed font-medium">
+                                {userName && <span className="font-bold block mb-1 text-sm lg:text-base opacity-90">{userName}さん</span>}
                                 {message}
                             </p>
                         </div>
 
                         {!mood && (
-                            <div className="flex flex-wrap gap-2 pt-1 animate-in fade-in duration-500 delay-300">
+                            <div className="flex flex-wrap gap-2 pt-2 animate-in fade-in duration-500 delay-300">
                                 <Button
                                     variant="outline"
                                     size="sm"
                                     onClick={() => handleMoodSelect('calm')}
-                                    className="bg-white/5 border-white/10 hover:bg-green-500/20 hover:text-green-300 hover:border-green-500/50 transition-all text-xs"
+                                    className="bg-white/5 border-white/10 hover:bg-green-500/20 hover:text-green-300 hover:border-green-500/50 transition-all text-sm h-9 px-4"
                                 >
-                                    <Smile className="mr-1.5 h-3.5 w-3.5" />
+                                    <Smile className="mr-2 h-4 w-4" />
                                     落ち着いている
                                 </Button>
                                 <Button
                                     variant="outline"
                                     size="sm"
                                     onClick={() => handleMoodSelect('anxious')}
-                                    className="bg-white/5 border-white/10 hover:bg-yellow-500/20 hover:text-yellow-300 hover:border-yellow-500/50 transition-all text-xs"
+                                    className="bg-white/5 border-white/10 hover:bg-yellow-500/20 hover:text-yellow-300 hover:border-yellow-500/50 transition-all text-sm h-9 px-4"
                                 >
-                                    <Ghost className="mr-1.5 h-3.5 w-3.5" />
+                                    <Ghost className="mr-2 h-4 w-4" />
                                     不安・迷い
                                 </Button>
                                 <Button
                                     variant="outline"
                                     size="sm"
                                     onClick={() => handleMoodSelect('angry')}
-                                    className="bg-white/5 border-white/10 hover:bg-red-500/20 hover:text-red-300 hover:border-red-500/50 transition-all text-xs"
+                                    className="bg-white/5 border-white/10 hover:bg-red-500/20 hover:text-red-300 hover:border-red-500/50 transition-all text-sm h-9 px-4"
                                 >
-                                    <Flame className="mr-1.5 h-3.5 w-3.5" />
+                                    <Flame className="mr-2 h-4 w-4" />
                                     イライラ・焦り
                                 </Button>
                             </div>

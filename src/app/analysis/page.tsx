@@ -71,9 +71,11 @@ export default function AnalysisPage() {
     return (
         <ProtectedRoute>
             <div className="container mx-auto p-4 pb-24">
-                <header className="flex items-center gap-2 mb-6">
-                    <BarChart3 className="h-6 w-6 text-solo-navy dark:text-solo-gold" />
-                    <h1 className="text-2xl font-bold">分析</h1>
+                <header className="sticky top-0 z-50 -mx-4 px-4 py-3 bg-background/95 backdrop-blur-xl border-b border-border/10 flex items-center gap-3 mb-6 shadow-sm">
+                    <div className="h-8 w-8 rounded-full bg-muted/50 flex items-center justify-center">
+                        <BarChart3 className="h-4 w-4 text-solo-navy dark:text-solo-gold" />
+                    </div>
+                    <h1 className="text-lg font-bold">分析</h1>
                 </header>
 
                 <Tabs defaultValue="stats" className="w-full">
