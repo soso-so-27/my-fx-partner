@@ -71,7 +71,7 @@ export default function AnalysisPage() {
     return (
         <ProtectedRoute>
             <div className="container mx-auto p-4 pb-24">
-                <header className="sticky top-0 z-50 -mx-4 px-4 pb-3 pt-[calc(env(safe-area-inset-top)+0.75rem)] bg-background/95 backdrop-blur-xl border-b border-border/10 flex items-center gap-3 mb-6 shadow-sm">
+                <header className="sticky top-0 z-50 -mx-4 px-4 py-2 pt-[max(env(safe-area-inset-top),0.5rem)] bg-background/95 backdrop-blur-xl border-b border-border/10 flex items-center gap-3 mb-4 shadow-sm">
                     <div className="h-8 w-8 rounded-full bg-muted/50 flex items-center justify-center">
                         <BarChart3 className="h-4 w-4 text-solo-navy dark:text-solo-gold" />
                     </div>
