@@ -206,25 +206,14 @@ export default function Home() {
   return (
     <ProtectedRoute>
       <div className="container mx-auto p-4 pb-24 space-y-6">
-        {/* Sticky Header */}
-        {/* Sticky Header - ChatGPT Style Minimal */}
-        <header className="sticky top-0 z-50 -mx-4 px-4 py-2 pt-[max(env(safe-area-inset-top),0.5rem)] bg-background/95 backdrop-blur-xl border-b border-border/10 flex items-center justify-between mb-2 transition-all shadow-sm">
-          <div className="flex items-center gap-3" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
-            <div className="h-8 w-8 rounded-full bg-solo-navy flex items-center justify-center"> {/* Logo Icon Placeholder */}
-              <span className="text-solo-gold font-bold text-xs">S</span>
-            </div>
-            <h1 className="text-lg font-bold text-solo-navy dark:text-solo-gold tracking-tight">
-              SOLO
-            </h1>
+        {/* Sticky Header - Minimal */}
+        <header className="sticky top-0 z-50 -mx-4 px-4 py-2 pt-[max(env(safe-area-inset-top),0.5rem)] bg-background/95 backdrop-blur-xl border-b border-border/10 flex items-center gap-3 mb-2 transition-all shadow-sm">
+          <div className="h-8 w-8 rounded-full bg-solo-navy flex items-center justify-center">
+            <span className="text-solo-gold font-bold text-xs">S</span>
           </div>
-          <div className="flex items-center gap-1">
-            <SyncButton variant="compact" onSyncComplete={loadData} />
-            <Link href="/settings">
-              <Button variant="ghost" size="icon" className="h-10 w-10 text-muted-foreground hover:bg-muted/50 rounded-full"> {/* Increased touch target */}
-                <Settings className="h-5 w-5" />
-              </Button>
-            </Link>
-          </div>
+          <h1 className="text-lg font-bold text-solo-navy dark:text-solo-gold tracking-tight">
+            SOLO
+          </h1>
         </header>
 
         {/* Mental Axis: AI Partner - Driver Focus */}
