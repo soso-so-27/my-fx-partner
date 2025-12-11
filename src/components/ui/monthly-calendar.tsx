@@ -8,6 +8,7 @@ import { ja } from "date-fns/locale"
 
 interface MonthlyCalendarProps {
     trades: Trade[]
+    unit?: 'pips' | 'amount'
 }
 
 interface DayData {
@@ -17,7 +18,7 @@ interface DayData {
     isCurrentMonth: boolean
 }
 
-export function MonthlyCalendar({ trades }: MonthlyCalendarProps) {
+export function MonthlyCalendar({ trades, unit = 'pips' }: MonthlyCalendarProps) {
     const { weeks, monthYear } = useMemo(() => {
         const today = new Date()
         const monthStart = startOfMonth(today)
@@ -31,7 +32,10 @@ export function MonthlyCalendar({ trades }: MonthlyCalendarProps) {
         // Generate 5-6 weeks of data
         for (let i = 0; i < 42; i++) {
             const dayTrades = trades.filter(t => isSameDay(new Date(t.entryTime), day))
-            const pnl = dayTrades.reduce((sum, t) => sum + (t.pnl?.pips ?? 0), 0)
+            const pnl = dayTrades.reduce((sum, t) => {
+                const val = unit === 'pips' ? (t.pnl?.pips ?? 0) : (t.pnl?.amount ?? 0)
+                return sum + val
+            }, 0)
 
             currentWeek.push({
                 date: day,
@@ -53,7 +57,7 @@ export function MonthlyCalendar({ trades }: MonthlyCalendarProps) {
             weeks,
             monthYear: format(today, 'yyyy年M月', { locale: ja })
         }
-    }, [trades])
+    }, [trades, unit])
 
     const weekDays = ['月', '火', '水', '木', '金', '土', '日']
     const isToday = (date: Date) => isSameDay(date, new Date())
@@ -92,13 +96,20 @@ export function MonthlyCalendar({ trades }: MonthlyCalendarProps) {
                     >
                         <span className="text-[9px]">{format(day.date, 'd')}</span>
                         {day.hasTraded && (
-                            <span className={cn(
-                                "text-[8px] font-bold font-numbers",
-                                day.pnl > 0 && "text-profit",
-                                day.pnl < 0 && "text-loss"
-                            )}>
-                                {day.pnl > 0 ? '+' : ''}{day.pnl}
-                            </span>
+                            <div className="flex flex-col items-center -mt-1">
+                                <span className={cn(
+                                    "font-bold font-numbers leading-tight",
+                                    // Adjust font size for larger Yen amounts
+                                    unit === 'amount' && Math.abs(day.pnl) > 9999 ? "text-[6px]" : "text-[8px]",
+                                    day.pnl > 0 && "text-profit",
+                                    day.pnl < 0 && "text-loss"
+                                )}>
+                                    {day.pnl > 0 ? '+' : ''}{unit === 'amount' ? '¥' : ''}{day.pnl.toLocaleString()}
+                                </span>
+                                <span className="text-[6px] text-muted-foreground leading-none">
+                                    {unit === 'pips' ? 'pips' : ''}
+                                </span>
+                            </div>
                         )}
                     </div>
                 ))}

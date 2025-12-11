@@ -19,6 +19,7 @@ import { SyncButton } from "@/components/ui/sync-button"
 import { OnboardingCard } from "@/components/ui/onboarding-card"
 import { WeeklyCalendar } from "@/components/ui/weekly-calendar"
 import { MonthlyCalendar } from "@/components/ui/monthly-calendar"
+import { AIPartnerWidget } from "@/components/dashboard/ai-partner-widget"
 import { GoalCard } from "@/components/home/goal-card"
 import { Trade } from "@/types/trade"
 import { Lightbulb, PenSquare, Share2 } from "lucide-react"
@@ -204,7 +205,7 @@ export default function Home() {
 
   return (
     <ProtectedRoute>
-      <div className="container mx-auto p-4 pb-24 space-y-4">
+      <div className="container mx-auto p-4 pb-24 space-y-6">
         {/* SOLO Branding with Quick Actions */}
         <section className="mb-2 flex items-center justify-between">
           <h1 className="text-4xl font-bold text-solo-navy dark:text-solo-gold tracking-tight">
@@ -220,133 +221,175 @@ export default function Home() {
           </div>
         </section>
 
-        {/* Onboarding for new users - covers Gmail & Rules setup */}
+        {/* Mental Axis: AI Partner - Driver Focus */}
+        <section>
+          <AIPartnerWidget
+            userName={user?.user_metadata?.name || user?.email?.split('@')[0]}
+            winRate={stats?.winRate}
+            verifiedRate={stats?.verifiedRate}
+          />
+        </section>
+
+        {/* Onboarding for new users */}
         <OnboardingCard />
 
-        {/* Goal Tracking */}
-        {stats && (
-          <GoalCard currentProfit={stats.monthlyPnl} />
-        )}
+        {/* Performance Axis: Stats & Trades - Vehicle Focus */}
+        <section className="space-y-4">
+          <div className="flex items-center gap-2 mb-2">
+            <h2 className="text-sm font-bold text-muted-foreground uppercase tracking-widest">
+              Performance Board
+            </h2>
+            <div className="h-[1px] bg-border flex-1"></div>
+          </div>
 
-        {/* Main Dashboard - P&L Focus */}
-        {stats && (
-          <section className="space-y-4">
-            {/* Capture target area */}
-            <div ref={dashboardRef} className="space-y-4 bg-background p-4 -m-4 rounded-lg">
-              {/* Unified Dashboard Card - Clean Minimal Design */}
-              <Card className="bg-card shadow-md rounded-xl overflow-hidden">
-                <CardContent className="p-0">
-                  {/* Period selector header */}
-                  <div className="flex justify-center gap-1 p-4 pb-3">
-                    <Button
-                      variant={period === 'today' ? 'default' : 'ghost'}
-                      size="sm"
-                      className="h-7 text-xs px-3"
-                      onClick={() => setPeriod('today')}
-                    >
-                      今日
-                    </Button>
-                    <Button
-                      variant={period === 'week' ? 'default' : 'ghost'}
-                      size="sm"
-                      className="h-7 text-xs px-3"
-                      onClick={() => setPeriod('week')}
-                    >
-                      今週
-                    </Button>
-                    <Button
-                      variant={period === 'month' ? 'default' : 'ghost'}
-                      size="sm"
-                      className="h-7 text-xs px-3"
-                      onClick={() => setPeriod('month')}
-                    >
-                      今月
-                    </Button>
-                  </div>
+          {/* Goal Tracking */}
+          {stats && (
+            <GoalCard currentProfit={stats.monthlyPnl} />
+          )}
 
-                  {/* Main P&L - tap to toggle pips/amount */}
-                  <div
-                    className="text-center px-4 cursor-pointer"
-                    onClick={() => setPnlUnit(pnlUnit === 'pips' ? 'amount' : 'pips')}
-                  >
-                    <p className="text-sm text-muted-foreground mb-1">
-                      {period === 'today' ? '今日' : period === 'week' ? '今週' : '今月'}の損益
-                    </p>
-                    <p className={cn(
-                      "text-4xl font-bold font-numbers",
-                      (pnlUnit === 'pips' ? stats.totalPnlPips : stats.totalPnl) >= 0 ? "text-profit" : "text-loss"
-                    )}>
-                      {(pnlUnit === 'pips' ? stats.totalPnlPips : stats.totalPnl) >= 0 ? '+' : ''}
-                      {(pnlUnit === 'pips' ? stats.totalPnlPips : stats.totalPnl).toLocaleString()}
-                      <span className="text-lg ml-1">{pnlUnit === 'pips' ? 'pips' : '円'}</span>
-                    </p>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      タップで {pnlUnit === 'pips' ? '金額' : 'pips'}表示
-                    </p>
-                  </div>
-
-                  {/* Sub stats */}
-                  <div className="grid grid-cols-3 gap-2 mt-4 mx-4 pt-3 border-t border-border/30">
-                    <div className="text-center">
-                      <p className="text-[10px] text-muted-foreground uppercase">勝率</p>
-                      <p className={cn(
-                        "text-lg font-bold font-numbers",
-                        stats.winRate >= 50 ? "text-profit" : "text-loss"
-                      )}>{stats.winRate}%</p>
+          {/* Main Dashboard - P&L Focus */}
+          {stats && (
+            <div className="space-y-4">
+              {/* Capture target area */}
+              <div ref={dashboardRef} className="space-y-4 bg-background p-4 -m-4 rounded-lg">
+                {/* Unified Dashboard Card - Clean Minimal Design */}
+                <Card className="bg-card shadow-md rounded-xl overflow-hidden">
+                  <CardContent className="p-0">
+                    {/* Period selector header */}
+                    <div className="flex justify-center gap-1 p-4 pb-3">
+                      <Button
+                        variant={period === 'today' ? 'default' : 'ghost'}
+                        size="sm"
+                        className="h-7 text-xs px-3"
+                        onClick={() => setPeriod('today')}
+                      >
+                        今日
+                      </Button>
+                      <Button
+                        variant={period === 'week' ? 'default' : 'ghost'}
+                        size="sm"
+                        className="h-7 text-xs px-3"
+                        onClick={() => setPeriod('week')}
+                      >
+                        今週
+                      </Button>
+                      <Button
+                        variant={period === 'month' ? 'default' : 'ghost'}
+                        size="sm"
+                        className="h-7 text-xs px-3"
+                        onClick={() => setPeriod('month')}
+                      >
+                        今月
+                      </Button>
                     </div>
-                    <div className="text-center">
-                      <p className="text-[10px] text-muted-foreground uppercase">PF</p>
-                      <p className={cn(
-                        "text-lg font-bold font-numbers",
-                        stats.profitFactor >= 1 ? "text-profit" : "text-loss"
-                      )}>{stats.profitFactor}</p>
-                    </div>
-                    <div className="text-center">
-                      <p className="text-[10px] text-green-600 dark:text-green-400 uppercase flex items-center justify-center gap-1">
-                        Real
+
+                    {/* Main P&L - tap to toggle pips/amount */}
+                    <div
+                      className="text-center px-4 cursor-pointer"
+                      onClick={() => setPnlUnit(pnlUnit === 'pips' ? 'amount' : 'pips')}
+                    >
+                      <p className="text-sm text-muted-foreground mb-1">
+                        {period === 'today' ? '今日' : period === 'week' ? '今週' : '今月'}の損益
                       </p>
-                      <p className="text-lg font-bold font-numbers text-green-600 dark:text-green-400">{stats.verifiedRate}%</p>
+                      <p className={cn(
+                        "text-4xl font-bold font-numbers",
+                        (pnlUnit === 'pips' ? stats.totalPnlPips : stats.totalPnl) >= 0 ? "text-profit" : "text-loss"
+                      )}>
+                        {(pnlUnit === 'pips' ? stats.totalPnlPips : stats.totalPnl) >= 0 ? '+' : ''}
+                        {(pnlUnit === 'pips' ? stats.totalPnlPips : stats.totalPnl).toLocaleString()}
+                        <span className="text-lg ml-1">{pnlUnit === 'pips' ? 'pips' : '円'}</span>
+                      </p>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        タップで {pnlUnit === 'pips' ? '金額' : 'pips'}表示
+                      </p>
                     </div>
-                  </div>
 
-                  {/* Weekly Calendar - Always Visible for Context */}
-                  <div className="mt-4 px-4 pt-4 border-t border-border/30">
-                    <div className="flex items-center justify-between mb-2">
-                      <h3 className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Weekly Flow</h3>
-                      {period !== 'week' && (
-                        <span className="text-[10px] text-muted-foreground">
-                          {/* Optional: Show week total PnL here if logic permits, but keep simple for now */}
-                        </span>
-                      )}
+                    {/* Sub stats */}
+                    <div className="grid grid-cols-3 gap-2 mt-4 mx-4 pt-3 border-t border-border/30">
+                      <div className="text-center">
+                        <p className="text-[10px] text-muted-foreground uppercase">勝率</p>
+                        <p className={cn(
+                          "text-lg font-bold font-numbers",
+                          stats.winRate >= 50 ? "text-profit" : "text-loss"
+                        )}>{stats.winRate}%</p>
+                      </div>
+                      <div className="text-center">
+                        <p className="text-[10px] text-muted-foreground uppercase">PF</p>
+                        <p className={cn(
+                          "text-lg font-bold font-numbers",
+                          stats.profitFactor >= 1 ? "text-profit" : "text-loss"
+                        )}>{stats.profitFactor}</p>
+                      </div>
+                      <div className="text-center">
+                        <p className="text-[10px] text-green-600 dark:text-green-400 uppercase flex items-center justify-center gap-1">
+                          Real
+                        </p>
+                        <p className="text-lg font-bold font-numbers text-green-600 dark:text-green-400">{stats.verifiedRate}%</p>
+                      </div>
                     </div>
-                    <WeeklyCalendar trades={trades} />
-                  </div>
 
-                  {/* Monthly Calendar - Only for Month View */}
-                  {period === 'month' && (
-                    <div className="mt-4 pt-4 px-4 pb-4 border-t border-border bg-muted/30">
-                      <MonthlyCalendar trades={trades} />
+                    {/* Weekly Calendar - Always Visible for Context */}
+                    <div className="mt-4 px-4 pt-4 border-t border-border/30">
+                      <div className="flex items-center justify-between mb-2">
+                        <h3 className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Weekly Flow</h3>
+                        {period !== 'week' && (
+                          <span className="text-[10px] text-muted-foreground">
+                            {/* Optional: Show week total PnL here if logic permits, but keep simple for now */}
+                          </span>
+                        )}
+                      </div>
+                      <WeeklyCalendar trades={trades} />
                     </div>
-                  )}
-                </CardContent>
-              </Card>
+
+                    {/* Monthly Calendar - Only for Month View */}
+                    {period === 'month' && (
+                      <div className="mt-4 pt-4 px-4 pb-4 border-t border-border bg-muted/30">
+                        <div className="flex items-center justify-between mb-3">
+                          <h3 className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Calendar</h3>
+                          <div className="flex bg-background/50 rounded-lg p-0.5 border border-border/50">
+                            <button
+                              onClick={() => setPnlUnit('pips')}
+                              className={cn(
+                                "px-2 py-0.5 text-[10px] rounded-md transition-all",
+                                pnlUnit === 'pips' ? "bg-background shadow-sm text-foreground font-medium" : "text-muted-foreground hover:text-foreground"
+                              )}
+                            >
+                              pips
+                            </button>
+                            <button
+                              onClick={() => setPnlUnit('amount')}
+                              className={cn(
+                                "px-2 py-0.5 text-[10px] rounded-md transition-all",
+                                pnlUnit === 'amount' ? "bg-background shadow-sm text-foreground font-medium" : "text-muted-foreground hover:text-foreground"
+                              )}
+                            >
+                              <span>¥</span>
+                            </button>
+                          </div>
+                        </div>
+                        <MonthlyCalendar trades={trades} unit={pnlUnit} />
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* Share button - outside capture area */}
+              <Button
+                className="w-full bg-solo-gold hover:bg-solo-gold/90 text-white"
+                onClick={handleCaptureDashboard}
+                disabled={isCapturing}
+              >
+                {isCapturing ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <Share2 className="mr-2 h-4 w-4" />
+                )}
+                {isCapturing ? '保存中...' : '保存してシェア'}
+              </Button>
             </div>
-
-            {/* Share button - outside capture area */}
-            <Button
-              className="w-full bg-solo-gold hover:bg-solo-gold/90 text-white"
-              onClick={handleCaptureDashboard}
-              disabled={isCapturing}
-            >
-              {isCapturing ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              ) : (
-                <Share2 className="mr-2 h-4 w-4" />
-              )}
-              {isCapturing ? '保存中...' : '保存してシェア'}
-            </Button>
-          </section>
-        )}
+          )}
+        </section>
 
         {/* Recent Trade Section */}
         <section>
