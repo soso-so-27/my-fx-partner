@@ -115,7 +115,7 @@ export default function AnalysisPage() {
                                     <CardTitle className="text-sm font-medium text-muted-foreground">合計損益</CardTitle>
                                 </CardHeader>
                                 <CardContent>
-                                    <div className={`text-2xl lg:text-3xl font-bold font-numbers whitespace-nowrap ${stats.totalPnl === 0 ? '' : stats.totalPnl > 0 ? 'text-profit' : 'text-loss'
+                                    <div className={`text-xl lg:text-2xl font-bold font-numbers truncate ${stats.totalPnl === 0 ? '' : stats.totalPnl > 0 ? 'text-profit' : 'text-loss'
                                         }`}>
                                         {stats.totalPnl > 0 ? '+' : ''}¥{stats.totalPnl.toLocaleString()}
                                     </div>

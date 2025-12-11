@@ -22,8 +22,8 @@ export function MobileNav() {
 
     return (
         <nav className="fixed bottom-0 left-0 right-0 border-t border-border bg-background md:hidden z-50">
-            {/* iOS Tab Bar: 49pt content + safe area */}
-            <div className="grid grid-cols-4 h-12 items-center pb-[env(safe-area-inset-bottom)]">
+            {/* iOS Tab Bar: Minimum 44pt touch targets */}
+            <div className="grid grid-cols-4 h-14 items-center pb-[env(safe-area-inset-bottom)]">
                 {navItems.map((item) => {
                     const Icon = item.icon
                     const isActive = pathname === item.href
@@ -33,7 +33,7 @@ export function MobileNav() {
                             key={item.href}
                             href={item.href}
                             className={cn(
-                                "flex flex-col items-center justify-center w-full h-full gap-0.5",
+                                "flex flex-col items-center justify-center w-full h-full min-h-[44px] gap-0.5",
                                 isActive ? "text-solo-gold" : "text-muted-foreground"
                             )}
                         >
