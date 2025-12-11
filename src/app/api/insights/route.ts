@@ -57,7 +57,12 @@ async function getOrCreateUserProfile(supabaseAdmin: any, email: string, name?: 
 export async function POST(request: NextRequest) {
     try {
         const session = await getServerSession(authOptions)
+
+        // Debug logging
+        console.log('Session debug:', JSON.stringify(session, null, 2))
+
         if (!session?.user?.email) {
+            console.log('Unauthorized: No session or email', { session })
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
         }
 
