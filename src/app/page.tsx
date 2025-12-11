@@ -205,11 +205,11 @@ export default function Home() {
 
   return (
     <ProtectedRoute>
-      <div className="container mx-auto p-4 pb-24 space-y-6">
+      <div className="container mx-auto p-4 pb-24 space-y-4">
         {/* iOS Navigation Bar: Opaque background, content below safe area */}
         <header className="sticky top-0 z-50 -mx-4 px-4 pt-[env(safe-area-inset-top)] pb-2 bg-background border-b border-border flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <div className="h-7 w-7 rounded-full bg-solo-navy flex items-center justify-center">
+            <div className="h-7 w-7 rounded-lg bg-solo-navy flex items-center justify-center">
               <span className="text-solo-gold font-bold text-[10px]">S</span>
             </div>
             <h1 className="text-base font-bold text-solo-navy dark:text-solo-gold">
@@ -219,7 +219,7 @@ export default function Home() {
           <div className="flex items-center gap-1">
             <SyncButton variant="compact" onSyncComplete={loadData} />
             <Link href="/settings">
-              <Button variant="ghost" size="icon" className="h-9 w-9 text-muted-foreground rounded-full">
+              <Button variant="ghost" size="icon" className="h-9 w-9 text-muted-foreground rounded-lg">
                 <Settings className="h-5 w-5" />
               </Button>
             </Link>
@@ -235,17 +235,8 @@ export default function Home() {
           />
         </section>
 
-        {/* Onboarding for new users */}
-        <OnboardingCard />
-
         {/* Performance Axis: Stats & Trades - Vehicle Focus */}
-        <section className="space-y-4">
-          <div className="flex items-center gap-2 mb-2">
-            <h2 className="text-sm font-bold text-muted-foreground uppercase tracking-widest">
-              Performance Board
-            </h2>
-            <div className="h-[1px] bg-border flex-1"></div>
-          </div>
+        <section className="space-y-3">
 
           {/* Goal Tracking */}
           {stats && (
@@ -379,19 +370,23 @@ export default function Home() {
                 </Card>
               </div>
 
-              {/* Share button - outside capture area */}
-              <Button
-                className="w-full bg-solo-gold hover:bg-solo-gold/90 text-white"
-                onClick={handleCaptureDashboard}
-                disabled={isCapturing}
-              >
-                {isCapturing ? (
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                ) : (
-                  <Share2 className="mr-2 h-4 w-4" />
-                )}
-                {isCapturing ? '保存中...' : '保存してシェア'}
-              </Button>
+              {/* Share button - compact */}
+              <div className="flex justify-end">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="text-muted-foreground"
+                  onClick={handleCaptureDashboard}
+                  disabled={isCapturing}
+                >
+                  {isCapturing ? (
+                    <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+                  ) : (
+                    <Share2 className="mr-1.5 h-3.5 w-3.5" />
+                  )}
+                  {isCapturing ? '保存中' : 'シェア'}
+                </Button>
+              </div>
             </div>
           )}
         </section>
@@ -459,49 +454,24 @@ export default function Home() {
                   </p>
                 </div>
                 <Button
+                  size="sm"
                   onClick={handleLoadDemoData}
                   disabled={isLoadingDemo}
                   className="bg-solo-gold hover:bg-solo-gold/90 text-white"
                 >
                   {isLoadingDemo ? (
                     <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      読み込み中...
+                      <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+                      読み込み中
                     </>
                   ) : (
-                    "デモデータを読み込む"
+                    "デモを試す"
                   )}
                 </Button>
               </CardContent>
             </Card>
           )}
         </section>
-
-        {/* Recent Insights Section */}
-        {insights.length > 0 && (
-          <section className="space-y-2">
-            <div className="flex items-center justify-between">
-              <h2 className="text-lg font-bold">最近の気づき</h2>
-              <Link href="/journal">
-                <Button variant="ghost" size="sm" className="text-sm h-9">
-                  すべて表示
-                </Button>
-              </Link>
-            </div>
-            <div className="space-y-2">
-              {insights.slice(0, 2).map((insight) => (
-                <Card key={insight.id} className="bg-card border-none shadow-sm">
-                  <CardContent className="p-3">
-                    <p className="text-xs text-muted-foreground mb-1">
-                      {new Date(insight.createdAt).toLocaleDateString('ja-JP')}
-                    </p>
-                    <p className="text-sm line-clamp-2">{insight.content}</p>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          </section>
-        )}
 
 
       </div>
