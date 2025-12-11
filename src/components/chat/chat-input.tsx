@@ -113,11 +113,7 @@ export function ChatInput({ onSend, disabled }: ChatInputProps) {
                     <ArrowUp className="h-4 w-4" />
                 </Button>
             </div>
-
-            {/* Hint Text */}
-            <p className="text-xs text-muted-foreground text-center mt-2">
-                Shift + Enter で改行
-            </p>
         </div>
     )
 }
+

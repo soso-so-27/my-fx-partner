@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { MessageBubble } from "./message-bubble"
 import { ChatInput } from "./chat-input"
@@ -20,6 +20,8 @@ interface Message {
     timestamp: string
 }
 
+const STORAGE_KEY = 'solo-chat-history'
+
 // Helper function to convert File to base64
 function fileToBase64(file: File): Promise<string> {
     return new Promise((resolve, reject) => {
@@ -27,7 +29,6 @@ function fileToBase64(file: File): Promise<string> {
         reader.readAsDataURL(file)
         reader.onload = () => {
             const result = reader.result as string
-            // Remove data URL prefix (e.g., "data:image/png;base64,")
             const base64 = result.split(',')[1]
             resolve(base64)
         }
@@ -42,18 +43,48 @@ export function ChatInterface() {
     const [isProcessing, setIsProcessing] = useState(false)
     const [currentMode, setCurrentMode] = useState<InsightMode | null>(null)
 
+    // Load conversation history from localStorage on mount
+    useEffect(() => {
+        const saved = localStorage.getItem(STORAGE_KEY)
+        if (saved) {
+            try {
+                const parsed = JSON.parse(saved)
+                setMessages(parsed.messages || [])
+                setCurrentMode(parsed.mode || null)
+            } catch (e) {
+                // Ignore parse errors
+            }
+        }
+    }, [])
+
+    // Save conversation history to localStorage on change
+    useEffect(() => {
+        if (messages.length > 0 || currentMode) {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify({
+                messages,
+                mode: currentMode
+            }))
+        }
+    }, [messages, currentMode])
+
+    const handleClearHistory = () => {
+        setMessages([])
+        setCurrentMode(null)
+        localStorage.removeItem(STORAGE_KEY)
+    }
+
     const handleModeSelect = (mode: 'pre-trade' | 'post-trade' | 'review') => {
         setCurrentMode(mode)
         let initialMessage = ""
         switch (mode) {
             case 'pre-trade':
-                initialMessage = "エントリー前チェックですね。\n監視中の「通貨ペア」と「根拠（セットアップ）」を教えてください。\nあなたのルールに適合しているか一緒に確認しましょう。"
+                initialMessage = "エントリー前チェックですね。「通貨ペア」と「根拠」を教えてください。"
                 break
             case 'post-trade':
-                initialMessage = "トレードお疲れ様でした。\nまずはチャート画像をアップロードするか、トレードの結果と、今の「感情」を率直に教えてください。"
+                initialMessage = "お疲れ様でした。チャート画像か、結果と感情を教えてください。"
                 break
             case 'review':
-                initialMessage = "振り返りを行いましょう。\n最近のトレードで「うまくいったこと」や「課題」だと感じていることはありますか？"
+                initialMessage = "振り返りを行いましょう。最近のトレードで気になることはありますか？"
                 break
         }
 
@@ -84,9 +115,7 @@ export function ChatInterface() {
         }
     }
 
-    // Custom AI Response Logic based on mode
     const getAIResponse = async (content: string, mode: InsightMode | null) => {
-        // Build conversation history for context
         const conversationHistory: ChatMessage[] = messages.map(msg => ({
             role: msg.role === 'ai' ? 'assistant' : 'user',
             content: msg.content
@@ -95,7 +124,6 @@ export function ChatInterface() {
         if (mode) {
             return await generateCoachingResponse(content, mode as any, conversationHistory)
         }
-        // Default fallback with context
         return await generateCoachingResponse(content, 'review', conversationHistory)
     }
 
@@ -114,7 +142,6 @@ export function ChatInterface() {
             let responseContent = ""
 
             if (files && files.length > 0) {
-                // Convert file to base64 and analyze
                 const file = files[0]
                 const base64 = await fileToBase64(file)
                 const imageAnalysis = await analyzeChartImage(base64, content || 'このチャートを分析してください')
@@ -122,18 +149,15 @@ export function ChatInterface() {
             }
 
             if (content.trim()) {
-                // If in a specific mode, use coaching logic
                 if (currentMode) {
                     const coachingResponse = await getAIResponse(content, currentMode)
                     if (responseContent) responseContent += "\n---\n"
                     responseContent += coachingResponse
                 } else {
-                    // Default analysis logic
                     const textResult = await analyzeTrade(content)
                     if (responseContent) responseContent += "\n---\n"
                     responseContent += textResult.summary
 
-                    // AI Review against Rules
                     const rules = user ? await tradeRuleService.getRules(user.id) : []
                     const activeRules = rules.filter(r => r.isActive)
 
@@ -143,11 +167,10 @@ export function ChatInterface() {
                     }
                 }
 
-                // Save trade to mock DB (only if it looks like a trade entry)
-                if (user && !currentMode) { // Don't auto-save in coaching modes for now
+                if (user && !currentMode) {
                     await tradeService.createTrade({
-                        pair: 'Unknown', // In real app, extract from analysis
-                        direction: 'BUY', // Mock
+                        pair: 'Unknown',
+                        direction: 'BUY',
                         entryPrice: 0,
                         stopLoss: 0,
                         takeProfit: 0,
@@ -162,7 +185,7 @@ export function ChatInterface() {
             const aiResponse: Message = {
                 id: (Date.now() + 1).toString(),
                 role: 'ai',
-                content: responseContent || "入力を受け取りましたが、具体的な分析を生成できませんでした。",
+                content: responseContent || "入力を受け取りました。",
                 timestamp: new Date().toLocaleTimeString()
             }
 
@@ -172,7 +195,7 @@ export function ChatInterface() {
             setMessages(prev => [...prev, {
                 id: (Date.now() + 1).toString(),
                 role: 'ai',
-                content: "申し訳ありません。トレードの分析中にエラーが発生しました。",
+                content: "申し訳ありません。エラーが発生しました。",
                 timestamp: new Date().toLocaleTimeString()
             }])
         } finally {
@@ -181,78 +204,73 @@ export function ChatInterface() {
     }
 
     return (
-        <div className="flex flex-col h-full max-w-4xl mx-auto">
-            {/* Minimal Header */}
-            <div className="px-4 py-3 border-b shrink-0">
-                <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-lg bg-solo-gold flex items-center justify-center">
-                        <span className="text-solo-black text-sm font-bold">S</span>
+        <div className="flex flex-col h-full">
+            {/* Header with safe-area */}
+            <header className="sticky top-0 z-50 pt-[env(safe-area-inset-top)] px-4 pb-2 bg-background border-b border-border flex items-center justify-between shrink-0">
+                <div className="flex items-center gap-2">
+                    <div className="w-7 h-7 rounded-lg bg-solo-gold flex items-center justify-center">
+                        <span className="text-solo-black text-xs font-bold">S</span>
                     </div>
-                    <div>
-                        <h2 className="font-semibold text-sm">SOLO AIパートナー</h2>
-                        <p className="text-xs text-muted-foreground">トレードの悩みや分析をサポート</p>
-                    </div>
+                    <span className="font-semibold text-sm">AIパートナー</span>
                 </div>
-            </div>
+                {messages.length > 0 && (
+                    <button
+                        onClick={handleClearHistory}
+                        className="text-xs text-muted-foreground hover:text-foreground"
+                    >
+                        クリア
+                    </button>
+                )}
+            </header>
 
             {/* Messages Area */}
             <ScrollArea className="flex-1 min-h-0">
                 {messages.length === 0 ? (
-                    <div className="flex flex-col items-center justify-center p-6 max-w-lg mx-auto min-h-[60vh]">
-                        {/* Welcome Section */}
-                        <div className="text-center space-y-4 mb-8">
-                            <div className="w-14 h-14 rounded-2xl bg-solo-gold mx-auto flex items-center justify-center">
-                                <span className="text-solo-black text-xl font-bold">S</span>
+                    <div className="flex flex-col items-center justify-center p-4 pt-8">
+                        {/* Compact Welcome */}
+                        <div className="text-center mb-6">
+                            <div className="w-12 h-12 rounded-xl bg-solo-gold mx-auto flex items-center justify-center mb-3">
+                                <span className="text-solo-black text-lg font-bold">S</span>
                             </div>
-                            <div>
-                                <h1 className="text-lg font-semibold">何かお手伝いできますか？</h1>
-                                <p className="text-sm text-muted-foreground mt-1">
-                                    タップして会話を始めるか、下から入力してください
-                                </p>
-                            </div>
+                            <h1 className="text-base font-semibold">何かお手伝いできますか？</h1>
                         </div>
 
-                        {/* Single Unified Action Cards */}
-                        <div className="w-full space-y-3">
+                        {/* Compact Mode Selection - Horizontal */}
+                        <div className="w-full max-w-sm grid grid-cols-3 gap-2">
                             <button
                                 onClick={() => handleModeSelect('pre-trade')}
-                                className="w-full flex items-center gap-4 p-4 rounded-xl border bg-card hover:border-solo-gold/50 hover:bg-solo-gold/5 transition-all text-left group"
+                                className="flex flex-col items-center gap-1.5 p-3 rounded-xl border bg-card hover:border-solo-gold/50 transition-all"
                             >
-                                <div className="w-10 h-10 rounded-lg bg-solo-gold/10 flex items-center justify-center group-hover:bg-solo-gold/20 transition-colors">
+                                <div className="w-10 h-10 rounded-lg bg-solo-gold/10 flex items-center justify-center">
                                     <CrosshairIcon className="h-5 w-5 text-solo-gold" />
                                 </div>
-                                <div>
-                                    <div className="font-medium text-sm group-hover:text-solo-gold transition-colors">エントリー前チェック</div>
-                                    <div className="text-xs text-muted-foreground">ルールに沿っているか確認</div>
-                                </div>
+                                <span className="text-xs font-medium text-center">エントリー前</span>
                             </button>
 
                             <button
                                 onClick={() => handleModeSelect('post-trade')}
-                                className="w-full flex items-center gap-4 p-4 rounded-xl border bg-card hover:border-solo-gold/50 hover:bg-solo-gold/5 transition-all text-left group"
+                                className="flex flex-col items-center gap-1.5 p-3 rounded-xl border bg-card hover:border-solo-gold/50 transition-all"
                             >
-                                <div className="w-10 h-10 rounded-lg bg-solo-gold/10 flex items-center justify-center group-hover:bg-solo-gold/20 transition-colors">
+                                <div className="w-10 h-10 rounded-lg bg-solo-gold/10 flex items-center justify-center">
                                     <PenLine className="h-5 w-5 text-solo-gold" />
                                 </div>
-                                <div>
-                                    <div className="font-medium text-sm group-hover:text-solo-gold transition-colors">トレードを振り返る</div>
-                                    <div className="text-xs text-muted-foreground">感情と結果を整理</div>
-                                </div>
+                                <span className="text-xs font-medium text-center">振り返り</span>
                             </button>
 
                             <button
                                 onClick={() => handleModeSelect('review')}
-                                className="w-full flex items-center gap-4 p-4 rounded-xl border bg-card hover:border-solo-gold/50 hover:bg-solo-gold/5 transition-all text-left group"
+                                className="flex flex-col items-center gap-1.5 p-3 rounded-xl border bg-card hover:border-solo-gold/50 transition-all"
                             >
-                                <div className="w-10 h-10 rounded-lg bg-solo-gold/10 flex items-center justify-center group-hover:bg-solo-gold/20 transition-colors">
+                                <div className="w-10 h-10 rounded-lg bg-solo-gold/10 flex items-center justify-center">
                                     <BarChart3 className="h-5 w-5 text-solo-gold" />
                                 </div>
-                                <div>
-                                    <div className="font-medium text-sm group-hover:text-solo-gold transition-colors">成績を分析</div>
-                                    <div className="text-xs text-muted-foreground">傾向と改善点を発見</div>
-                                </div>
+                                <span className="text-xs font-medium text-center">分析</span>
                             </button>
                         </div>
+
+                        <p className="text-xs text-muted-foreground mt-4">
+                            または下から直接メッセージを入力
+                        </p>
                     </div>
                 ) : (
                     <div className="flex flex-col">
@@ -267,17 +285,15 @@ export function ChatInterface() {
                             />
                         ))}
                         {isProcessing && (
-                            <div className="w-full py-4 px-4 md:px-8">
-                                <div className="max-w-3xl mx-auto flex gap-4">
-                                    <div className="w-8 h-8 rounded-lg bg-solo-gold flex items-center justify-center animate-pulse">
-                                        <span className="text-solo-black text-sm font-bold">S</span>
+                            <div className="w-full py-4 px-4">
+                                <div className="flex gap-3 items-center">
+                                    <div className="w-7 h-7 rounded-lg bg-solo-gold flex items-center justify-center animate-pulse">
+                                        <span className="text-solo-black text-xs font-bold">S</span>
                                     </div>
-                                    <div className="flex items-center gap-2">
-                                        <div className="flex gap-1">
-                                            <span className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></span>
-                                            <span className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></span>
-                                            <span className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></span>
-                                        </div>
+                                    <div className="flex gap-1">
+                                        <span className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></span>
+                                        <span className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></span>
+                                        <span className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></span>
                                     </div>
                                 </div>
                             </div>
@@ -286,13 +302,10 @@ export function ChatInterface() {
                 )}
             </ScrollArea>
 
-            {/* Input Area */}
-            <div className="shrink-0 border-t bg-background">
-                <div className="max-w-3xl mx-auto">
-                    <ChatInput onSend={handleSend} disabled={isProcessing} />
-                </div>
+            {/* Input Area with safe-area */}
+            <div className="shrink-0 border-t bg-background pb-[env(safe-area-inset-bottom)]">
+                <ChatInput onSend={handleSend} disabled={isProcessing} />
             </div>
         </div>
     )
 }
-
