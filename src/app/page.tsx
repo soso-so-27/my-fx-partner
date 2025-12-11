@@ -208,7 +208,7 @@ export default function Home() {
       <div className="container mx-auto p-4 pb-24 space-y-6">
         {/* Sticky Header */}
         {/* Sticky Header - ChatGPT Style Minimal */}
-        <header className="sticky top-0 z-50 -mx-4 px-4 py-3 bg-background/95 backdrop-blur-xl border-b border-border/10 flex items-center justify-between mb-2 transition-all shadow-sm">
+        <header className="sticky top-0 z-50 -mx-4 px-4 pb-3 pt-[calc(env(safe-area-inset-top)+0.75rem)] bg-background/95 backdrop-blur-xl border-b border-border/10 flex items-center justify-between mb-2 transition-all shadow-sm">
           <div className="flex items-center gap-3" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
             <div className="h-8 w-8 rounded-full bg-solo-navy flex items-center justify-center"> {/* Logo Icon Placeholder */}
               <span className="text-solo-gold font-bold text-xs">S</span>
