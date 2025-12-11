@@ -206,20 +206,20 @@ export default function Home() {
   return (
     <ProtectedRoute>
       <div className="container mx-auto p-4 pb-24 space-y-6">
-        {/* Sticky Header - Minimal */}
-        <header className="sticky top-0 z-50 -mx-4 px-4 py-2 pt-[max(env(safe-area-inset-top),0.5rem)] bg-background backdrop-blur-xl border-b border-border/10 flex items-center justify-between mb-2 shadow-sm">
-          <div className="flex items-center gap-3">
-            <div className="h-8 w-8 rounded-full bg-solo-navy flex items-center justify-center">
-              <span className="text-solo-gold font-bold text-xs">S</span>
+        {/* iOS Navigation Bar: 44pt height + safe area */}
+        <header className="sticky top-0 z-50 -mx-4 px-4 h-11 pt-[env(safe-area-inset-top)] bg-background border-b border-border/20 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <div className="h-7 w-7 rounded-full bg-solo-navy flex items-center justify-center">
+              <span className="text-solo-gold font-bold text-[10px]">S</span>
             </div>
-            <h1 className="text-lg font-bold text-solo-navy dark:text-solo-gold tracking-tight">
+            <h1 className="text-base font-bold text-solo-navy dark:text-solo-gold">
               SOLO
             </h1>
           </div>
           <div className="flex items-center gap-1">
             <SyncButton variant="compact" onSyncComplete={loadData} />
             <Link href="/settings">
-              <Button variant="ghost" size="icon" className="h-10 w-10 text-muted-foreground hover:bg-muted/50 rounded-full">
+              <Button variant="ghost" size="icon" className="h-9 w-9 text-muted-foreground rounded-full">
                 <Settings className="h-5 w-5" />
               </Button>
             </Link>

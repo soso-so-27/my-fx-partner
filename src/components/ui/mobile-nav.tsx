@@ -1,20 +1,18 @@
 "use client"
 
-import { Home, BookOpen, MessageSquare, BarChart3 } from "lucide-react"
+import { Home, BookOpen, MessageSquare, BarChart3, RefreshCw } from "lucide-react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { cn } from "@/lib/utils"
-import { SyncFAB } from "./sync-fab"
 
 export function MobileNav() {
     const pathname = usePathname()
 
-    // ナビ構成:
-    // ホーム(ダッシュボード) / 相談(AI) / ジャーナル(ノート+ルール) / 分析(統計+記録)
+    // iOS style 5-tab navigation (no FAB)
+    // Following iOS HIG: Tab bar height = 49pt + safe area for home indicator
     const navItems = [
         { href: '/', icon: Home, label: 'ホーム' },
         { href: '/chat', icon: MessageSquare, label: '相談' },
-        { href: null, icon: null, label: null }, // Sync FAB
         { href: '/journal', icon: BookOpen, label: 'ジャーナル' },
         { href: '/analysis', icon: BarChart3, label: '分析' },
     ]
@@ -23,36 +21,30 @@ export function MobileNav() {
     if (pathname === '/login') return null
 
     return (
-        <div className="fixed bottom-0 left-0 right-0 border-t bg-background/80 backdrop-blur-lg md:hidden z-50 pb-safe">
-            <nav className="relative grid grid-cols-5 h-16 items-center">
-                <SyncFAB />
-                {navItems.map((item, index) => {
-                    // Spacer for Sync FAB (Center item)
-                    if (index === 2) {
-                        return <div key="spacer" className="w-full h-full" />
-                    }
-
-                    const Icon = item.icon!
+        <nav className="fixed bottom-0 left-0 right-0 border-t bg-background/95 backdrop-blur-lg md:hidden z-50">
+            {/* iOS Tab Bar: 49pt content + safe area */}
+            <div className="grid grid-cols-4 h-12 items-center pb-[env(safe-area-inset-bottom)]">
+                {navItems.map((item) => {
+                    const Icon = item.icon
                     const isActive = pathname === item.href
 
                     return (
                         <Link
                             key={item.href}
-                            href={item.href!}
+                            href={item.href}
                             className={cn(
-                                "flex flex-col items-center justify-center w-full h-full space-y-1",
-                                isActive ? "text-primary" : "text-muted-foreground hover:text-primary/80"
+                                "flex flex-col items-center justify-center w-full h-full gap-0.5",
+                                isActive ? "text-solo-gold" : "text-muted-foreground"
                             )}
                         >
-                            <Icon className="h-5 w-5" />
-                            <span className="text-[11px] font-medium">{item.label}</span>
+                            {/* iOS HIG: Tab bar icons = 25x25pt (h-6 = 24px) */}
+                            <Icon className="h-6 w-6" />
+                            {/* iOS HIG: Labels below icons */}
+                            <span className="text-[10px] font-medium">{item.label}</span>
                         </Link>
                     )
                 })}
-            </nav>
-        </div>
+            </div>
+        </nav>
     )
 }
-
-
-

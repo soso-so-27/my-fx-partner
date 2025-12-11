@@ -181,7 +181,7 @@ export function ChatInterface() {
     }
 
     return (
-        <div className="flex flex-col h-[calc(100vh-8rem)] max-w-4xl mx-auto">
+        <div className="flex flex-col h-full max-w-4xl mx-auto">
             {/* Minimal Header */}
             <div className="px-4 py-3 border-b shrink-0">
                 <div className="flex items-center gap-3">
