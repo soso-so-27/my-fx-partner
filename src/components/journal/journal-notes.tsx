@@ -161,29 +161,23 @@ export function JournalNotes() {
 
     return (
         <div className="h-full flex flex-col relative">
-            <div className="absolute bottom-6 right-4 z-10">
+            <div className="absolute bottom-20 right-4 z-10">
                 <Button
-                    className="h-14 w-14 rounded-full shadow-lg bg-solo-navy dark:bg-solo-gold hover:opacity-90"
+                    className="h-12 w-12 rounded-full shadow-lg bg-solo-navy dark:bg-solo-gold hover:opacity-90"
                     onClick={openCreateDialog}
                 >
-                    <PenSquare className="h-6 w-6 text-white dark:text-black" />
+                    <PenSquare className="h-5 w-5 text-white dark:text-black" />
                 </Button>
             </div>
 
             <ScrollArea className="flex-1 -mx-4 px-4">
                 <div className="pb-24 space-y-8">
                     {insights.length === 0 && !loading && (
-                        <div className="flex flex-col items-center justify-center py-16 text-muted-foreground bg-muted/20 rounded-xl border-2 border-dashed m-4">
-                            <div className="bg-background p-4 rounded-full mb-4 shadow-sm">
-                                <PenSquare className="h-8 w-8 text-solo-gold opacity-80" />
-                            </div>
-                            <h3 className="font-bold text-solo-navy dark:text-solo-white mb-2">最初のノートを書こう</h3>
-                            <p className="text-sm text-center max-w-xs mb-6">
-                                トレードの記録、感情、ふとした気づき。<br />
-                                まとまっていなくても大丈夫です。
-                            </p>
-                            <Button onClick={openCreateDialog} className="bg-solo-navy dark:bg-solo-gold text-white">
-                                <PlusCircle className="mr-2 h-4 w-4" />
+                        <div className="flex flex-col items-center justify-center py-8 text-muted-foreground bg-muted/20 rounded-xl border border-dashed mx-2">
+                            <PenSquare className="h-6 w-6 text-solo-gold opacity-60 mb-2" />
+                            <p className="text-sm mb-3">トレードの記録や気づきを残しましょう</p>
+                            <Button size="sm" onClick={openCreateDialog} className="bg-solo-navy dark:bg-solo-gold text-white">
+                                <PlusCircle className="mr-1.5 h-3.5 w-3.5" />
                                 ノートを作成
                             </Button>
                         </div>
