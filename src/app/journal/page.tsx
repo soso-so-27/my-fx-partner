@@ -31,9 +31,11 @@ export default function JournalPage() {
     return (
         <ProtectedRoute>
             <div className="container mx-auto p-4 h-[calc(100vh-4rem)] flex flex-col">
-                <header className="flex items-center gap-2 mb-6 shrink-0">
-                    <BookOpen className="h-6 w-6 text-solo-navy dark:text-solo-gold" />
-                    <h1 className="text-2xl font-bold">ジャーナル</h1>
+                <header className="sticky top-0 z-50 -mx-4 px-4 py-2 pt-[max(env(safe-area-inset-top),0.5rem)] bg-background backdrop-blur-xl border-b border-border/10 flex items-center gap-3 mb-4 shadow-sm shrink-0">
+                    <div className="h-8 w-8 rounded-full bg-muted/50 flex items-center justify-center">
+                        <BookOpen className="h-4 w-4 text-solo-navy dark:text-solo-gold" />
+                    </div>
+                    <h1 className="text-lg font-bold">ジャーナル</h1>
                 </header>
 
                 <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col min-h-0">

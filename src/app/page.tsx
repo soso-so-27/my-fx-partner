@@ -207,7 +207,7 @@ export default function Home() {
     <ProtectedRoute>
       <div className="container mx-auto p-4 pb-24 space-y-6">
         {/* Sticky Header - Minimal */}
-        <header className="sticky top-0 z-50 -mx-4 px-4 py-2 pt-[max(env(safe-area-inset-top),0.5rem)] bg-background/95 backdrop-blur-xl border-b border-border/10 flex items-center justify-between mb-2 transition-all shadow-sm">
+        <header className="sticky top-0 z-50 -mx-4 px-4 py-2 pt-[max(env(safe-area-inset-top),0.5rem)] bg-background backdrop-blur-xl border-b border-border/10 flex items-center justify-between mb-2 shadow-sm">
           <div className="flex items-center gap-3">
             <div className="h-8 w-8 rounded-full bg-solo-navy flex items-center justify-center">
               <span className="text-solo-gold font-bold text-xs">S</span>
