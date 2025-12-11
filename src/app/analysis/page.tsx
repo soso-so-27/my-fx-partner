@@ -113,7 +113,7 @@ export default function AnalysisPage() {
                                     <CardTitle className="text-sm font-medium text-muted-foreground">合計損益</CardTitle>
                                 </CardHeader>
                                 <CardContent>
-                                    <div className={`text-2xl lg:text-3xl font-bold font-numbers break-words ${stats.totalPnl === 0 ? '' : stats.totalPnl > 0 ? 'text-profit' : 'text-loss'
+                                    <div className={`text-2xl lg:text-3xl font-bold font-numbers whitespace-nowrap ${stats.totalPnl === 0 ? '' : stats.totalPnl > 0 ? 'text-profit' : 'text-loss'
                                         }`}>
                                         {stats.totalPnl > 0 ? '+' : ''}¥{stats.totalPnl.toLocaleString()}
                                     </div>
@@ -162,17 +162,17 @@ export default function AnalysisPage() {
                                     <CardTitle>詳細統計</CardTitle>
                                 </CardHeader>
                                 <CardContent className="space-y-4">
-                                    <div className="flex justify-between">
-                                        <span className="text-muted-foreground">平均利益</span>
-                                        <span className="font-numbers font-medium text-profit">+¥{stats.averageWin.toLocaleString()}</span>
+                                    <div className="flex justify-between items-center">
+                                        <span className="text-muted-foreground whitespace-nowrap">平均利益</span>
+                                        <span className="font-numbers font-medium text-profit whitespace-nowrap">+¥{stats.averageWin.toLocaleString()}</span>
                                     </div>
-                                    <div className="flex justify-between">
-                                        <span className="text-muted-foreground">平均損失</span>
-                                        <span className="font-numbers font-medium text-loss">-¥{Math.abs(stats.averageLoss).toLocaleString()}</span>
+                                    <div className="flex justify-between items-center">
+                                        <span className="text-muted-foreground whitespace-nowrap">平均損失</span>
+                                        <span className="font-numbers font-medium text-loss whitespace-nowrap">-¥{Math.abs(stats.averageLoss).toLocaleString()}</span>
                                     </div>
-                                    <div className="flex justify-between">
-                                        <span className="text-muted-foreground">ベスト通貨ペア</span>
-                                        <span className="font-medium">{stats.bestPair}</span>
+                                    <div className="flex justify-between items-center">
+                                        <span className="text-muted-foreground whitespace-nowrap">ベスト通貨ペア</span>
+                                        <span className="font-medium whitespace-nowrap">{stats.bestPair}</span>
                                     </div>
                                 </CardContent>
                             </Card>

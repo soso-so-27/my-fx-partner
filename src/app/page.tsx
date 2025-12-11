@@ -206,20 +206,20 @@ export default function Home() {
   return (
     <ProtectedRoute>
       <div className="container mx-auto p-4 pb-24 space-y-6">
-        {/* SOLO Branding with Quick Actions */}
-        <section className="mb-2 flex items-center justify-between">
-          <h1 className="text-4xl font-bold text-solo-navy dark:text-solo-gold tracking-tight">
+        {/* Sticky Header */}
+        <header className="sticky top-0 z-50 -mx-4 px-4 py-3 bg-background/80 backdrop-blur-md border-b border-border/40 flex items-center justify-between mb-4 transition-all">
+          <h1 className="text-2xl font-bold text-solo-navy dark:text-solo-gold tracking-tight" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
             SOLO
           </h1>
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-2">
+            <SyncButton variant="compact" onSyncComplete={loadData} />
             <Link href="/settings">
-              <Button variant="ghost" size="icon" className="h-9 w-9 text-muted-foreground">
+              <Button variant="ghost" size="icon" className="h-9 w-9 text-muted-foreground hover:bg-muted/50">
                 <Settings className="h-5 w-5" />
               </Button>
             </Link>
-            <SyncButton variant="compact" onSyncComplete={loadData} />
           </div>
-        </section>
+        </header>
 
         {/* Mental Axis: AI Partner - Driver Focus */}
         <section>
