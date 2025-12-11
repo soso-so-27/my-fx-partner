@@ -21,6 +21,38 @@ function getSupabaseAdmin() {
     })
 }
 
+// Get or create user profile by email
+async function getOrCreateUserProfile(supabaseAdmin: any, email: string, name?: string) {
+    // First try to find existing profile
+    const { data: existingProfile, error: findError } = await supabaseAdmin
+        .from('profiles')
+        .select('id')
+        .eq('email', email)
+        .single()
+
+    if (existingProfile) {
+        return existingProfile.id
+    }
+
+    // Profile not found, create one
+    const { data: newProfile, error: createError } = await supabaseAdmin
+        .from('profiles')
+        .insert({
+            email,
+            display_name: name || email.split('@')[0],
+            created_at: new Date().toISOString()
+        })
+        .select('id')
+        .single()
+
+    if (createError) {
+        console.error('Error creating profile:', createError)
+        throw new Error('Failed to create user profile')
+    }
+
+    return newProfile.id
+}
+
 // POST /api/insights - Create new insight
 export async function POST(request: NextRequest) {
     try {
@@ -30,6 +62,8 @@ export async function POST(request: NextRequest) {
         }
 
         const supabaseAdmin = getSupabaseAdmin()
+        const userId = await getOrCreateUserProfile(supabaseAdmin, session.user.email, session.user.name || undefined)
+
         const body = await request.json()
         const { content, mode, userNote, tags } = body
 
@@ -37,21 +71,10 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
         }
 
-        // Get user ID from profiles table using email
-        const { data: profile, error: profileError } = await supabaseAdmin
-            .from('profiles')
-            .select('id')
-            .eq('email', session.user.email)
-            .single()
-
-        if (profileError || !profile) {
-            return NextResponse.json({ error: 'User profile not found' }, { status: 404 })
-        }
-
         const { data, error } = await supabaseAdmin
             .from('insights')
             .insert({
-                user_id: profile.id,
+                user_id: userId,
                 content,
                 mode,
                 user_note: userNote,
