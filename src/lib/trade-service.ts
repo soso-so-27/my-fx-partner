@@ -1,24 +1,6 @@
 import { supabase } from '@/lib/supabase/client'
 import { Trade, CreateTradeInput } from '@/types/trade'
 
-// Calculate trading session based on Tokyo time
-function calculateSession(entryTime: string): 'Tokyo' | 'London' | 'NewYork' | 'Sydney' {
-    const date = new Date(entryTime)
-    // Convert to Tokyo time (UTC+9)
-    const tokyoHour = (date.getUTCHours() + 9) % 24
-
-    // Session times (in Tokyo time):
-    // Tokyo: 9:00-15:00 (0900-1500)
-    // London: 16:00-24:00 (1600-2400)
-    // NewYork: 21:00-6:00 (2100-0600 next day)
-    // Sydney: 6:00-9:00 (0600-0900)
-
-    if (tokyoHour >= 9 && tokyoHour < 15) return 'Tokyo'
-    if (tokyoHour >= 16 && tokyoHour < 24) return 'London'
-    if (tokyoHour >= 21 || tokyoHour < 6) return 'NewYork'
-    return 'Sydney'
-}
-
 export const tradeService = {
     async getTrades(userId?: string): Promise<Trade[]> {
         if (!userId) return []
@@ -49,96 +31,45 @@ export const tradeService = {
     },
 
     async createTrade(input: CreateTradeInput, userId: string): Promise<Trade> {
-        const dbInput = {
-            user_id: userId,
-            pair: input.pair,
-            pair_normalized: input.pair.toUpperCase().replace(/[/\s]/g, ''),
-            direction: input.direction,
-            entry_price: input.entryPrice,
-            entry_time: input.entryTime || new Date().toISOString(),
-            exit_price: input.exitPrice,
-            exit_time: input.exitTime,
-            timezone: input.timezone || 'Asia/Tokyo',
-            session: calculateSession(input.entryTime || new Date().toISOString()),
-            stop_loss: input.stopLoss,
-            take_profit: input.takeProfit,
-            lot_size: input.lotSize,
-            lot_size_raw: input.lotSizeRaw,
-            pnl: input.pnl || { currency: 'JPY' },
-            pnl_source: input.pnlSource || 'manual',
-            chart_images: input.chartImages || [],
-            notes: input.notes,
-            tags: input.tags || [],
-            is_verified: input.isVerified || false,
-            verification_source: input.verificationSource,
-            broker: input.broker,
-            original_email_id: input.originalEmailId,
-            rule_compliance: input.ruleCompliance || []
+        // Use API route to bypass RLS
+        const response = await fetch('/api/trades', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(input)
+        })
+
+        if (!response.ok) {
+            const error = await response.json()
+            throw new Error(error.error || 'Failed to create trade')
         }
 
-        const { data, error } = await supabase
-            .from('trades')
-            .insert(dbInput)
-            .select()
-            .single()
-
-        if (error) throw error
+        const data = await response.json()
         return mapDbTradeToTrade(data)
     },
 
     async updateTrade(id: string, updates: Partial<Trade>): Promise<Trade | null> {
-        const dbUpdates: any = {
-            updated_at: new Date().toISOString()
+        const response = await fetch('/api/trades', {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id, ...updates })
+        })
+
+        if (!response.ok) {
+            console.error('Error updating trade')
+            return null
         }
-        if (updates.pair) {
-            dbUpdates.pair = updates.pair
-            dbUpdates.pair_normalized = updates.pair.toUpperCase().replace(/[/\s]/g, '')
-        }
-        if (updates.direction) dbUpdates.direction = updates.direction
-        if (updates.entryPrice) dbUpdates.entry_price = updates.entryPrice
-        if (updates.entryTime) dbUpdates.entry_time = updates.entryTime
-        if (updates.exitPrice) dbUpdates.exit_price = updates.exitPrice
-        if (updates.exitTime) dbUpdates.exit_time = updates.exitTime
-        if (updates.timezone) dbUpdates.timezone = updates.timezone
 
-        if (updates.stopLoss) dbUpdates.stop_loss = updates.stopLoss
-        if (updates.takeProfit) dbUpdates.take_profit = updates.takeProfit
-
-        if (updates.lotSize) dbUpdates.lot_size = updates.lotSize
-        if (updates.lotSizeRaw) dbUpdates.lot_size_raw = updates.lotSizeRaw
-
-        if (updates.pnl) dbUpdates.pnl = updates.pnl
-        if (updates.pnlSource) dbUpdates.pnl_source = updates.pnlSource
-
-        if (updates.chartImages) dbUpdates.chart_images = updates.chartImages
-
-        if (updates.notes) dbUpdates.notes = updates.notes
-        if (updates.tags) dbUpdates.tags = updates.tags
-
-        if (updates.isVerified !== undefined) dbUpdates.is_verified = updates.isVerified
-        if (updates.verificationSource) dbUpdates.verification_source = updates.verificationSource
-        if (updates.broker) dbUpdates.broker = updates.broker
-        if (updates.isFrequentPair !== undefined) dbUpdates.is_frequent_pair = updates.isFrequentPair
-        if (updates.ruleCompliance) dbUpdates.rule_compliance = updates.ruleCompliance
-
-        const { data, error } = await supabase
-            .from('trades')
-            .update(dbUpdates)
-            .eq('id', id)
-            .select()
-            .single()
-
-        if (error) return null
-        return mapDbTradeToTrade(data)
+        // Re-fetch the updated trade
+        const updated = await this.getTradeById(id)
+        return updated || null
     },
 
     async deleteTrade(id: string): Promise<boolean> {
-        const { error } = await supabase
-            .from('trades')
-            .delete()
-            .eq('id', id)
+        const response = await fetch(`/api/trades?id=${id}`, {
+            method: 'DELETE'
+        })
 
-        return !error
+        return response.ok
     }
 }
 

@@ -11,23 +11,24 @@ class InsightService {
         },
         userId: string
     ): Promise<Insight> {
-        const dbInput = {
-            user_id: userId,
-            content: input.content,
-            mode: input.mode,
-            user_note: input.userNote,
-            tags: input.tags || []
-            // created_at is default
+        // Use API route to bypass RLS
+        const response = await fetch('/api/insights', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                content: input.content,
+                mode: input.mode,
+                userNote: input.userNote,
+                tags: input.tags || []
+            })
+        })
+
+        if (!response.ok) {
+            const error = await response.json()
+            throw new Error(error.error || 'Failed to create insight')
         }
 
-        const { data, error } = await supabase
-            .from('insights')
-            .insert(dbInput)
-            .select()
-            .single()
-
-        if (error) throw error
-        return this.mapDbInsightToInsight(data)
+        return await response.json()
     }
 
     async getInsightsByUser(userId: string, limit?: number): Promise<Insight[]> {
@@ -56,34 +57,31 @@ class InsightService {
     }
 
     async deleteInsight(id: string): Promise<void> {
-        const { error } = await supabase
-            .from('insights')
-            .delete()
-            .eq('id', id)
+        const response = await fetch(`/api/insights?id=${id}`, {
+            method: 'DELETE'
+        })
 
-        if (error) console.error('Error deleting insight:', error)
+        if (!response.ok) {
+            const error = await response.json()
+            throw new Error(error.error || 'Failed to delete insight')
+        }
     }
 
     async updateInsightNote(id: string, userNote: string): Promise<void> {
-        const { error } = await supabase
-            .from('insights')
-            .update({ user_note: userNote })
-            .eq('id', id)
-
-        if (error) console.error('Error updating insight note:', error)
+        await this.updateInsight(id, { userNote })
     }
 
     async updateInsight(id: string, updates: { userNote?: string, tags?: string[] }): Promise<void> {
-        const dbUpdates: any = {}
-        if (updates.userNote !== undefined) dbUpdates.user_note = updates.userNote
-        if (updates.tags !== undefined) dbUpdates.tags = updates.tags
+        const response = await fetch('/api/insights', {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id, ...updates })
+        })
 
-        const { error } = await supabase
-            .from('insights')
-            .update(dbUpdates)
-            .eq('id', id)
-
-        if (error) throw error
+        if (!response.ok) {
+            const error = await response.json()
+            throw new Error(error.error || 'Failed to update insight')
+        }
     }
 
     private mapDbInsightToInsight(dbInsight: any): Insight {
