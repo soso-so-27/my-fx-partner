@@ -183,9 +183,9 @@
 
   body {
     @apply bg-background text-foreground;
-    height: 100dvh;
-    overflow: hidden;
-    /* Prevent body scroll, use inner scroll areas */
+    min-height: 100dvh;
+    overflow-x: hidden;
+    overflow-y: auto;
     overscroll-behavior: none;
   }
 }
