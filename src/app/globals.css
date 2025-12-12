@@ -42,133 +42,115 @@
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
 
-  /* SOLO Brand Colors */
-  --color-solo-black: #0F1117;
-  --color-solo-navy: #121C36;
-  --color-solo-gold: #C8A85F;
+  /* Calm Brand Colors */
+  --color-solo-black: #1A1D21;
+  --color-solo-navy: #4A5568;
+  --color-solo-gold: #6B8E7B;
   --color-solo-white: #F8F8FA;
 
-  /* Legacy FX Trader Colors (mapped to SOLO) */
-  --color-profit: #ff4444;
-  --color-loss: #4444ff;
-  --color-gold: #C8A85F;
+  /* Muted Indicator Colors (family-friendly) */
+  --color-profit: #5A7B6D;
+  --color-loss: #8B7B7B;
+  --color-gold: #6B8E7B;
 }
 
 :root {
   --radius: 0.5rem;
-  /* SOLO Brand Colors */
-  --solo-black: #0F1117;
-  --solo-navy: #121C36;
-  --solo-gold: #C8A85F;
+  /* Calm Brand Colors */
+  --solo-black: #1A1D21;
+  --solo-navy: #4A5568;
+  --solo-gold: #6B8E7B;
   --solo-white: #F8F8FA;
 
   /* Base Theme Mapping */
   --background: #F8F8FA;
-  /* Calm White */
-  --foreground: #0F1117;
-  /* SOLO Black */
+  --foreground: #1A1D21;
 
   --card: #ffffff;
-  --card-foreground: #0F1117;
+  --card-foreground: #1A1D21;
 
   --popover: #ffffff;
-  --popover-foreground: #0F1117;
+  --popover-foreground: #1A1D21;
 
-  --primary: #0F1117;
-  /* SOLO Black */
+  --primary: #1A1D21;
   --primary-foreground: #F8F8FA;
 
-  --secondary: #121C36;
-  /* SOLO Navy */
+  --secondary: #4A5568;
   --secondary-foreground: #F8F8FA;
 
   --muted: #f1f5f9;
   --muted-foreground: #64748b;
 
-  --accent: #C8A85F;
-  /* SOLO Gold */
-  --accent-foreground: #0F1117;
+  --accent: #6B8E7B;
+  --accent-foreground: #1A1D21;
 
-  --destructive: #ef4444;
+  --destructive: #b45656;
   --destructive-foreground: #F8F8FA;
 
   --border: #e2e8f0;
   --input: #e2e8f0;
-  --ring: #C8A85F;
-  /* SOLO Gold */
+  --ring: #6B8E7B;
 
-  --chart-1: #C8A85F;
-  /* Gold */
-  --chart-2: #121C36;
-  /* Navy */
-  --chart-3: #0F1117;
-  /* Black */
+  --chart-1: #6B8E7B;
+  --chart-2: #4A5568;
+  --chart-3: #1A1D21;
   --chart-4: #94a3b8;
   --chart-5: #cbd5e1;
 
   --sidebar: #F8F8FA;
-  --sidebar-foreground: #0F1117;
-  --sidebar-primary: #0F1117;
+  --sidebar-foreground: #1A1D21;
+  --sidebar-primary: #1A1D21;
   --sidebar-primary-foreground: #F8F8FA;
   --sidebar-accent: #f1f5f9;
-  --sidebar-accent-foreground: #0F1117;
+  --sidebar-accent-foreground: #1A1D21;
   --sidebar-border: #e2e8f0;
-  --sidebar-ring: #C8A85F;
+  --sidebar-ring: #6B8E7B;
 }
 
 .dark {
-  /* SOLO Dark Theme (Main) */
-  --background: #0F1117;
-  /* SOLO Black */
+  /* Calm Dark Theme */
+  --background: #1A1D21;
   --foreground: #F8F8FA;
-  /* Calm White */
 
-  --card: #121C36;
-  /* SOLO Navy */
+  --card: #252830;
   --card-foreground: #F8F8FA;
 
-  --popover: #121C36;
+  --popover: #252830;
   --popover-foreground: #F8F8FA;
 
-  --primary: #C8A85F;
-  /* SOLO Gold */
-  --primary-foreground: #0F1117;
+  --primary: #6B8E7B;
+  --primary-foreground: #1A1D21;
 
-  --secondary: #1a2c5b;
-  /* Slightly lighter Navy */
+  --secondary: #3D4552;
   --secondary-foreground: #F8F8FA;
 
-  --muted: #1e293b;
+  --muted: #2D3139;
   --muted-foreground: #94a3b8;
 
-  --accent: #C8A85F;
-  /* SOLO Gold */
-  --accent-foreground: #0F1117;
+  --accent: #6B8E7B;
+  --accent-foreground: #1A1D21;
 
-  --destructive: #7f1d1d;
+  --destructive: #8B5656;
   --destructive-foreground: #F8F8FA;
 
-  --border: #1e293b;
-  --input: #1e293b;
-  --ring: #C8A85F;
+  --border: #2D3139;
+  --input: #2D3139;
+  --ring: #6B8E7B;
 
-  --chart-1: #C8A85F;
-  /* Gold */
-  --chart-2: #3b82f6;
-  /* Blue */
-  --chart-3: #10b981;
-  /* Green */
+  --chart-1: #6B8E7B;
+  --chart-2: #7B9EB8;
+  --chart-3: #8FB89F;
   --chart-4: #94a3b8;
   --chart-5: #64748b;
 
-  --sidebar: #0F1117;
+  --sidebar: #1A1D21;
   --sidebar-foreground: #F8F8FA;
-  --sidebar-primary: #C8A85F;
-  --sidebar-primary-foreground: #0F1117;
-  --sidebar-accent: #121C36;
+  --sidebar-primary: #6B8E7B;
+  --sidebar-primary-foreground: #1A1D21;
+  --sidebar-accent: #252830;
   --sidebar-accent-foreground: #F8F8FA;
-  --sidebar-border: #1e293b;
-  --sidebar-ring: #C8A85F;
+  --sidebar-border: #2D3139;
+  --sidebar-ring: #6B8E7B;
 }
 
 @layer base {
@@ -192,27 +174,25 @@
 
 @layer utilities {
 
-  /* FX Trader Utilities */
+  /* Calm Utilities */
   .text-profit {
-    color: #ff4444;
-    /* Japanese red for profit/up */
+    color: #5A7B6D;
   }
 
   .text-loss {
-    color: #4444ff;
-    /* Japanese blue for loss/down */
+    color: #8B7B7B;
   }
 
   .text-gold {
-    color: #d4af37;
+    color: #6B8E7B;
   }
 
   .bg-gold {
-    background-color: #d4af37;
+    background-color: #6B8E7B;
   }
 
   .border-gold {
-    border-color: #d4af37;
+    border-color: #6B8E7B;
   }
 
   /* Monospace numbers for better readability */

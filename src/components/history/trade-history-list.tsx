@@ -118,7 +118,7 @@ export function TradeHistoryList() {
                                 <CardTitle className="text-base font-medium font-numbers flex items-center gap-2">
                                     {trade.pair} <span className="text-muted-foreground text-sm">({trade.direction})</span>
                                     {trade.isVerified && (
-                                        <Badge variant="secondary" className="bg-solo-gold/10 text-amber-700 border-solo-gold/30 dark:bg-solo-gold/20 dark:text-solo-gold dark:border-solo-gold/40 gap-1 h-5 px-1.5">
+                                        <Badge variant="secondary" className="bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-900/20 dark:text-emerald-400 dark:border-emerald-700/40 gap-1 h-5 px-1.5">
                                             <ShieldCheck className="h-3 w-3" />
                                             <span className="text-[10px]">Real</span>
                                         </Badge>

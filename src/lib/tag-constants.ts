@@ -15,15 +15,15 @@ export const PREDEFINED_TAGS = {
 
 export type TagCategory = keyof typeof PREDEFINED_TAGS
 
-// 統一されたタグカラー - SOLOブランドカラーを基調に、ライト/ダーク両対応
+// 統一されたタグカラー - 落ち着いたブランドカラーを基調に、ライト/ダーク両対応
 // 色数を3種類に抑えて視点誘導を明確に
 export const TAG_COLORS = {
-    // スタイル: ゴールド系（SOLOブランドメイン）
-    style: 'bg-solo-gold/10 text-solo-gold border-solo-gold/30 dark:bg-solo-gold/20 dark:text-solo-gold dark:border-solo-gold/40',
-    // 戦略: ネイビー系（SOLOブランドセカンダリ）
-    strategy: 'bg-solo-navy/10 text-solo-navy border-solo-navy/30 dark:bg-solo-navy/30 dark:text-slate-200 dark:border-slate-500/40',
+    // スタイル: セージグリーン系（ブランドメイン）
+    style: 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-900/20 dark:text-emerald-400 dark:border-emerald-700/40',
+    // 戦略: グレー系（ブランドセカンダリ）
+    strategy: 'bg-slate-100 text-slate-700 border-slate-300 dark:bg-slate-700/30 dark:text-slate-300 dark:border-slate-500/40',
     // セッション: ニュートラル
-    session: 'bg-slate-100 text-slate-700 border-slate-300 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-600'
+    session: 'bg-stone-100 text-stone-600 border-stone-300 dark:bg-stone-800 dark:text-stone-400 dark:border-stone-600'
 } as const
 
 export function getTagCategory(tag: string): TagCategory | null {
