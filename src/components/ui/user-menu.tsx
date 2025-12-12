@@ -61,7 +61,14 @@ export function UserMenu() {
                     </div>
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={handleSignOut} className="text-destructive cursor-pointer">
+                <DropdownMenuItem
+                    onSelect={(e) => {
+                        e.preventDefault()
+                        console.log('Logout clicked')
+                        signOut({ callbackUrl: "/login" })
+                    }}
+                    className="text-destructive cursor-pointer"
+                >
                     <LogOut className="mr-2 h-4 w-4" />
                     ログアウト
                 </DropdownMenuItem>
