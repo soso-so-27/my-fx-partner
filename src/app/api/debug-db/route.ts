@@ -84,6 +84,7 @@ export async function GET(request: NextRequest) {
             user_id: targetId,
             pair: 'DEBUG',
             direction: 'BUY',
+            entry_price: 100, // Fixed: Added required field
             entry_time: new Date().toISOString(),
             session: 'Tokyo'
         }
