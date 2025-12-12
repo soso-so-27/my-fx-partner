@@ -15,7 +15,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea"
 import { compressImage } from "@/lib/image-utils"
 import { tradeService } from "@/lib/trade-service"
-import { useAuth } from "@/contexts/auth-context"
+import { useSession } from "next-auth/react"
 import { useToast } from "@/components/ui/use-toast"
 
 interface ChartGalleryProps {
@@ -29,7 +29,7 @@ interface GalleryItem {
 }
 
 export function ChartGallery({ trades, onTradeCreated }: ChartGalleryProps) {
-    const { user } = useAuth()
+    const { status } = useSession()
     const { toast } = useToast()
 
     // Upload State
@@ -39,9 +39,9 @@ export function ChartGallery({ trades, onTradeCreated }: ChartGalleryProps) {
     const [isUploading, setIsUploading] = useState(false)
     const fileInputRef = useRef<HTMLInputElement>(null)
 
-    // Form State
+    // Form State - Use 'BUY' as default since DB doesn't allow 'ANALYSIS'
     const [pair, setPair] = useState("")
-    const [direction, setDirection] = useState<'BUY' | 'SELL' | 'ANALYSIS'>('ANALYSIS')
+    const [direction, setDirection] = useState<'BUY' | 'SELL'>('BUY')
     const [date, setDate] = useState(format(new Date(), 'yyyy-MM-dd HH:mm'))
     const [note, setNote] = useState("")
 
@@ -65,7 +65,7 @@ export function ChartGallery({ trades, onTradeCreated }: ChartGalleryProps) {
     }
 
     const handleUpload = async () => {
-        if (!user || !uploadFile) return
+        if (status !== "authenticated" || !uploadFile) return
         setIsUploading(true)
         try {
             // Compress image (Stronger compression for safety)
@@ -81,13 +81,13 @@ export function ChartGallery({ trades, onTradeCreated }: ChartGalleryProps) {
                 chartImages: [{
                     id: crypto.randomUUID(),
                     url: base64Image,
-                    type: direction === 'ANALYSIS' ? 'analysis' : 'entry',
+                    type: 'entry', // Fixed type, no more ANALYSIS
                     aiAnalyzed: false,
                     uploadedAt: new Date().toISOString(),
                     fileSize: uploadFile.size,
                     mimeType: uploadFile.type
                 }]
-            }, user.id)
+            }, '') // userId not needed, API route uses session
 
             toast({ title: "画像を追加しました" })
             setIsUploadOpen(false)
@@ -95,7 +95,7 @@ export function ChartGallery({ trades, onTradeCreated }: ChartGalleryProps) {
             setPreviewUrl(null)
             setPair("")
             setNote("")
-            setDirection('ANALYSIS')
+            setDirection('BUY')
 
             if (onTradeCreated) onTradeCreated()
         } catch (error: any) {
