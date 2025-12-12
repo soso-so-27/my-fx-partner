@@ -23,16 +23,23 @@ function getSupabaseAdmin() {
 
 // Get or create user profile by email
 async function getOrCreateUserProfile(supabaseAdmin: any, email: string, name?: string) {
-    // First try to find existing profile
+    // First try to find existing profile using maybeSingle (returns null if not found, no error)
     const { data: existingProfile, error: findError } = await supabaseAdmin
         .from('profiles')
         .select('id')
         .eq('email', email)
-        .single()
+        .maybeSingle()
+
+    if (findError) {
+        console.error('Error finding profile:', findError)
+    }
 
     if (existingProfile) {
+        console.log('Found existing profile:', existingProfile.id)
         return existingProfile.id
     }
+
+    console.log('Profile not found, creating new one for:', email)
 
     // Profile not found, create one
     const { data: newProfile, error: createError } = await supabaseAdmin
@@ -47,9 +54,19 @@ async function getOrCreateUserProfile(supabaseAdmin: any, email: string, name?: 
 
     if (createError) {
         console.error('Error creating profile:', createError)
+        // If creation failed due to unique constraint, try to find again
+        if (createError.code === '23505') {
+            const { data: retryProfile } = await supabaseAdmin
+                .from('profiles')
+                .select('id')
+                .eq('email', email)
+                .maybeSingle()
+            if (retryProfile) return retryProfile.id
+        }
         throw new Error('Failed to create user profile')
     }
 
+    console.log('Created new profile:', newProfile.id)
     return newProfile.id
 }
 
