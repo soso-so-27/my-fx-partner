@@ -343,12 +343,11 @@ export default function SettingsPage() {
                             <Button
                                 variant="outline"
                                 className="w-full text-destructive border-destructive/30 hover:bg-destructive/10"
-                                onClick={async () => {
-                                    const { signOut } = await import("@/contexts/auth-context").then(m => ({ signOut: () => { } }))
-                                    // Direct sign out
-                                    const supabase = (await import("@/lib/supabase")).supabase
-                                    await supabase.auth.signOut()
-                                    window.location.href = "/login"
+                                onClick={() => {
+                                    // Use NextAuth signOut
+                                    import("next-auth/react").then(({ signOut }) => {
+                                        signOut({ callbackUrl: "/login" })
+                                    })
                                 }}
                             >
                                 ログアウト
