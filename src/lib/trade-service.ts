@@ -3,19 +3,15 @@ import { Trade, CreateTradeInput } from '@/types/trade'
 
 export const tradeService = {
     async getTrades(userId?: string): Promise<Trade[]> {
-        if (!userId) return []
+        // Use API route to handle auth and profile lookup securely
+        const response = await fetch('/api/trades')
 
-        const { data, error } = await supabase
-            .from('trades')
-            .select('*')
-            .eq('user_id', userId)
-            .order('entry_time', { ascending: false })
-
-        if (error) {
-            console.error('Error fetching trades:', error)
+        if (!response.ok) {
+            console.error('Error fetching trades')
             return []
         }
 
+        const data = await response.json()
         return (data || []).map(mapDbTradeToTrade)
     },
 

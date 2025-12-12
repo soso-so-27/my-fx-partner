@@ -67,6 +67,7 @@ async function getOrCreateUserProfile(supabaseAdmin: any, email: string, name?: 
     }
 
     console.log('Created new profile:', newProfile.id)
+    console.log('Created new profile:', newProfile.id)
     return newProfile.id
 }
 
@@ -81,8 +82,8 @@ function calculateSession(entryTime: string): 'Tokyo' | 'London' | 'NewYork' | '
     return 'Sydney'
 }
 
-// POST /api/trades - Create new trade
-export async function POST(request: NextRequest) {
+// GET /api/trades - Get user's trades
+export async function GET(request: NextRequest) {
     try {
         const session = await getServerSession(authOptions)
         if (!session?.user?.email) {
@@ -91,6 +92,39 @@ export async function POST(request: NextRequest) {
 
         const supabaseAdmin = getSupabaseAdmin()
         const userId = await getOrCreateUserProfile(supabaseAdmin, session.user.email, session.user.name || undefined)
+
+        const { data, error } = await supabaseAdmin
+            .from('trades')
+            .select('*')
+            .eq('user_id', userId)
+            .order('entry_time', { ascending: false })
+
+        if (error) {
+            console.error('Error fetching trades:', error)
+            return NextResponse.json({ error: 'Failed to fetch trades' }, { status: 500 })
+        }
+
+        return NextResponse.json(data)
+    } catch (error: any) {
+        console.error('API error:', error)
+        return NextResponse.json({ error: error.message }, { status: 500 })
+    }
+}
+
+// POST /api/trades - Create new trade
+export async function POST(request: NextRequest) {
+    try {
+        const session = await getServerSession(authOptions)
+        if (!session?.user?.email) {
+            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+        }
+
+        console.log('DEBUG: Creating trade for email:', session.user.email)
+
+        const supabaseAdmin = getSupabaseAdmin()
+        const userId = await getOrCreateUserProfile(supabaseAdmin, session.user.email, session.user.name || undefined)
+
+        console.log('DEBUG: Resolved userId:', userId)
 
         const body = await request.json()
         const entryTime = body.entryTime || new Date().toISOString()
