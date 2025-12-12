@@ -31,28 +31,20 @@ class InsightService {
         return await response.json()
     }
 
-    async getInsightsByUser(userId: string, limit?: number): Promise<Insight[]> {
-        let query = supabase
-            .from('insights')
-            .select('*')
-            .eq('user_id', userId)
-            .order('created_at', { ascending: false })
+    async getInsightsByUser(userId?: string, limit?: number): Promise<Insight[]> {
+        // Use API route instead of direct Supabase call
+        const response = await fetch('/api/insights')
 
-        if (limit) {
-            query = query.limit(limit)
-        }
-
-        const { data, error } = await query
-
-        if (error) {
-            console.error('Error fetching insights:', error)
+        if (!response.ok) {
+            console.error('Error fetching insights:', await response.text())
             return []
         }
 
-        return (data || []).map(this.mapDbInsightToInsight)
+        const data = await response.json()
+        return limit ? data.slice(0, limit) : data
     }
 
-    async getAllInsights(userId: string): Promise<Insight[]> {
+    async getAllInsights(userId?: string): Promise<Insight[]> {
         return this.getInsightsByUser(userId)
     }
 

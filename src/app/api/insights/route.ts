@@ -53,6 +53,45 @@ async function getOrCreateUserProfile(supabaseAdmin: any, email: string, name?: 
     return newProfile.id
 }
 
+// GET /api/insights - Get user's insights
+export async function GET(request: NextRequest) {
+    try {
+        const session = await getServerSession(authOptions)
+        if (!session?.user?.email) {
+            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+        }
+
+        const supabaseAdmin = getSupabaseAdmin()
+        const userId = await getOrCreateUserProfile(supabaseAdmin, session.user.email, session.user.name || undefined)
+
+        const { data, error } = await supabaseAdmin
+            .from('insights')
+            .select('*')
+            .eq('user_id', userId)
+            .order('created_at', { ascending: false })
+
+        if (error) {
+            console.error('Error fetching insights:', error)
+            return NextResponse.json({ error: 'Failed to fetch insights' }, { status: 500 })
+        }
+
+        const insights = (data || []).map((d: any) => ({
+            id: d.id,
+            userId: d.user_id,
+            content: d.content,
+            mode: d.mode,
+            userNote: d.user_note,
+            createdAt: d.created_at,
+            tags: d.tags || []
+        }))
+
+        return NextResponse.json(insights)
+    } catch (error: any) {
+        console.error('API error:', error)
+        return NextResponse.json({ error: error.message }, { status: 500 })
+    }
+}
+
 // POST /api/insights - Create new insight
 export async function POST(request: NextRequest) {
     try {

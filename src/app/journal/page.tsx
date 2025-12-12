@@ -7,28 +7,35 @@ import { JournalNotes } from "@/components/journal/journal-notes"
 import { TradeRuleManager } from "@/components/journal/trade-rule-manager"
 import { ChartGallery } from "@/components/analysis/chart-gallery"
 import { BookOpen, ImageIcon, ListChecks } from "lucide-react"
-import { useAuth } from "@/contexts/auth-context"
+import { useSession } from "next-auth/react"
 import { tradeService } from "@/lib/trade-service"
 import { Trade } from "@/types/trade"
 
 export default function JournalPage() {
-    const { user } = useAuth()
+    const { data: session, status } = useSession()
     const [trades, setTrades] = useState<Trade[]>([])
     const [activeTab, setActiveTab] = useState("notes")
     const [refreshTrigger, setRefreshTrigger] = useState(0)
+    const [isLoading, setIsLoading] = useState(true)
 
     useEffect(() => {
         const loadTrades = async () => {
-            if (!user) return
+            if (status !== "authenticated" || !session?.user?.email) {
+                setIsLoading(false)
+                return
+            }
             try {
-                const userTrades = await tradeService.getTrades(user.id)
+                // Use email for now since we don't have Supabase user.id
+                const userTrades = await tradeService.getTrades(session.user.email)
                 setTrades(userTrades)
             } catch (error) {
                 console.error('Failed to load trades:', error)
+            } finally {
+                setIsLoading(false)
             }
         }
         loadTrades()
-    }, [user, refreshTrigger])
+    }, [session, status, refreshTrigger])
 
     const handleRefresh = () => {
         setRefreshTrigger(prev => prev + 1)

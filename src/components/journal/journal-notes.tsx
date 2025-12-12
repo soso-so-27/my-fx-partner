@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { useAuth } from "@/contexts/auth-context"
+import { useSession } from "next-auth/react"
 import { insightService } from "@/lib/insight-service"
 import { Insight } from "@/types/insight"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -37,7 +37,7 @@ const MODE_COLORS = {
 const EMOTION_PREFIX = 'emotion:'
 
 export function JournalNotes() {
-    const { user } = useAuth()
+    const { data: session, status } = useSession()
     const { toast } = useToast()
     const [insights, setInsights] = useState<Insight[]>([])
     const [loading, setLoading] = useState(true)
@@ -55,9 +55,12 @@ export function JournalNotes() {
 
     useEffect(() => {
         const loadInsights = async () => {
-            if (!user) return
+            if (status !== "authenticated") {
+                setLoading(false)
+                return
+            }
             try {
-                const data = await insightService.getAllInsights(user.id)
+                const data = await insightService.getAllInsights()
                 setInsights(data)
             } catch (error) {
                 console.error("Failed to load insights", error)
@@ -66,7 +69,7 @@ export function JournalNotes() {
             }
         }
         loadInsights()
-    }, [user])
+    }, [status])
 
     const handleDelete = async (id: string) => {
         if (!confirm('このメモを削除しますか？')) return
@@ -87,7 +90,7 @@ export function JournalNotes() {
     }
 
     const handleCreate = async () => {
-        if (!user || !newNoteContent.trim()) return
+        if (status !== "authenticated" || !newNoteContent.trim()) return
         try {
             const newEmotionTags = selectedEmotions.map(id => `${EMOTION_PREFIX}${id}`)
 
@@ -96,7 +99,7 @@ export function JournalNotes() {
                 mode: 'review', // Default mode for manual entry
                 userNote: '',
                 tags: newEmotionTags
-            }, user.id)
+            }, '') // userId is not used, API route uses session
 
             // Insert at top
             setInsights([created, ...insights])
