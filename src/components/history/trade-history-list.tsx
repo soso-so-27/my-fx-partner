@@ -179,8 +179,16 @@ export function TradeHistoryList() {
                         </Card>
                     ))}
                     {filteredTrades.length === 0 && (
-                        <div className="text-center py-8 text-muted-foreground">
-                            トレードが見つかりませんでした
+                        <div className="flex flex-col items-center justify-center py-12 text-muted-foreground bg-muted/20 rounded-xl border border-dashed mx-2">
+                            <div className="w-12 h-12 rounded-full bg-muted/50 flex items-center justify-center mb-3">
+                                <Plus className="h-6 w-6 opacity-40" />
+                            </div>
+                            <p className="font-medium mb-1">トレード記録がありません</p>
+                            <p className="text-sm text-center mb-4 px-4">最初の1件を記録して、分析を始めましょう</p>
+                            <Button size="sm" onClick={() => setShowAddDialog(true)} className="gap-1">
+                                <Plus className="h-4 w-4" />
+                                トレードを記録
+                            </Button>
                         </div>
                     )}
                 </div>

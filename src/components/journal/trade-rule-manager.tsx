@@ -103,8 +103,16 @@ export function TradeRuleManager() {
             ) : (
                 <div className="space-y-4">
                     {filteredRules.length === 0 ? (
-                        <div className="text-center py-10 text-muted-foreground border rounded-lg border-dashed">
-                            ルールが登録されていません
+                        <div className="flex flex-col items-center justify-center py-12 text-muted-foreground bg-muted/20 rounded-xl border border-dashed">
+                            <div className="w-12 h-12 rounded-full bg-muted/50 flex items-center justify-center mb-3">
+                                <Plus className="h-6 w-6 opacity-40" />
+                            </div>
+                            <p className="font-medium mb-1">ルールが登録されていません</p>
+                            <p className="text-sm text-center mb-4 px-4">自分だけのルールを作成して、<br />AIにトレードを評価してもらいましょう</p>
+                            <Button size="sm" onClick={openCreateDialog} className="gap-1">
+                                <Plus className="h-4 w-4" />
+                                ルールを作成
+                            </Button>
                         </div>
                     ) : (
                         filteredRules.map((rule) => (
