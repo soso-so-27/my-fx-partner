@@ -22,24 +22,27 @@ function getSupabaseAdmin() {
 }
 
 // Get or create user profile by email
-async function getOrCreateUserProfile(supabaseAdmin: any, email: string, name?: string) {
-    // First try to find existing profile using maybeSingle (returns null if not found, no error)
+async function getOrCreateUserProfile(supabaseAdmin: any, rawEmail: string, name?: string) {
+    const email = rawEmail.trim().toLowerCase()
+    console.log(`DEBUG: Processing profile for email: ${email} (raw: ${rawEmail})`)
+
+    // First try to find existing profile using maybeSingle (ilike for case-insensitive)
     const { data: existingProfile, error: findError } = await supabaseAdmin
         .from('profiles')
         .select('id')
-        .eq('email', email)
+        .ilike('email', email)
         .maybeSingle()
 
     if (findError) {
-        console.error('Error finding profile:', findError)
+        console.error('DEBUG: Error finding profile:', findError)
     }
 
     if (existingProfile) {
-        console.log('Found existing profile:', existingProfile.id)
+        console.log('DEBUG: Found existing profile:', existingProfile.id)
         return existingProfile.id
     }
 
-    console.log('Profile not found, creating new one for:', email)
+    console.log('DEBUG: Profile not found, creating new one for:', email)
 
     // Profile not found, create one
     const { data: newProfile, error: createError } = await supabaseAdmin
@@ -53,21 +56,23 @@ async function getOrCreateUserProfile(supabaseAdmin: any, email: string, name?: 
         .single()
 
     if (createError) {
-        console.error('Error creating profile:', createError)
-        // If creation failed due to unique constraint, try to find again
+        console.error('DEBUG: Error creating profile:', createError)
+        // If creation failed due to unique constraint, try to find again specifically
         if (createError.code === '23505') {
             const { data: retryProfile } = await supabaseAdmin
                 .from('profiles')
                 .select('id')
-                .eq('email', email)
+                .ilike('email', email)
                 .maybeSingle()
-            if (retryProfile) return retryProfile.id
+            if (retryProfile) {
+                console.log('DEBUG: Found profile on retry:', retryProfile.id)
+                return retryProfile.id
+            }
         }
-        throw new Error('Failed to create user profile')
+        throw new Error(`Failed to create user profile: ${createError.message}`)
     }
 
-    console.log('Created new profile:', newProfile.id)
-    console.log('Created new profile:', newProfile.id)
+    console.log('DEBUG: Created new profile:', newProfile.id)
     return newProfile.id
 }
 
@@ -92,6 +97,8 @@ export async function GET(request: NextRequest) {
 
         const supabaseAdmin = getSupabaseAdmin()
         const userId = await getOrCreateUserProfile(supabaseAdmin, session.user.email, session.user.name || undefined)
+
+        console.log(`DEBUG: GET trades for userId: ${userId}`)
 
         const { data, error } = await supabaseAdmin
             .from('trades')
@@ -119,12 +126,17 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
         }
 
-        console.log('DEBUG: Creating trade for email:', session.user.email)
-
         const supabaseAdmin = getSupabaseAdmin()
         const userId = await getOrCreateUserProfile(supabaseAdmin, session.user.email, session.user.name || undefined)
 
-        console.log('DEBUG: Resolved userId:', userId)
+        console.log(`DEBUG: POST trade with userId: ${userId}`)
+
+        // Verify profile exists (Safe guard)
+        const { data: verifyProfile } = await supabaseAdmin.from('profiles').select('id').eq('id', userId).single()
+        if (!verifyProfile) {
+            console.error(`CRITICAL: Profile ${userId} returned by helper but not found in DB!`)
+            throw new Error(`Profile internal inconsistency`)
+        }
 
         const body = await request.json()
         const entryTime = body.entryTime || new Date().toISOString()
