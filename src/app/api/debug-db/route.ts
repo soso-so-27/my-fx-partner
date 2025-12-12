@@ -84,9 +84,10 @@ export async function GET(request: NextRequest) {
             user_id: targetId,
             pair: 'DEBUG',
             direction: 'BUY',
-            entry_price: 100, // Fixed: Added required field
+            entry_price: 100,
             entry_time: new Date().toISOString(),
-            session: 'Tokyo'
+            session: 'Tokyo',
+            notes: 'Debug entry' // Added to satisfy potential non-null constraint
         }
 
         const { data: trade, error: tradeError } = await supabaseAdmin
