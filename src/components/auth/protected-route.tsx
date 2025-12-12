@@ -2,19 +2,19 @@
 
 import { useEffect } from "react"
 import { useRouter } from "next/navigation"
-import { useAuth } from "@/contexts/auth-context"
+import { useSession } from "next-auth/react"
 
 export function ProtectedRoute({ children }: { children: React.ReactNode }) {
-    const { user, loading } = useAuth()
+    const { status } = useSession()
     const router = useRouter()
 
     useEffect(() => {
-        if (!loading && !user) {
+        if (status === "unauthenticated") {
             router.push("/login")
         }
-    }, [user, loading, router])
+    }, [status, router])
 
-    if (loading) {
+    if (status === "loading") {
         return (
             <div className="min-h-screen flex items-center justify-center">
                 <div className="text-muted-foreground">読み込み中...</div>
@@ -22,7 +22,7 @@ export function ProtectedRoute({ children }: { children: React.ReactNode }) {
         )
     }
 
-    if (!user) {
+    if (status === "unauthenticated") {
         return null
     }
 
