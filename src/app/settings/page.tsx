@@ -231,6 +231,22 @@ export default function SettingsPage() {
                         </CardContent>
                     </Card>
 
+                    {/* Theme Settings */}
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>外観設定</CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                            <div className="flex items-center justify-between">
+                                <div>
+                                    <Label>テーマ</Label>
+                                    <p className="text-sm text-muted-foreground">ライト・ダーク・システム設定から選択</p>
+                                </div>
+                                <ModeToggle />
+                            </div>
+                        </CardContent>
+                    </Card>
+
                     {/* Trade Rules */}
                     <Card>
                         <CardHeader>
