@@ -1,11 +1,12 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Target, Plus, Trash2, Clock, TrendingUp, TrendingDown } from "lucide-react"
+import { Target, Plus, Trash2, Clock, TrendingUp, TrendingDown, Link2 } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Pattern, SUPPORTED_CURRENCY_PAIRS, SUPPORTED_TIMEFRAMES } from "@/lib/pattern-service"
+import { PatternDetailDialog } from "./pattern-detail-dialog"
 import {
     Dialog,
     DialogContent,
@@ -32,6 +33,8 @@ export function PatternList({ userId }: PatternListProps) {
     const [patterns, setPatterns] = useState<Pattern[]>([])
     const [isLoading, setIsLoading] = useState(true)
     const [isDialogOpen, setIsDialogOpen] = useState(false)
+    const [selectedPattern, setSelectedPattern] = useState<Pattern | null>(null)
+    const [isDetailOpen, setIsDetailOpen] = useState(false)
     const { toast } = useToast()
 
     const fetchPatterns = async () => {
@@ -131,7 +134,14 @@ export function PatternList({ userId }: PatternListProps) {
             ) : (
                 /* Pattern Cards */
                 patterns.map(pattern => (
-                    <Card key={pattern.id} className="overflow-hidden">
+                    <Card
+                        key={pattern.id}
+                        className="overflow-hidden cursor-pointer hover:ring-2 hover:ring-primary/50 transition-shadow"
+                        onClick={() => {
+                            setSelectedPattern(pattern)
+                            setIsDetailOpen(true)
+                        }}
+                    >
                         {/* Pattern Image */}
                         <div className="w-full h-32 bg-muted relative">
                             {pattern.imageUrl ? (
@@ -150,10 +160,17 @@ export function PatternList({ userId }: PatternListProps) {
                                 variant="ghost"
                                 size="icon"
                                 className="absolute top-2 right-2 bg-background/80 hover:bg-destructive hover:text-destructive-foreground"
-                                onClick={() => handleDelete(pattern.id)}
+                                onClick={(e) => {
+                                    e.stopPropagation()
+                                    handleDelete(pattern.id)
+                                }}
                             >
                                 <Trash2 className="h-4 w-4" />
                             </Button>
+                            {/* Link indicator */}
+                            <div className="absolute bottom-2 left-2">
+                                <Link2 className="h-4 w-4 text-white drop-shadow-lg" />
+                            </div>
                         </div>
 
                         {/* Pattern Info */}
@@ -193,6 +210,12 @@ export function PatternList({ userId }: PatternListProps) {
                     </CardContent>
                 </Card>
             )}
+            {/* Pattern Detail Dialog */}
+            <PatternDetailDialog
+                pattern={selectedPattern}
+                open={isDetailOpen}
+                onOpenChange={setIsDetailOpen}
+            />
         </div>
     )
 }
