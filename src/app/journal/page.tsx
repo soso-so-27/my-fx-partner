@@ -4,7 +4,7 @@ import { useEffect, useState } from "react"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { ProtectedRoute } from "@/components/auth/protected-route"
 import { JournalNotes } from "@/components/journal/journal-notes"
-import { ChartGallery } from "@/components/analysis/chart-gallery"
+import { PatternList } from "@/components/patterns/pattern-list"
 import { BookOpen, Target, Bookmark, FileText } from "lucide-react"
 import { useSession } from "next-auth/react"
 import { tradeService } from "@/lib/trade-service"
@@ -74,7 +74,7 @@ export default function JournalPage() {
 
                     {/* Patterns Tab - Pattern Alert library */}
                     <TabsContent value="patterns" className="flex-1 min-h-0 mt-0 overflow-auto data-[state=inactive]:hidden">
-                        <PatternsPlaceholder />
+                        <PatternList userId={session?.user?.email || ""} />
                     </TabsContent>
 
                     {/* Clips Tab - Knowledge Clip library */}
@@ -84,27 +84,6 @@ export default function JournalPage() {
                 </Tabs>
             </div>
         </ProtectedRoute>
-    )
-}
-
-// Placeholder for Patterns tab - will be implemented with Pattern Alert
-function PatternsPlaceholder() {
-    return (
-        <Card>
-            <CardContent className="flex flex-col items-center justify-center py-12">
-                <div className="h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center mb-4">
-                    <Target className="h-8 w-8 text-primary" />
-                </div>
-                <h3 className="font-semibold mb-2">パターンライブラリ</h3>
-                <p className="text-sm text-muted-foreground text-center max-w-xs mb-4">
-                    得意なチャートパターンを登録すると、類似パターン出現時に通知を受け取れます。
-                </p>
-                <Button disabled>
-                    <Target className="h-4 w-4 mr-2" />
-                    パターンを登録（Coming Soon）
-                </Button>
-            </CardContent>
-        </Card>
     )
 }
 
