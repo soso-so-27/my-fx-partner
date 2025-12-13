@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth-options'
 import { alertService } from '@/lib/pattern-service'
+import { getSupabaseAdmin, getOrCreateUserProfile } from '@/lib/supabase-admin'
 
 // GET /api/alerts - Get all alerts for the current user
 export async function GET() {
@@ -12,8 +13,12 @@ export async function GET() {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
         }
 
-        const alerts = await alertService.getAlerts(session.user.email)
-        const unreadCount = await alertService.getUnreadCount(session.user.email)
+        // Get user profile UUID
+        const supabase = getSupabaseAdmin()
+        const userId = await getOrCreateUserProfile(supabase, session.user.email, session.user.name || undefined)
+
+        const alerts = await alertService.getAlerts(userId)
+        const unreadCount = await alertService.getUnreadCount(userId)
 
         return NextResponse.json({
             alerts,

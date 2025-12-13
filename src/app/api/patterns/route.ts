@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth-options'
 import { patternService, PatternInput } from '@/lib/pattern-service'
+import { getSupabaseAdmin, getOrCreateUserProfile } from '@/lib/supabase-admin'
 
 // GET /api/patterns - Get all patterns for the current user
 export async function GET() {
@@ -12,7 +13,11 @@ export async function GET() {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
         }
 
-        const patterns = await patternService.getPatterns(session.user.email)
+        // Get user profile UUID
+        const supabase = getSupabaseAdmin()
+        const userId = await getOrCreateUserProfile(supabase, session.user.email, session.user.name || undefined)
+
+        const patterns = await patternService.getPatterns(userId)
 
         return NextResponse.json({ patterns })
     } catch (error) {
@@ -39,8 +44,12 @@ export async function POST(request: NextRequest) {
             }, { status: 400 })
         }
 
+        // Get user profile UUID
+        const supabase = getSupabaseAdmin()
+        const userId = await getOrCreateUserProfile(supabase, session.user.email, session.user.name || undefined)
+
         // Check pattern limit (Free: 1, Pro: 5, Premium: 10+)
-        const currentCount = await patternService.getPatternCount(session.user.email)
+        const currentCount = await patternService.getPatternCount(userId)
         const limit = 1 // TODO: Get from user's plan
 
         if (currentCount >= limit) {
@@ -51,7 +60,7 @@ export async function POST(request: NextRequest) {
             }, { status: 403 })
         }
 
-        const pattern = await patternService.createPattern(session.user.email, body)
+        const pattern = await patternService.createPattern(userId, body)
 
         if (!pattern) {
             return NextResponse.json({ error: 'Failed to create pattern' }, { status: 500 })

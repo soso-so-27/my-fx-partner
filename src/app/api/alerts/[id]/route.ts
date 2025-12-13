@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth-options'
 import { alertService } from '@/lib/pattern-service'
+import { getSupabaseAdmin, getOrCreateUserProfile } from '@/lib/supabase-admin'
 
 interface RouteParams {
     params: Promise<{ id: string }>
@@ -16,6 +17,10 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
         }
 
+        // Get user profile UUID
+        const supabase = getSupabaseAdmin()
+        const userId = await getOrCreateUserProfile(supabase, session.user.email, session.user.name || undefined)
+
         const { id } = await params
         const body = await request.json() as {
             action: 'read' | 'acted' | 'feedback'
@@ -26,14 +31,14 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
 
         switch (body.action) {
             case 'read':
-                success = await alertService.markAsRead(id, session.user.email)
+                success = await alertService.markAsRead(id, userId)
                 break
             case 'acted':
-                success = await alertService.markAsActed(id, session.user.email)
+                success = await alertService.markAsActed(id, userId)
                 break
             case 'feedback':
                 if (body.feedback) {
-                    success = await alertService.submitFeedback(id, session.user.email, body.feedback)
+                    success = await alertService.submitFeedback(id, userId, body.feedback)
                 }
                 break
             default:

@@ -1,8 +1,13 @@
 import { createClient } from '@supabase/supabase-js'
 
 export const getSupabaseAdmin = () => {
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
-    const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+    const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+
+    if (!supabaseUrl || !supabaseServiceKey) {
+        throw new Error('Missing Supabase configuration')
+    }
+
     return createClient(supabaseUrl, supabaseServiceKey, {
         auth: {
             autoRefreshToken: false,
@@ -11,11 +16,11 @@ export const getSupabaseAdmin = () => {
     })
 }
 
-export async function getOrCreateUserProfile(supabaseAdmin: any, rawEmail: string, name?: string) {
+export async function getOrCreateUserProfile(supabaseAdmin: ReturnType<typeof getSupabaseAdmin>, rawEmail: string, name?: string) {
     const email = rawEmail.trim().toLowerCase()
 
     // First try to find existing profile using maybeSingle (ilike for case-insensitive)
-    const { data: existingProfile, error: findError } = await supabaseAdmin
+    const { data: existingProfile } = await supabaseAdmin
         .from('profiles')
         .select('id')
         .ilike('email', email)

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth-options'
 import { patternService, PatternInput } from '@/lib/pattern-service'
+import { getSupabaseAdmin, getOrCreateUserProfile } from '@/lib/supabase-admin'
 
 interface RouteParams {
     params: Promise<{ id: string }>
@@ -16,6 +17,10 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
         }
 
+        // Get user profile UUID
+        const supabase = getSupabaseAdmin()
+        const userId = await getOrCreateUserProfile(supabase, session.user.email, session.user.name || undefined)
+
         const { id } = await params
         const pattern = await patternService.getPattern(id)
 
@@ -24,7 +29,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
         }
 
         // Check ownership
-        if (pattern.userId !== session.user.email) {
+        if (pattern.userId !== userId) {
             return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
         }
 
@@ -44,10 +49,14 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
         }
 
+        // Get user profile UUID
+        const supabase = getSupabaseAdmin()
+        const userId = await getOrCreateUserProfile(supabase, session.user.email, session.user.name || undefined)
+
         const { id } = await params
         const body = await request.json() as Partial<PatternInput>
 
-        const pattern = await patternService.updatePattern(id, session.user.email, body)
+        const pattern = await patternService.updatePattern(id, userId, body)
 
         if (!pattern) {
             return NextResponse.json({ error: 'Pattern not found or update failed' }, { status: 404 })
@@ -69,8 +78,12 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
         }
 
+        // Get user profile UUID
+        const supabase = getSupabaseAdmin()
+        const userId = await getOrCreateUserProfile(supabase, session.user.email, session.user.name || undefined)
+
         const { id } = await params
-        const success = await patternService.deletePattern(id, session.user.email)
+        const success = await patternService.deletePattern(id, userId)
 
         if (!success) {
             return NextResponse.json({ error: 'Pattern not found or delete failed' }, { status: 404 })
