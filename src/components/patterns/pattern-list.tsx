@@ -209,8 +209,47 @@ function PatternForm({ onSuccess }: { onSuccess: () => void }) {
     const [timeframe, setTimeframe] = useState("")
     const [direction, setDirection] = useState<string>("")
     const [imageUrl, setImageUrl] = useState("")
+    const [imageFile, setImageFile] = useState<File | null>(null)
+    const [imagePreview, setImagePreview] = useState<string | null>(null)
+    const [isUploading, setIsUploading] = useState(false)
     const [isSubmitting, setIsSubmitting] = useState(false)
     const { toast } = useToast()
+
+    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0]
+        if (!file) return
+
+        // Validate file type
+        const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp']
+        if (!allowedTypes.includes(file.type)) {
+            toast({
+                title: "サポートされていない形式です",
+                description: "JPEG, PNG, GIF, WebP のみ対応",
+                variant: "destructive"
+            })
+            return
+        }
+
+        // Validate file size (5MB max)
+        if (file.size > 5 * 1024 * 1024) {
+            toast({
+                title: "ファイルサイズが大きすぎます",
+                description: "5MB以下にしてください",
+                variant: "destructive"
+            })
+            return
+        }
+
+        setImageFile(file)
+        setImageUrl("") // Clear URL if file is selected
+
+        // Create preview
+        const reader = new FileReader()
+        reader.onloadend = () => {
+            setImagePreview(reader.result as string)
+        }
+        reader.readAsDataURL(file)
+    }
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
@@ -220,11 +259,40 @@ function PatternForm({ onSuccess }: { onSuccess: () => void }) {
             return
         }
 
-        // For MVP, use placeholder image URL
-        const finalImageUrl = imageUrl || "https://via.placeholder.com/400x300?text=Pattern"
-
         setIsSubmitting(true)
+        let finalImageUrl = imageUrl || "https://via.placeholder.com/400x300?text=Pattern"
+
         try {
+            // Upload image if file is selected
+            if (imageFile) {
+                setIsUploading(true)
+                const formData = new FormData()
+                formData.append('file', imageFile)
+                formData.append('bucket', 'patterns')
+
+                const uploadRes = await fetch('/api/upload', {
+                    method: 'POST',
+                    body: formData
+                })
+
+                if (uploadRes.ok) {
+                    const uploadData = await uploadRes.json()
+                    finalImageUrl = uploadData.url
+                } else {
+                    const uploadError = await uploadRes.json()
+                    toast({
+                        title: "画像アップロードに失敗しました",
+                        description: uploadError.error,
+                        variant: "destructive"
+                    })
+                    setIsSubmitting(false)
+                    setIsUploading(false)
+                    return
+                }
+                setIsUploading(false)
+            }
+
+            // Create pattern
             const res = await fetch('/api/patterns', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -232,7 +300,7 @@ function PatternForm({ onSuccess }: { onSuccess: () => void }) {
                     name,
                     currencyPair,
                     timeframe,
-                    direction: direction || null,
+                    direction: direction === "none" ? null : direction || null,
                     imageUrl: finalImageUrl,
                 })
             })
@@ -313,22 +381,58 @@ function PatternForm({ onSuccess }: { onSuccess: () => void }) {
                 </Select>
             </div>
 
-            {/* Image URL (Temporary for MVP) */}
+            {/* Image Upload */}
             <div className="space-y-2">
-                <Label>パターン画像URL（任意）</Label>
-                <Input
-                    placeholder="https://..."
-                    value={imageUrl}
-                    onChange={(e) => setImageUrl(e.target.value)}
-                />
-                <p className="text-xs text-muted-foreground">
-                    ※ 画像アップロード機能は開発中です
-                </p>
+                <Label>パターン画像</Label>
+                <div className="space-y-3">
+                    {/* File Input */}
+                    <div className="flex items-center gap-2">
+                        <Input
+                            type="file"
+                            accept="image/jpeg,image/png,image/gif,image/webp"
+                            onChange={handleFileChange}
+                            className="cursor-pointer"
+                        />
+                    </div>
+
+                    {/* Preview */}
+                    {imagePreview && (
+                        <div className="relative w-full h-40 bg-muted rounded-lg overflow-hidden">
+                            <img
+                                src={imagePreview}
+                                alt="Preview"
+                                className="w-full h-full object-contain"
+                            />
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    setImageFile(null)
+                                    setImagePreview(null)
+                                }}
+                                className="absolute top-2 right-2 bg-destructive text-destructive-foreground rounded-full p-1 hover:bg-destructive/90"
+                            >
+                                <Trash2 className="h-4 w-4" />
+                            </button>
+                        </div>
+                    )}
+
+                    {/* Or URL input */}
+                    {!imageFile && (
+                        <div className="space-y-2">
+                            <p className="text-xs text-muted-foreground">または URL を入力:</p>
+                            <Input
+                                placeholder="https://..."
+                                value={imageUrl}
+                                onChange={(e) => setImageUrl(e.target.value)}
+                            />
+                        </div>
+                    )}
+                </div>
             </div>
 
             {/* Submit */}
             <Button type="submit" className="w-full" disabled={isSubmitting}>
-                {isSubmitting ? "登録中..." : "パターンを登録"}
+                {isUploading ? "画像アップロード中..." : isSubmitting ? "登録中..." : "パターンを登録"}
             </Button>
         </form>
     )
