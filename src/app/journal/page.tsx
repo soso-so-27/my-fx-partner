@@ -5,12 +5,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { ProtectedRoute } from "@/components/auth/protected-route"
 import { JournalNotes } from "@/components/journal/journal-notes"
 import { PatternList } from "@/components/patterns/pattern-list"
+import { ClipList } from "@/components/clips/clip-list"
 import { BookOpen, Target, Bookmark, FileText } from "lucide-react"
 import { useSession } from "next-auth/react"
 import { tradeService } from "@/lib/trade-service"
 import { Trade } from "@/types/trade"
-import { Card, CardContent } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
 
 export default function JournalPage() {
     const { data: session, status } = useSession()
@@ -79,32 +78,10 @@ export default function JournalPage() {
 
                     {/* Clips Tab - Knowledge Clip library */}
                     <TabsContent value="clips" className="flex-1 min-h-0 mt-0 overflow-auto data-[state=inactive]:hidden">
-                        <ClipsPlaceholder />
+                        <ClipList userId={session?.user?.email || ""} />
                     </TabsContent>
                 </Tabs>
             </div>
         </ProtectedRoute>
     )
 }
-
-// Placeholder for Clips tab - will be implemented with Knowledge Clip
-function ClipsPlaceholder() {
-    return (
-        <Card>
-            <CardContent className="flex flex-col items-center justify-center py-12">
-                <div className="h-16 w-16 rounded-full bg-secondary/10 flex items-center justify-center mb-4">
-                    <Bookmark className="h-8 w-8 text-secondary" />
-                </div>
-                <h3 className="font-semibold mb-2">クリップボックス</h3>
-                <p className="text-sm text-muted-foreground text-center max-w-xs mb-4">
-                    X（Twitter）やブログ、YouTubeの有用なコンテンツを保存し、トレードに紐づけて管理できます。
-                </p>
-                <Button disabled variant="secondary">
-                    <Bookmark className="h-4 w-4 mr-2" />
-                    クリップを追加（Coming Soon）
-                </Button>
-            </CardContent>
-        </Card>
-    )
-}
-
