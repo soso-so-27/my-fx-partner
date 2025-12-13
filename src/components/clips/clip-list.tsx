@@ -22,6 +22,7 @@ import {
     SelectValue,
 } from '@/components/ui/select'
 import { useToast } from '@/components/ui/use-toast'
+import { ClipDetailDialog } from './clip-detail-dialog'
 import {
     Plus,
     Trash2,
@@ -220,6 +221,8 @@ export function ClipList({ userId }: ClipListProps) {
     const [clips, setClips] = useState<Clip[]>([])
     const [isLoading, setIsLoading] = useState(true)
     const [isDialogOpen, setIsDialogOpen] = useState(false)
+    const [selectedClip, setSelectedClip] = useState<Clip | null>(null)
+    const [isDetailOpen, setIsDetailOpen] = useState(false)
     const { toast } = useToast()
 
     const fetchClips = async () => {
@@ -322,7 +325,14 @@ export function ClipList({ userId }: ClipListProps) {
                         const Icon = config.icon
 
                         return (
-                            <Card key={clip.id} className="overflow-hidden">
+                            <Card
+                                key={clip.id}
+                                className="overflow-hidden cursor-pointer hover:ring-2 hover:ring-primary/50 transition-shadow"
+                                onClick={() => {
+                                    setSelectedClip(clip)
+                                    setIsDetailOpen(true)
+                                }}
+                            >
                                 <CardContent className="p-4">
                                     <div className="flex items-start gap-3">
                                         {/* Content Type Icon */}
@@ -353,7 +363,10 @@ export function ClipList({ userId }: ClipListProps) {
                                                         variant="ghost"
                                                         size="icon"
                                                         className="h-8 w-8"
-                                                        onClick={() => window.open(clip.url, '_blank')}
+                                                        onClick={(e) => {
+                                                            e.stopPropagation()
+                                                            window.open(clip.url, '_blank')
+                                                        }}
                                                     >
                                                         <ExternalLink className="h-4 w-4" />
                                                     </Button>
@@ -361,7 +374,10 @@ export function ClipList({ userId }: ClipListProps) {
                                                         variant="ghost"
                                                         size="icon"
                                                         className="h-8 w-8 text-destructive hover:text-destructive"
-                                                        onClick={() => handleDelete(clip.id)}
+                                                        onClick={(e) => {
+                                                            e.stopPropagation()
+                                                            handleDelete(clip.id)
+                                                        }}
                                                     >
                                                         <Trash2 className="h-4 w-4" />
                                                     </Button>
@@ -400,6 +416,12 @@ export function ClipList({ userId }: ClipListProps) {
                     })}
                 </div>
             )}
+            {/* Clip Detail Dialog */}
+            <ClipDetailDialog
+                clip={selectedClip}
+                open={isDetailOpen}
+                onOpenChange={setIsDetailOpen}
+            />
         </div>
     )
 }
