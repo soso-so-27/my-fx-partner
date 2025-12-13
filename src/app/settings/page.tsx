@@ -297,6 +297,29 @@ export default function SettingsPage() {
                         </CardContent>
                     </Card>
 
+                    {/* Import Data (Phase 3) */}
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>データインポート (Beta)</CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                            <div className="space-y-2">
+                                <Label>テキスト/CSV貼り付け</Label>
+                                <p className="text-sm text-muted-foreground">
+                                    MT4/MT5の履歴メールやCSVテキストを貼り付けてください。
+                                </p>
+                                <Textarea
+                                    placeholder="例: buy 0.1 USDJPY at 150.00..."
+                                    className="font-mono text-sm"
+                                    rows={5}
+                                />
+                                <Button variant="secondary" onClick={() => toast({ title: "解析機能は準備中です" })}>
+                                    解析プレビュー
+                                </Button>
+                            </div>
+                        </CardContent>
+                    </Card>
+
                     {/* Marketing Demo Data (Debug) - Only for Admin/Demo users */}
                     {(user?.email === "nakanishisoya@gmail.com" || user?.email === "demo@example.com") && (
                         <Card className="border-solo-gold/20 bg-solo-gold/5">

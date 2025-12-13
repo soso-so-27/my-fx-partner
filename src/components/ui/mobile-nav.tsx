@@ -1,6 +1,6 @@
 "use client"
 
-import { Home, BookOpen, MessageSquare, BarChart3, RefreshCw } from "lucide-react"
+import { Home, BookOpen, MessageSquare, BarChart3, RefreshCw, ListTodo } from "lucide-react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { cn } from "@/lib/utils"
@@ -13,6 +13,7 @@ export function MobileNav() {
     const navItems = [
         { href: '/', icon: Home, label: 'ホーム' },
         { href: '/chat', icon: MessageSquare, label: '相談' },
+        { href: '/polls', icon: ListTodo, label: '投票' },
         { href: '/journal', icon: BookOpen, label: 'ジャーナル' },
         { href: '/analysis', icon: BarChart3, label: '分析' },
     ]
@@ -23,7 +24,7 @@ export function MobileNav() {
     return (
         <nav className="fixed bottom-0 left-0 right-0 border-t border-border bg-background md:hidden z-50">
             {/* iOS Tab Bar: Minimum 44pt touch targets */}
-            <div className="grid grid-cols-4 h-14 items-center pb-[env(safe-area-inset-bottom)]">
+            <div className="grid grid-cols-5 h-14 items-center pb-[env(safe-area-inset-bottom)]">
                 {navItems.map((item) => {
                     const Icon = item.icon
                     const isActive = pathname === item.href

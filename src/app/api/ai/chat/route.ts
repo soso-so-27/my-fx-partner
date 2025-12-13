@@ -1,4 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { getServerSession } from 'next-auth'
+import { authOptions } from '@/lib/auth-options'
+import { getSupabaseAdmin, getOrCreateUserProfile } from '@/lib/supabase-admin'
+import { AnalyticsService } from '@/lib/analytics-service'
+import { AIUsageService } from '@/lib/ai-usage-service'
 import OpenAI from 'openai'
 
 // System prompts for different modes
@@ -75,16 +80,42 @@ const SYSTEM_PROMPTS: Record<string, string> = {
 あなたは投資助言者ではなく、トレーダー自身が決めたルールの遵守状況を確認し、内省を促すコーチです。`
 }
 
+export const dynamic = 'force-dynamic'
+
 export async function POST(request: NextRequest) {
     try {
+        const session = await getServerSession(authOptions)
+        if (!session?.user?.email) {
+            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+        }
+
         const openai = new OpenAI({
             apiKey: process.env.OPENAI_API_KEY,
         })
 
-        const { message, mode = 'default', conversationHistory = [] } = await request.json()
+        const body = await request.json()
+        const { message, mode = 'default', conversationHistory = [] } = body
 
         if (!message) {
             return NextResponse.json({ error: 'Message is required' }, { status: 400 })
+        }
+
+        const supabaseAdmin = getSupabaseAdmin()
+        const userId = await getOrCreateUserProfile(supabaseAdmin, session.user.email)
+
+        // 1. Check Usage Limits
+        // TODO: Tier information should be fetched from profile/subscription
+        const tier = 'free'
+        const { allowed, remaining } = await AIUsageService.checkLimit(supabaseAdmin, userId, tier)
+
+        if (!allowed) {
+            // Track limit reached event
+            await AnalyticsService.trackEvent(supabaseAdmin, userId, 'ai_limit_reached', { tier, mode })
+            return NextResponse.json({
+                error: 'Daily limit reached',
+                remaining: 0,
+                isLimitReached: true
+            }, { status: 403 })
         }
 
         const systemPrompt = SYSTEM_PROMPTS[mode] || SYSTEM_PROMPTS['default']
@@ -104,9 +135,18 @@ export async function POST(request: NextRequest) {
 
         const responseContent = completion.choices[0]?.message?.content || 'すみません、応答を生成できませんでした。'
 
+        // 2. Track Usage (Success)
+        await AnalyticsService.trackEvent(supabaseAdmin, userId, 'ai_chat', {
+            mode,
+            inputLength: message.length,
+            outputLength: responseContent.length,
+            tokens: completion.usage?.total_tokens
+        })
+
         return NextResponse.json({
             response: responseContent,
             usage: completion.usage,
+            remaining: remaining - 1 // Estimate remaining
         })
     } catch (error) {
         console.error('OpenAI API error:', error)

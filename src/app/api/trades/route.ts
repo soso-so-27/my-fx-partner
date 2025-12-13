@@ -1,80 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth-options'
-import { createClient } from '@supabase/supabase-js'
+import { getSupabaseAdmin, getOrCreateUserProfile } from '@/lib/supabase-admin'
 
 export const dynamic = 'force-dynamic'
 
-function getSupabaseAdmin() {
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
-    const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
-
-    if (!supabaseServiceKey) {
-        throw new Error('SUPABASE_SERVICE_ROLE_KEY is not set')
-    }
-
-    return createClient(supabaseUrl, supabaseServiceKey, {
-        auth: {
-            autoRefreshToken: false,
-            persistSession: false
-        }
-    })
-}
-
-// Get or create user profile by email
-async function getOrCreateUserProfile(supabaseAdmin: any, rawEmail: string, name?: string) {
-    const email = rawEmail.trim().toLowerCase()
-    console.log(`DEBUG: Processing profile for email: ${email} (raw: ${rawEmail})`)
-
-    // First try to find existing profile using maybeSingle (ilike for case-insensitive)
-    const { data: existingProfile, error: findError } = await supabaseAdmin
-        .from('profiles')
-        .select('id')
-        .ilike('email', email)
-        .maybeSingle()
-
-    if (findError) {
-        console.error('DEBUG: Error finding profile:', findError)
-    }
-
-    if (existingProfile) {
-        console.log('DEBUG: Found existing profile:', existingProfile.id)
-        return existingProfile.id
-    }
-
-    console.log('DEBUG: Profile not found, creating new one for:', email)
-
-    // Profile not found, create one
-    const { data: newProfile, error: createError } = await supabaseAdmin
-        .from('profiles')
-        .insert({
-            email,
-            display_name: name || email.split('@')[0],
-            created_at: new Date().toISOString()
-        })
-        .select('id')
-        .single()
-
-    if (createError) {
-        console.error('DEBUG: Error creating profile:', createError)
-        // If creation failed due to unique constraint, try to find again specifically
-        if (createError.code === '23505') {
-            const { data: retryProfile } = await supabaseAdmin
-                .from('profiles')
-                .select('id')
-                .ilike('email', email)
-                .maybeSingle()
-            if (retryProfile) {
-                console.log('DEBUG: Found profile on retry:', retryProfile.id)
-                return retryProfile.id
-            }
-        }
-        throw new Error(`Failed to create user profile: ${createError.message}`)
-    }
-
-    console.log('DEBUG: Created new profile:', newProfile.id)
-    return newProfile.id
-}
+// Calculate trading session based on Tokyo time
 
 // Calculate trading session based on Tokyo time
 function calculateSession(entryTime: string): 'Tokyo' | 'London' | 'NewYork' | 'Sydney' {

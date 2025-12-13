@@ -46,6 +46,9 @@ async function refreshAccessToken(token: any) {
     }
 }
 
+import { getSupabaseAdmin, getOrCreateUserProfile } from '@/lib/supabase-admin'
+import { AnalyticsService } from '@/lib/analytics-service'
+
 export const authOptions: NextAuthOptions = {
     secret: process.env.NEXTAUTH_SECRET,
     providers: [
@@ -62,6 +65,18 @@ export const authOptions: NextAuthOptions = {
         }),
     ],
     callbacks: {
+        async signIn({ user, account }) {
+            if (user.email) {
+                try {
+                    const supabaseAdmin = getSupabaseAdmin()
+                    const userId = await getOrCreateUserProfile(supabaseAdmin, user.email, user.name || undefined)
+                    await AnalyticsService.trackEvent(supabaseAdmin, userId, 'login', { provider: account?.provider })
+                } catch (error) {
+                    console.error('Login tracking failed:', error)
+                }
+            }
+            return true
+        },
         async jwt({ token, account, user }) {
             // Initial sign in
             if (account && user) {

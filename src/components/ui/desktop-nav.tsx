@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { Home, MessageSquare, TrendingUp, BookText, History, Settings } from "lucide-react"
+import { Home, MessageSquare, TrendingUp, BookText, History, Settings, ListTodo } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { SyncButton } from "./sync-button"
 import { ModeToggle } from "./mode-toggle"
@@ -13,6 +13,7 @@ export function DesktopNav() {
     const navItems = [
         { href: '/', icon: Home, label: 'ホーム' },
         { href: '/chat', icon: MessageSquare, label: 'AIパートナー' },
+        { href: '/polls', icon: ListTodo, label: '投票' },
         { href: '/history', icon: History, label: '履歴' },
         { href: '/journal', icon: BookText, label: 'ジャーナル' },
         { href: '/analysis', icon: TrendingUp, label: '分析' },
