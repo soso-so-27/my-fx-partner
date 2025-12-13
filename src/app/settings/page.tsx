@@ -24,6 +24,7 @@ import {
 import { RULE_TEMPLATES } from "@/lib/rule-templates"
 import { tradeRuleService } from "@/lib/trade-rule-service"
 import { ModeToggle } from "@/components/ui/mode-toggle"
+import { NotificationSettings } from "@/components/settings/notification-settings"
 
 export default function SettingsPage() {
     const [mounted, setMounted] = useState(false)
@@ -293,11 +294,16 @@ export default function SettingsPage() {
                     </Card>
 
                     {/* External Services */}
+                    {/* Notification Settings */}
+                    <NotificationSettings />
+
+                    {/* External Services */}
                     <Card>
                         <CardHeader>
                             <CardTitle>外部サービス連携</CardTitle>
                         </CardHeader>
                         <CardContent>
+                            {/* External Service Connect */}
                             <div className="flex items-center justify-between p-4 border rounded-lg bg-card">
                                 <div className="space-y-1">
                                     <h3 className="font-medium flex items-center gap-2">
@@ -395,6 +401,6 @@ export default function SettingsPage() {
                     </Card>
                 </div>
             </div>
-        </ProtectedRoute>
+        </ProtectedRoute >
     )
 }
