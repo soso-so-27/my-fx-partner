@@ -132,58 +132,53 @@ export function PatternList({ userId }: PatternListProps) {
                 /* Pattern Cards */
                 patterns.map(pattern => (
                     <Card key={pattern.id} className="overflow-hidden">
-                        <div className="flex">
-                            {/* Pattern Image */}
-                            <div className="w-24 h-24 bg-muted flex-shrink-0">
-                                {pattern.imageUrl ? (
-                                    <img
-                                        src={pattern.imageUrl}
-                                        alt={pattern.name}
-                                        className="w-full h-full object-cover"
-                                    />
-                                ) : (
-                                    <div className="w-full h-full flex items-center justify-center">
-                                        <Target className="h-8 w-8 text-muted-foreground" />
-                                    </div>
+                        {/* Pattern Image */}
+                        <div className="w-full h-32 bg-muted relative">
+                            {pattern.imageUrl ? (
+                                <img
+                                    src={pattern.imageUrl}
+                                    alt={pattern.name}
+                                    className="w-full h-full object-cover"
+                                />
+                            ) : (
+                                <div className="w-full h-full flex items-center justify-center">
+                                    <Target className="h-12 w-12 text-muted-foreground" />
+                                </div>
+                            )}
+                            {/* Delete button overlay */}
+                            <Button
+                                variant="ghost"
+                                size="icon"
+                                className="absolute top-2 right-2 bg-background/80 hover:bg-destructive hover:text-destructive-foreground"
+                                onClick={() => handleDelete(pattern.id)}
+                            >
+                                <Trash2 className="h-4 w-4" />
+                            </Button>
+                        </div>
+
+                        {/* Pattern Info */}
+                        <CardContent className="p-3">
+                            <h4 className="font-semibold">{pattern.name}</h4>
+                            <div className="flex items-center gap-2 mt-1 text-sm text-muted-foreground flex-wrap">
+                                <Badge variant="secondary" className="text-xs">
+                                    {pattern.currencyPair}
+                                </Badge>
+                                <span className="flex items-center gap-1">
+                                    <Clock className="h-3 w-3" />
+                                    {SUPPORTED_TIMEFRAMES.find(t => t.value === pattern.timeframe)?.label || pattern.timeframe}
+                                </span>
+                                {pattern.direction && (
+                                    <span className="flex items-center gap-1">
+                                        {pattern.direction === 'long' ? (
+                                            <TrendingUp className="h-3 w-3 text-green-500" />
+                                        ) : (
+                                            <TrendingDown className="h-3 w-3 text-red-500" />
+                                        )}
+                                        {pattern.direction === 'long' ? 'ロング' : 'ショート'}
+                                    </span>
                                 )}
                             </div>
-
-                            {/* Pattern Info */}
-                            <CardContent className="flex-1 p-3">
-                                <div className="flex items-start justify-between">
-                                    <div>
-                                        <h4 className="font-semibold">{pattern.name}</h4>
-                                        <div className="flex items-center gap-2 mt-1 text-sm text-muted-foreground">
-                                            <Badge variant="secondary" className="text-xs">
-                                                {pattern.currencyPair}
-                                            </Badge>
-                                            <span className="flex items-center gap-1">
-                                                <Clock className="h-3 w-3" />
-                                                {SUPPORTED_TIMEFRAMES.find(t => t.value === pattern.timeframe)?.label || pattern.timeframe}
-                                            </span>
-                                            {pattern.direction && (
-                                                <span className="flex items-center gap-1">
-                                                    {pattern.direction === 'long' ? (
-                                                        <TrendingUp className="h-3 w-3 text-green-500" />
-                                                    ) : (
-                                                        <TrendingDown className="h-3 w-3 text-red-500" />
-                                                    )}
-                                                    {pattern.direction === 'long' ? 'ロング' : 'ショート'}
-                                                </span>
-                                            )}
-                                        </div>
-                                    </div>
-                                    <Button
-                                        variant="ghost"
-                                        size="icon"
-                                        className="text-muted-foreground hover:text-destructive"
-                                        onClick={() => handleDelete(pattern.id)}
-                                    >
-                                        <Trash2 className="h-4 w-4" />
-                                    </Button>
-                                </div>
-                            </CardContent>
-                        </div>
+                        </CardContent>
                     </Card>
                 ))
             )}
@@ -268,7 +263,7 @@ function PatternForm({ onSuccess }: { onSuccess: () => void }) {
                 setIsUploading(true)
                 const formData = new FormData()
                 formData.append('file', imageFile)
-                formData.append('bucket', 'patterns')
+                formData.append('bucket', 'chart-images')
 
                 const uploadRes = await fetch('/api/upload', {
                     method: 'POST',
