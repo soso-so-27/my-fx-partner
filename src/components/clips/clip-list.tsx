@@ -70,6 +70,7 @@ function ClipForm({ onSuccess }: { onSuccess: () => void }) {
     const [memo, setMemo] = useState('')
     const [importance, setImportance] = useState(3)
     const [isSubmitting, setIsSubmitting] = useState(false)
+    const [isFetchingMetadata, setIsFetchingMetadata] = useState(false)
     const { toast } = useToast()
 
     // Auto-detect content type from URL
@@ -82,6 +83,32 @@ function ClipForm({ onSuccess }: { onSuccess: () => void }) {
             setContentType('note')
         }
     }, [url])
+
+    // Fetch metadata from URL
+    const fetchMetadata = async () => {
+        if (!url) return
+
+        setIsFetchingMetadata(true)
+        try {
+            const res = await fetch(`/api/metadata?url=${encodeURIComponent(url)}`)
+            if (res.ok) {
+                const data = await res.json()
+                if (data.title) setTitle(data.title)
+                if (data.contentType) setContentType(data.contentType)
+                toast({ title: '情報を取得しました' })
+            } else {
+                toast({
+                    title: '情報の取得に失敗しました',
+                    description: 'タイトルを手動で入力してください',
+                    variant: 'destructive'
+                })
+            }
+        } catch (error) {
+            console.error('Error fetching metadata:', error)
+        } finally {
+            setIsFetchingMetadata(false)
+        }
+    }
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
@@ -136,14 +163,30 @@ function ClipForm({ onSuccess }: { onSuccess: () => void }) {
         <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
                 <Label htmlFor="url">URL *</Label>
-                <Input
-                    id="url"
-                    type="url"
-                    value={url}
-                    onChange={(e) => setUrl(e.target.value)}
-                    placeholder="https://..."
-                    required
-                />
+                <div className="flex gap-2">
+                    <Input
+                        id="url"
+                        type="url"
+                        value={url}
+                        onChange={(e) => setUrl(e.target.value)}
+                        placeholder="https://..."
+                        required
+                        className="flex-1"
+                    />
+                    <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={fetchMetadata}
+                        disabled={!url || isFetchingMetadata}
+                    >
+                        {isFetchingMetadata ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                            '取得'
+                        )}
+                    </Button>
+                </div>
             </div>
 
             <div className="space-y-2">
