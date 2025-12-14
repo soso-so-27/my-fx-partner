@@ -128,11 +128,47 @@ export async function GET(request: Request) {
                         if (!alertError && alert) {
                             alertsCreated.push(alert.id)
 
-                            // TODO: Send push notification
-                            // await sendPushNotification(pattern.user_id, {
-                            //     title: `Pattern Alert: ${pattern.name}`,
-                            //     body: `${similarityPercent}% 類似パターン検出！`,
-                            // })
+                            // Send push notification to user
+                            try {
+                                // Get user's push subscriptions
+                                const { data: subscriptions } = await supabase
+                                    .from('push_subscriptions')
+                                    .select('endpoint, keys')
+                                    .eq('user_id', pattern.user_id)
+
+                                if (subscriptions && subscriptions.length > 0) {
+                                    const webpush = await import('web-push')
+
+                                    const VAPID_PUBLIC_KEY = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY || ''
+                                    const VAPID_PRIVATE_KEY = process.env.VAPID_PRIVATE_KEY || ''
+                                    const VAPID_SUBJECT = process.env.VAPID_SUBJECT || 'mailto:support@solo-app.com'
+
+                                    if (VAPID_PUBLIC_KEY && VAPID_PRIVATE_KEY) {
+                                        webpush.setVapidDetails(VAPID_SUBJECT, VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY)
+
+                                        const payload = JSON.stringify({
+                                            title: `🎯 ${pattern.name}`,
+                                            body: `${similarityPercent}% 類似パターン検出！`,
+                                            icon: '/icon-192.png',
+                                            badge: '/icon-192.png',
+                                            tag: `alert-${alert.id}`,
+                                            url: `/alerts?id=${alert.id}`,
+                                        })
+
+                                        // Send to all subscriptions
+                                        await Promise.all(
+                                            subscriptions.map(sub =>
+                                                webpush.sendNotification(
+                                                    { endpoint: sub.endpoint, keys: sub.keys },
+                                                    payload
+                                                ).catch(err => console.error('Push failed:', err))
+                                            )
+                                        )
+                                    }
+                                }
+                            } catch (pushError) {
+                                console.error('Push notification error:', pushError)
+                            }
                         }
                     }
                 }

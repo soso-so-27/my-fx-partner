@@ -120,7 +120,7 @@ export function usePushNotifications() {
             })
 
             // Send subscription to server
-            const response = await fetch('/api/notifications/subscribe', {
+            const response = await fetch('/api/push/subscribe', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -164,8 +164,8 @@ export function usePushNotifications() {
                 await subscription.unsubscribe()
 
                 // Remove from server
-                await fetch('/api/notifications/unsubscribe', {
-                    method: 'POST',
+                await fetch('/api/push/subscribe', {
+                    method: 'DELETE',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         endpoint: subscription.endpoint,
