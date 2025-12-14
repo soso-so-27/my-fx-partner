@@ -13,7 +13,7 @@ jobs:
     steps:
       - name: Check Patterns for Similarity
         run: |
-          response=$(curl -s -o /dev/null -w "%{http_code}" \
+          response=$(curl -sL -o /dev/null -w "%{http_code}" \
             -X GET "${{ secrets.APP_URL }}/api/patterns/check" \
             -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
             -H "Content-Type: application/json")
