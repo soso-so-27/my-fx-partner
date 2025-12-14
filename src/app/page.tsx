@@ -7,7 +7,7 @@ import { Card, CardContent } from '@/components/ui/card'
 import { cn } from "@/lib/utils"
 import { tradeService } from "@/lib/trade-service"
 import { analysisEngine } from "@/lib/analysis-engine"
-import { Loader2, Settings, Share2, TrendingUp, TrendingDown, Target, PlusCircle } from "lucide-react"
+import { Loader2, Settings, Share2, TrendingUp, TrendingDown, Target, PlusCircle, Trash2 } from "lucide-react"
 import { useSession } from "next-auth/react"
 import { ProtectedRoute } from "@/components/auth/protected-route"
 import { demoDataService } from "@/lib/demo-data-service"
@@ -185,6 +185,35 @@ export default function Home() {
     }
   }
 
+  // Clear demo data (delete all trades for the user)
+  const handleClearDemoData = async () => {
+    if (!session?.user?.email) return
+    if (!confirm("すべてのトレードデータを削除しますか？この操作は取り消せません。")) return
+
+    setIsLoadingDemo(true)
+    try {
+      // Delete all trades
+      for (const trade of trades) {
+        await tradeService.deleteTrade(trade.id)
+      }
+
+      toast({
+        title: "データを削除しました",
+        description: "すべてのトレードが削除されました。",
+      })
+      await loadData()
+    } catch (error) {
+      console.error("Failed to clear demo data", error)
+      toast({
+        title: "エラー",
+        description: "データの削除に失敗しました。",
+        variant: "destructive"
+      })
+    } finally {
+      setIsLoadingDemo(false)
+    }
+  }
+
   return (
     <ProtectedRoute>
       <div className="container mx-auto p-4 pb-24 space-y-4">
@@ -200,6 +229,18 @@ export default function Home() {
           </div>
           <div className="flex items-center gap-1">
             <SyncButton variant="compact" onSyncComplete={loadData} />
+            {trades.length > 0 && (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-9 w-9 text-muted-foreground hover:text-destructive rounded-lg"
+                onClick={handleClearDemoData}
+                disabled={isLoadingDemo}
+                title="データを削除"
+              >
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            )}
             <Link href="/settings">
               <Button variant="ghost" size="icon" className="h-9 w-9 text-muted-foreground rounded-lg">
                 <Settings className="h-5 w-5" />
