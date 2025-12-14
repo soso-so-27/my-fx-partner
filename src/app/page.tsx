@@ -197,6 +197,12 @@ export default function Home() {
         await tradeService.deleteTrade(trade.id)
       }
 
+      // Clear trades state immediately
+      setTrades([])
+      setMonthlyStats(null)
+      setSelectedDate(null)
+      setSelectedDayTrades([])
+
       toast({
         title: "データを削除しました",
         description: "すべてのトレードが削除されました。",
