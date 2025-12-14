@@ -116,9 +116,9 @@ export function PatternList({ userId }: PatternListProps) {
             {/* Empty State */}
             {patterns.length === 0 ? (
                 <Card>
-                    <CardContent className="flex flex-col items-center justify-center py-12">
-                        <div className="h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center mb-4">
-                            <Target className="h-8 w-8 text-primary" />
+                    <CardContent className="flex flex-col items-center justify-center py-8">
+                        <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center mb-3">
+                            <Target className="h-6 w-6 text-primary" />
                         </div>
                         <h3 className="font-semibold mb-2">パターンを登録しよう</h3>
                         <p className="text-sm text-muted-foreground text-center max-w-xs mb-4">
@@ -143,7 +143,7 @@ export function PatternList({ userId }: PatternListProps) {
                         }}
                     >
                         {/* Pattern Image */}
-                        <div className="w-full h-32 bg-muted relative">
+                        <div className="w-full h-24 bg-muted relative">
                             {pattern.imageUrl ? (
                                 <img
                                     src={pattern.imageUrl}
@@ -152,7 +152,7 @@ export function PatternList({ userId }: PatternListProps) {
                                 />
                             ) : (
                                 <div className="w-full h-full flex items-center justify-center">
-                                    <Target className="h-12 w-12 text-muted-foreground" />
+                                    <Target className="h-8 w-8 text-muted-foreground" />
                                 </div>
                             )}
                             {/* Delete button overlay */}
@@ -174,22 +174,22 @@ export function PatternList({ userId }: PatternListProps) {
                         </div>
 
                         {/* Pattern Info */}
-                        <CardContent className="p-3">
-                            <h4 className="font-semibold">{pattern.name}</h4>
-                            <div className="flex items-center gap-2 mt-1 text-sm text-muted-foreground flex-wrap">
-                                <Badge variant="secondary" className="text-xs">
+                        <CardContent className="p-2.5">
+                            <h4 className="font-medium text-sm truncate">{pattern.name}</h4>
+                            <div className="flex items-center gap-1.5 mt-1 text-xs text-muted-foreground flex-wrap">
+                                <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
                                     {pattern.currencyPair}
                                 </Badge>
-                                <span className="flex items-center gap-1">
-                                    <Clock className="h-3 w-3" />
+                                <span className="flex items-center gap-0.5">
+                                    <Clock className="h-2.5 w-2.5" />
                                     {SUPPORTED_TIMEFRAMES.find(t => t.value === pattern.timeframe)?.label || pattern.timeframe}
                                 </span>
                                 {pattern.direction && (
-                                    <span className="flex items-center gap-1">
+                                    <span className="flex items-center gap-0.5">
                                         {pattern.direction === 'long' ? (
-                                            <TrendingUp className="h-3 w-3 text-green-500" />
+                                            <TrendingUp className="h-2.5 w-2.5 text-green-500" />
                                         ) : (
-                                            <TrendingDown className="h-3 w-3 text-red-500" />
+                                            <TrendingDown className="h-2.5 w-2.5 text-red-500" />
                                         )}
                                         {pattern.direction === 'long' ? 'ロング' : 'ショート'}
                                     </span>

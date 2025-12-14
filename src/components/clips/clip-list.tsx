@@ -457,9 +457,9 @@ export function ClipList({ userId, sharedData }: ClipListProps) {
             {/* Clips List */}
             {clips.length === 0 ? (
                 <Card>
-                    <CardContent className="flex flex-col items-center justify-center py-12">
-                        <div className="h-16 w-16 rounded-full bg-secondary/10 flex items-center justify-center mb-4">
-                            <Bookmark className="h-8 w-8 text-secondary" />
+                    <CardContent className="flex flex-col items-center justify-center py-8">
+                        <div className="h-12 w-12 rounded-full bg-secondary/10 flex items-center justify-center mb-3">
+                            <Bookmark className="h-6 w-6 text-secondary" />
                         </div>
                         <h3 className="font-semibold mb-2">クリップがありません</h3>
                         <p className="text-sm text-muted-foreground text-center max-w-xs mb-4">
@@ -472,7 +472,7 @@ export function ClipList({ userId, sharedData }: ClipListProps) {
                     </CardContent>
                 </Card>
             ) : (
-                <div className="space-y-3">
+                <div className="space-y-2">
                     {filteredClips.map((clip) => {
                         const config = contentTypeConfig[clip.contentType]
                         const Icon = config.icon
@@ -486,11 +486,11 @@ export function ClipList({ userId, sharedData }: ClipListProps) {
                                     setIsDetailOpen(true)
                                 }}
                             >
-                                <CardContent className="p-4">
-                                    <div className="flex items-start gap-3">
+                                <CardContent className="p-3">
+                                    <div className="flex items-start gap-2">
                                         {/* Content Type Icon */}
-                                        <div className={`shrink-0 h-10 w-10 rounded-lg flex items-center justify-center ${config.color}`}>
-                                            <Icon className="h-5 w-5" />
+                                        <div className={`shrink-0 h-8 w-8 rounded-lg flex items-center justify-center ${config.color}`}>
+                                            <Icon className="h-4 w-4" />
                                         </div>
 
                                         {/* Content */}
@@ -511,28 +511,28 @@ export function ClipList({ userId, sharedData }: ClipListProps) {
                                                 </div>
 
                                                 {/* Actions */}
-                                                <div className="flex items-center gap-1 shrink-0">
+                                                <div className="flex items-center gap-0.5 shrink-0">
                                                     <Button
                                                         variant="ghost"
                                                         size="icon"
-                                                        className="h-8 w-8"
+                                                        className="h-7 w-7"
                                                         onClick={(e) => {
                                                             e.stopPropagation()
                                                             window.open(clip.url, '_blank')
                                                         }}
                                                     >
-                                                        <ExternalLink className="h-4 w-4" />
+                                                        <ExternalLink className="h-3.5 w-3.5" />
                                                     </Button>
                                                     <Button
                                                         variant="ghost"
                                                         size="icon"
-                                                        className="h-8 w-8 text-destructive hover:text-destructive"
+                                                        className="h-7 w-7 text-destructive hover:text-destructive"
                                                         onClick={(e) => {
                                                             e.stopPropagation()
                                                             handleDelete(clip.id)
                                                         }}
                                                     >
-                                                        <Trash2 className="h-4 w-4" />
+                                                        <Trash2 className="h-3.5 w-3.5" />
                                                     </Button>
                                                 </div>
                                             </div>
@@ -545,15 +545,15 @@ export function ClipList({ userId, sharedData }: ClipListProps) {
                                             )}
 
                                             {/* Footer */}
-                                            <div className="flex items-center gap-2 mt-2">
-                                                <Badge variant="secondary" className="text-xs">
+                                            <div className="flex items-center gap-1.5 mt-1.5">
+                                                <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
                                                     {config.label}
                                                 </Badge>
-                                                <div className="flex gap-0.5">
+                                                <div className="flex gap-0">
                                                     {[1, 2, 3, 4, 5].map((star) => (
                                                         <Star
                                                             key={star}
-                                                            className={`h-3 w-3 ${star <= clip.importance
+                                                            className={`h-2.5 w-2.5 ${star <= clip.importance
                                                                 ? 'text-yellow-500 fill-yellow-500'
                                                                 : 'text-gray-300'
                                                                 }`}

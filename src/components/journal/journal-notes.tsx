@@ -166,15 +166,15 @@ export function JournalNotes() {
         <div className="h-full flex flex-col relative">
             <div className="absolute bottom-20 right-4 z-10">
                 <Button
-                    className="h-12 w-12 rounded-full shadow-lg bg-solo-navy dark:bg-solo-gold hover:opacity-90"
+                    className="h-10 w-10 rounded-full shadow-lg bg-solo-navy dark:bg-solo-gold hover:opacity-90"
                     onClick={openCreateDialog}
                 >
-                    <PenSquare className="h-5 w-5 text-white dark:text-black" />
+                    <PenSquare className="h-4 w-4 text-white dark:text-black" />
                 </Button>
             </div>
 
             <ScrollArea className="flex-1 -mx-4 px-4">
-                <div className="pb-24 space-y-8">
+                <div className="pb-20 space-y-4">
                     {insights.length === 0 && !loading && (
                         <div className="flex flex-col items-center justify-center py-8 text-muted-foreground bg-muted/20 rounded-xl border border-dashed mx-2">
                             <PenSquare className="h-6 w-6 text-solo-gold opacity-60 mb-2" />
@@ -234,12 +234,12 @@ export function JournalNotes() {
                         }
 
                         return (
-                            <div key={groupKey} className="space-y-4">
-                                <div className="flex items-center gap-2 px-2">
-                                    <h3 className="text-sm font-bold text-muted-foreground">{groupTitle}</h3>
-                                    <div className="h-px flex-1 bg-border/50" />
+                            <div key={groupKey} className="space-y-2">
+                                <div className="flex items-center gap-2 px-1">
+                                    <h3 className="text-xs font-semibold text-muted-foreground">{groupTitle}</h3>
+                                    <div className="h-px flex-1 bg-border/40" />
                                 </div>
-                                <div className="space-y-4">
+                                <div className="space-y-1.5">
                                     {groupInsights.map(insight => {
                                         const Icon = MODE_ICONS[insight.mode] || Lightbulb
                                         const emotionTags = (insight.tags || [])
@@ -249,27 +249,27 @@ export function JournalNotes() {
                                         const regularTags = (insight.tags || []).filter(tag => !tag.startsWith(EMOTION_PREFIX))
 
                                         return (
-                                            <Card key={insight.id} className="border-l-4 ml-1 hover:bg-muted/5 transition-colors" style={{ borderLeftColor: insight.mode === 'pre-trade' ? '#3b82f6' : insight.mode === 'post-trade' ? '#f59e0b' : '#a855f7' }}>
-                                                <CardHeader className="flex flex-row items-start justify-between pb-2 pt-4 px-4">
-                                                    <div className="flex items-center gap-2">
-                                                        <Badge variant="outline" className={`border-0 font-normal ${MODE_COLORS[insight.mode]}`}>
+                                            <Card key={insight.id} className="border-l-2 ml-0.5 hover:bg-muted/5 transition-colors" style={{ borderLeftColor: insight.mode === 'pre-trade' ? '#3b82f6' : insight.mode === 'post-trade' ? '#f59e0b' : '#a855f7' }}>
+                                                <CardHeader className="flex flex-row items-start justify-between pb-1 pt-2 px-3">
+                                                    <div className="flex items-center gap-1.5">
+                                                        <Badge variant="outline" className={`border-0 font-normal text-[10px] px-1.5 py-0 ${MODE_COLORS[insight.mode]}`}>
                                                             {MODE_LABELS[insight.mode]}
                                                         </Badge>
-                                                        <span className="text-xs text-muted-foreground font-numbers">
+                                                        <span className="text-[10px] text-muted-foreground font-numbers">
                                                             {format(new Date(insight.createdAt), 'HH:mm', { locale: ja })}
                                                         </span>
                                                     </div>
                                                     <Button
                                                         variant="ghost"
                                                         size="icon"
-                                                        className="h-6 w-6 text-muted-foreground hover:text-destructive -mr-2 -mt-2"
+                                                        className="h-5 w-5 text-muted-foreground hover:text-destructive -mr-1 -mt-1"
                                                         onClick={() => handleDelete(insight.id)}
                                                     >
-                                                        <Trash2 className="h-3 w-3" />
+                                                        <Trash2 className="h-2.5 w-2.5" />
                                                     </Button>
                                                 </CardHeader>
-                                                <CardContent className="px-4 pb-4 space-y-3">
-                                                    <div className="text-sm whitespace-pre-wrap leading-relaxed">
+                                                <CardContent className="px-3 pb-2 space-y-1.5">
+                                                    <div className="text-xs whitespace-pre-wrap leading-relaxed line-clamp-3">
                                                         {insight.content}
                                                     </div>
 
@@ -293,22 +293,22 @@ export function JournalNotes() {
                                                     )}
 
                                                     {insight.userNote && (
-                                                        <div className="bg-muted/50 p-3 rounded-lg text-sm mt-2">
-                                                            <div className="flex items-center justify-between mb-1">
-                                                                <span className="text-[10px] font-bold text-muted-foreground">追記メモ</span>
-                                                                <button onClick={() => openEditDialog(insight)} className="text-[10px] text-solo-navy hover:underline">編集</button>
+                                                        <div className="bg-muted/50 p-2 rounded text-xs mt-1">
+                                                            <div className="flex items-center justify-between mb-0.5">
+                                                                <span className="text-[9px] font-medium text-muted-foreground">追記メモ</span>
+                                                                <button onClick={() => openEditDialog(insight)} className="text-[9px] text-solo-navy hover:underline">編集</button>
                                                             </div>
-                                                            <p className="text-muted-foreground">{insight.userNote}</p>
+                                                            <p className="text-muted-foreground line-clamp-2">{insight.userNote}</p>
                                                         </div>
                                                     )}
 
                                                     {!insight.userNote && (
                                                         <button
                                                             onClick={() => openEditDialog(insight)}
-                                                            className="text-[10px] text-muted-foreground hover:text-solo-gold flex items-center mt-2 transition-colors"
+                                                            className="text-[9px] text-muted-foreground hover:text-solo-gold flex items-center mt-0.5 transition-colors"
                                                         >
-                                                            <PlusCircle className="h-3 w-3 mr-1" />
-                                                            メモを追加
+                                                            <PlusCircle className="h-2.5 w-2.5 mr-0.5" />
+                                                            メモ追加
                                                         </button>
                                                     )}
                                                 </CardContent>
