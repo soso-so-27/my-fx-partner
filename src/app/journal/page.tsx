@@ -12,11 +12,20 @@ import { tradeService } from "@/lib/trade-service"
 import { Trade } from "@/types/trade"
 
 export default function JournalPage() {
+    const initialData = undefined;
+
     const { data: session, status } = useSession()
     const [trades, setTrades] = useState<Trade[]>([])
     const [activeTab, setActiveTab] = useState("records")
     const [refreshTrigger, setRefreshTrigger] = useState(0)
     const [isLoading, setIsLoading] = useState(true)
+
+    useEffect(() => {
+        // Switch to clips tab if sharing
+        if (initialData) {
+            setActiveTab("clips")
+        }
+    }, [initialData])
 
     useEffect(() => {
         const loadTrades = async () => {
@@ -78,7 +87,7 @@ export default function JournalPage() {
 
                     {/* Clips Tab - Knowledge Clip library */}
                     <TabsContent value="clips" className="flex-1 min-h-0 mt-0 overflow-auto data-[state=inactive]:hidden">
-                        <ClipList userId={session?.user?.email || ""} />
+                        <ClipList userId={session?.user?.email || ""} initialData={initialData} />
                     </TabsContent>
                 </Tabs>
             </div>

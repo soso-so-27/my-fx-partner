@@ -7,6 +7,7 @@ import { UserMenu } from "@/components/ui/user-menu";
 import { Toaster } from "@/components/ui/toaster";
 import { AuthProvider } from "@/contexts/auth-context";
 import { NextAuthProvider } from "@/components/auth/next-auth-provider";
+import { ClientLayout } from "@/components/layout/client-layout";
 
 const notoSansJP = Noto_Sans_JP({
   variable: "--font-noto-sans-jp",
@@ -64,7 +65,9 @@ export default function RootLayout({
           <NextAuthProvider>
             <AuthProvider>
               <DesktopNav />
-              {children}
+              <ClientLayout>
+                {children}
+              </ClientLayout>
               <MobileNav />
               <Toaster />
             </AuthProvider>

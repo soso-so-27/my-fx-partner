@@ -1,39 +1,117 @@
 "use client"
 
-import { Bell, ChevronRight, Clock, TrendingUp } from "lucide-react"
+import { useState, useEffect } from "react"
+import { Bell, ChevronRight, Clock, TrendingUp, Target, Loader2, ThumbsUp, ThumbsDown, ExternalLink } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { ProtectedRoute } from "@/components/auth/protected-route"
 import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
+import {
+    Dialog,
+    DialogContent,
+    DialogHeader,
+    DialogTitle,
+} from "@/components/ui/dialog"
+import { useToast } from "@/components/ui/use-toast"
 
-// Placeholder data for MVP - will be replaced with real data from DB
-const mockAlerts = [
-    {
-        id: "1",
-        patternName: "5分押し目ロング",
-        currencyPair: "USDJPY",
-        timeframe: "5分",
-        similarity: 92,
-        createdAt: new Date(Date.now() - 1000 * 60 * 30), // 30 min ago
-        status: "unread"
-    },
-    {
-        id: "2",
-        patternName: "レンジブレイク",
-        currencyPair: "EURUSD",
-        timeframe: "1時間",
-        similarity: 87,
-        createdAt: new Date(Date.now() - 1000 * 60 * 120), // 2 hours ago
-        status: "read"
-    },
-]
+interface Alert {
+    id: string
+    patternId: string
+    patternName: string
+    currencyPair: string
+    timeframe: string
+    similarityScore: number
+    matchedImageUrl: string | null
+    triggeredAt: string
+    isRead: boolean
+    feedback: 'positive' | 'negative' | null
+    patternImageUrl?: string
+}
 
 export default function AlertsPage() {
+    const [alerts, setAlerts] = useState<Alert[]>([])
+    const [isLoading, setIsLoading] = useState(true)
+    const [selectedAlert, setSelectedAlert] = useState<Alert | null>(null)
+    const [isDetailOpen, setIsDetailOpen] = useState(false)
+    const { toast } = useToast()
+
+    const fetchAlerts = async () => {
+        try {
+            const res = await fetch('/api/alerts')
+            if (res.ok) {
+                const data = await res.json()
+                setAlerts(data.alerts || [])
+            }
+        } catch (error) {
+            console.error('Error fetching alerts:', error)
+        } finally {
+            setIsLoading(false)
+        }
+    }
+
+    useEffect(() => {
+        fetchAlerts()
+    }, [])
+
+    const handleAlertClick = async (alert: Alert) => {
+        setSelectedAlert(alert)
+        setIsDetailOpen(true)
+
+        // Mark as read
+        if (!alert.isRead) {
+            try {
+                await fetch(`/api/alerts/${alert.id}`, {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ isRead: true })
+                })
+                setAlerts(alerts.map(a =>
+                    a.id === alert.id ? { ...a, isRead: true } : a
+                ))
+            } catch (error) {
+                console.error('Error marking alert as read:', error)
+            }
+        }
+    }
+
+    const handleFeedback = async (alertId: string, feedback: 'positive' | 'negative') => {
+        try {
+            const res = await fetch(`/api/alerts/${alertId}`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ feedback })
+            })
+
+            if (res.ok) {
+                setAlerts(alerts.map(a =>
+                    a.id === alertId ? { ...a, feedback } : a
+                ))
+                if (selectedAlert?.id === alertId) {
+                    setSelectedAlert({ ...selectedAlert, feedback })
+                }
+                toast({
+                    title: feedback === 'positive' ? 'ありがとうございます！' : 'フィードバックを記録しました',
+                    description: '今後の通知精度向上に活用します'
+                })
+            }
+        } catch (error) {
+            console.error('Error submitting feedback:', error)
+        }
+    }
+
+    const unreadCount = alerts.filter(a => !a.isRead).length
+
     return (
         <ProtectedRoute>
             <div className="container mx-auto p-4 max-w-4xl pb-20">
                 <header className="sticky top-0 z-50 -mx-4 px-4 pt-[env(safe-area-inset-top)] pb-2 bg-background border-b border-border flex items-center gap-2 mb-4">
-                    <div className="h-7 w-7 rounded-full bg-muted/50 flex items-center justify-center">
+                    <div className="h-7 w-7 rounded-full bg-muted/50 flex items-center justify-center relative">
                         <Bell className="h-4 w-4 text-primary" />
+                        {unreadCount > 0 && (
+                            <span className="absolute -top-1 -right-1 h-4 w-4 bg-red-500 text-white text-[10px] rounded-full flex items-center justify-center">
+                                {unreadCount}
+                            </span>
+                        )}
                     </div>
                     <h1 className="text-base font-bold">通知</h1>
                     <Badge variant="secondary" className="ml-auto">
@@ -42,8 +120,11 @@ export default function AlertsPage() {
                 </header>
 
                 <div className="space-y-4">
-                    {/* Empty State */}
-                    {mockAlerts.length === 0 ? (
+                    {isLoading ? (
+                        <div className="flex justify-center py-12">
+                            <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+                        </div>
+                    ) : alerts.length === 0 ? (
                         <Card>
                             <CardContent className="flex flex-col items-center justify-center py-12">
                                 <div className="h-16 w-16 rounded-full bg-muted flex items-center justify-center mb-4">
@@ -57,19 +138,19 @@ export default function AlertsPage() {
                         </Card>
                     ) : (
                         <>
-                            {/* Alert Cards */}
-                            {mockAlerts.map((alert) => (
+                            {alerts.map((alert) => (
                                 <Card
                                     key={alert.id}
-                                    className={`hover:bg-muted/50 transition-colors cursor-pointer ${alert.status === "unread" ? "border-primary/50" : ""
+                                    className={`hover:bg-muted/50 transition-colors cursor-pointer ${!alert.isRead ? "border-primary/50 bg-primary/5" : ""
                                         }`}
+                                    onClick={() => handleAlertClick(alert)}
                                 >
                                     <CardContent className="p-4">
                                         <div className="flex items-center justify-between">
                                             <div className="flex-1">
                                                 <div className="flex items-center gap-2 mb-1">
                                                     <span className="font-semibold">{alert.patternName}</span>
-                                                    {alert.status === "unread" && (
+                                                    {!alert.isRead && (
                                                         <Badge className="bg-primary text-primary-foreground text-xs">
                                                             NEW
                                                         </Badge>
@@ -85,14 +166,16 @@ export default function AlertsPage() {
                                                     <span>|</span>
                                                     <span className="flex items-center gap-1">
                                                         <Clock className="h-3 w-3" />
-                                                        {formatTimeAgo(alert.createdAt)}
+                                                        {formatTimeAgo(new Date(alert.triggeredAt))}
                                                     </span>
                                                 </div>
                                             </div>
                                             <div className="flex items-center gap-3">
                                                 <div className="text-right">
-                                                    <div className="text-lg font-bold text-primary">
-                                                        {alert.similarity}%
+                                                    <div className={`text-lg font-bold ${alert.similarityScore >= 80 ? 'text-green-600' :
+                                                            alert.similarityScore >= 60 ? 'text-yellow-600' : 'text-muted-foreground'
+                                                        }`}>
+                                                        {alert.similarityScore}%
                                                     </div>
                                                     <div className="text-xs text-muted-foreground">一致度</div>
                                                 </div>
@@ -118,6 +201,109 @@ export default function AlertsPage() {
                         </CardContent>
                     </Card>
                 </div>
+
+                {/* Alert Detail Dialog */}
+                <Dialog open={isDetailOpen} onOpenChange={setIsDetailOpen}>
+                    <DialogContent className="max-w-lg">
+                        <DialogHeader>
+                            <DialogTitle className="flex items-center gap-2">
+                                <Target className="h-5 w-5 text-primary" />
+                                {selectedAlert?.patternName}
+                            </DialogTitle>
+                        </DialogHeader>
+
+                        {selectedAlert && (
+                            <div className="space-y-4">
+                                {/* Similarity Score - Prominent display */}
+                                <div className="text-center p-4 bg-muted/30 rounded-lg">
+                                    <div className={`text-4xl font-bold ${selectedAlert.similarityScore >= 80 ? 'text-green-600' :
+                                            selectedAlert.similarityScore >= 60 ? 'text-yellow-600' : 'text-muted-foreground'
+                                        }`}>
+                                        {selectedAlert.similarityScore}%
+                                    </div>
+                                    <p className="text-sm text-muted-foreground mt-1">類似度スコア</p>
+                                </div>
+
+                                {/* Pattern Image Comparison */}
+                                <div className="grid grid-cols-2 gap-3">
+                                    <div className="space-y-1">
+                                        <p className="text-xs text-muted-foreground text-center">登録パターン</p>
+                                        <div className="aspect-video bg-muted rounded-lg overflow-hidden">
+                                            {selectedAlert.patternImageUrl ? (
+                                                <img
+                                                    src={selectedAlert.patternImageUrl}
+                                                    alt="Registered Pattern"
+                                                    className="w-full h-full object-cover"
+                                                />
+                                            ) : (
+                                                <div className="w-full h-full flex items-center justify-center">
+                                                    <Target className="h-8 w-8 text-muted-foreground" />
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                    <div className="space-y-1">
+                                        <p className="text-xs text-muted-foreground text-center">検出パターン</p>
+                                        <div className="aspect-video bg-muted rounded-lg overflow-hidden">
+                                            {selectedAlert.matchedImageUrl ? (
+                                                <img
+                                                    src={selectedAlert.matchedImageUrl}
+                                                    alt="Matched Pattern"
+                                                    className="w-full h-full object-cover"
+                                                />
+                                            ) : (
+                                                <div className="w-full h-full flex items-center justify-center text-xs text-muted-foreground">
+                                                    プレビューなし
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Metadata */}
+                                <div className="flex items-center justify-center gap-4 text-sm">
+                                    <Badge variant="secondary">{selectedAlert.currencyPair}</Badge>
+                                    <span className="text-muted-foreground">{selectedAlert.timeframe}</span>
+                                    <span className="text-muted-foreground flex items-center gap-1">
+                                        <Clock className="h-3 w-3" />
+                                        {formatTimeAgo(new Date(selectedAlert.triggeredAt))}
+                                    </span>
+                                </div>
+
+                                {/* Feedback Section */}
+                                <div className="border-t pt-4">
+                                    <p className="text-sm text-center mb-3">この通知は役に立ちましたか？</p>
+                                    <div className="flex justify-center gap-3">
+                                        <Button
+                                            variant={selectedAlert.feedback === 'positive' ? 'default' : 'outline'}
+                                            size="sm"
+                                            onClick={() => handleFeedback(selectedAlert.id, 'positive')}
+                                            className={selectedAlert.feedback === 'positive' ? 'bg-green-600 hover:bg-green-700' : ''}
+                                        >
+                                            <ThumbsUp className="h-4 w-4 mr-1" />
+                                            役立った
+                                        </Button>
+                                        <Button
+                                            variant={selectedAlert.feedback === 'negative' ? 'default' : 'outline'}
+                                            size="sm"
+                                            onClick={() => handleFeedback(selectedAlert.id, 'negative')}
+                                            className={selectedAlert.feedback === 'negative' ? 'bg-red-600 hover:bg-red-700' : ''}
+                                        >
+                                            <ThumbsDown className="h-4 w-4 mr-1" />
+                                            役立たなかった
+                                        </Button>
+                                    </div>
+                                </div>
+
+                                {/* Open Chart (Placeholder) */}
+                                <Button variant="outline" className="w-full" disabled>
+                                    <ExternalLink className="h-4 w-4 mr-2" />
+                                    チャートを開く（準備中）
+                                </Button>
+                            </div>
+                        )}
+                    </DialogContent>
+                </Dialog>
             </div>
         </ProtectedRoute>
     )

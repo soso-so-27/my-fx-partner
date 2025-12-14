@@ -30,7 +30,8 @@ import {
     Twitter,
     Youtube,
     FileText,
-    Loader2
+    Loader2,
+    Bell
 } from 'lucide-react'
 
 interface Clip {
@@ -197,6 +198,62 @@ export function PatternDetailDialog({ pattern, open, onOpenChange }: PatternDeta
                                 {pattern.direction === 'long' ? 'ロング' : 'ショート'}
                             </span>
                         )}
+                    </div>
+
+                    {/* Notification Settings Section */}
+                    <div className="space-y-3 p-3 bg-muted/30 rounded-lg border border-border/50">
+                        <h4 className="font-medium flex items-center gap-2 text-sm">
+                            <Bell className="h-4 w-4" />
+                            通知設定
+                        </h4>
+
+                        <div className="grid grid-cols-2 gap-3">
+                            {/* Alert Threshold */}
+                            <div className="space-y-1">
+                                <label className="text-xs text-muted-foreground">類似度しきい値</label>
+                                <Select defaultValue="70">
+                                    <SelectTrigger className="h-8 text-xs">
+                                        <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="60">60% 以上</SelectItem>
+                                        <SelectItem value="70">70% 以上</SelectItem>
+                                        <SelectItem value="80">80% 以上</SelectItem>
+                                        <SelectItem value="90">90% 以上</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+
+                            {/* Notification Frequency */}
+                            <div className="space-y-1">
+                                <label className="text-xs text-muted-foreground">通知頻度</label>
+                                <Select defaultValue="realtime">
+                                    <SelectTrigger className="h-8 text-xs">
+                                        <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="realtime">リアルタイム</SelectItem>
+                                        <SelectItem value="hourly">1時間ごと</SelectItem>
+                                        <SelectItem value="daily">1日1回</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                        </div>
+
+                        {/* Push Notification Toggle */}
+                        <div className="flex items-center justify-between">
+                            <span className="text-xs text-muted-foreground">プッシュ通知</span>
+                            <Badge variant="outline" className="text-xs">
+                                <span className="flex items-center gap-1">
+                                    <span className="h-1.5 w-1.5 rounded-full bg-green-500" />
+                                    有効
+                                </span>
+                            </Badge>
+                        </div>
+
+                        <p className="text-[10px] text-muted-foreground">
+                            ※ 類似パターン検出機能は現在開発中です。設定は保存されますが、通知はまだ送信されません。
+                        </p>
                     </div>
 
                     {/* Linked Clips Section */}

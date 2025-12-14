@@ -25,5 +25,15 @@
         "finance",
         "productivity"
     ],
-    "lang": "ja"
+    "lang": "ja",
+    "share_target": {
+        "action": "/journal",
+        "method": "GET",
+        "enctype": "application/x-www-form-urlencoded",
+        "params": {
+            "title": "share_title",
+            "text": "share_text",
+            "url": "share_url"
+        }
+    }
 }

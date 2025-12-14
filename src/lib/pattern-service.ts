@@ -1,4 +1,5 @@
 import { getSupabaseAdmin } from './supabase-admin'
+import { generateMockFeatureVector } from './feature-vector'
 
 // Types
 export interface Pattern {
@@ -95,6 +96,11 @@ export const patternService = {
     // Create a new pattern
     async createPattern(userId: string, input: PatternInput): Promise<Pattern | null> {
         const supabase = getSupabaseAdmin()
+
+        // Generate a temporary pattern ID for feature vector generation
+        const tempId = `temp-${Date.now()}-${Math.random().toString(36).substring(7)}`
+        const featureVector = generateMockFeatureVector(tempId)
+
         const { data, error } = await supabase
             .from('patterns')
             .insert({
@@ -107,6 +113,8 @@ export const patternService = {
                 direction: input.direction,
                 tags: input.tags || [],
                 is_active: true,
+                feature_vector: featureVector,
+                similarity_threshold: 70,
             })
             .select()
             .single()

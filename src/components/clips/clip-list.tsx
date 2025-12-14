@@ -33,7 +33,10 @@ import {
     FileText,
     Link2,
     Star,
-    Loader2
+    Loader2,
+    Search,
+    X,
+    Filter
 } from 'lucide-react'
 
 // Types
@@ -51,6 +54,11 @@ interface Clip {
 
 interface ClipListProps {
     userId: string
+    initialData?: {
+        url?: string
+        title?: string
+        text?: string
+    }
 }
 
 // Content type icons and colors
@@ -63,9 +71,9 @@ const contentTypeConfig = {
 }
 
 // Clip Form Component
-function ClipForm({ onSuccess }: { onSuccess: () => void }) {
-    const [url, setUrl] = useState('')
-    const [title, setTitle] = useState('')
+function ClipForm({ onSuccess, initialUrl, initialTitle }: { onSuccess: () => void, initialUrl?: string, initialTitle?: string }) {
+    const [url, setUrl] = useState(initialUrl || '')
+    const [title, setTitle] = useState(initialTitle || '')
     const [contentType, setContentType] = useState<string>('blog')
     const [memo, setMemo] = useState('')
     const [importance, setImportance] = useState(3)
@@ -260,13 +268,23 @@ function ClipForm({ onSuccess }: { onSuccess: () => void }) {
 }
 
 // Main ClipList Component
-export function ClipList({ userId }: ClipListProps) {
+export function ClipList({ userId, initialData }: ClipListProps) {
     const [clips, setClips] = useState<Clip[]>([])
     const [isLoading, setIsLoading] = useState(true)
     const [isDialogOpen, setIsDialogOpen] = useState(false)
     const [selectedClip, setSelectedClip] = useState<Clip | null>(null)
     const [isDetailOpen, setIsDetailOpen] = useState(false)
+    const [searchQuery, setSearchQuery] = useState('')
+    const [filterType, setFilterType] = useState<string>('all')
+    const [filterImportance, setFilterImportance] = useState<number>(0)
     const { toast } = useToast()
+
+    // Auto-open dialog if there is shared data
+    useEffect(() => {
+        if (initialData?.url || initialData?.text) {
+            setIsDialogOpen(true)
+        }
+    }, [initialData])
 
     const fetchClips = async () => {
         try {
@@ -285,6 +303,24 @@ export function ClipList({ userId }: ClipListProps) {
     useEffect(() => {
         fetchClips()
     }, [])
+
+    // Filter clips based on search query, type, and importance
+    const filteredClips = clips.filter(clip => {
+        // Search filter
+        const searchLower = searchQuery.toLowerCase()
+        const matchesSearch = searchQuery === '' ||
+            clip.title?.toLowerCase().includes(searchLower) ||
+            clip.url.toLowerCase().includes(searchLower) ||
+            clip.memo?.toLowerCase().includes(searchLower)
+
+        // Type filter
+        const matchesType = filterType === 'all' || clip.contentType === filterType
+
+        // Importance filter
+        const matchesImportance = filterImportance === 0 || clip.importance >= filterImportance
+
+        return matchesSearch && matchesType && matchesImportance
+    })
 
     const handleDelete = async (id: string) => {
         if (!confirm('このクリップを削除しますか？')) return
@@ -323,25 +359,99 @@ export function ClipList({ userId }: ClipListProps) {
 
     return (
         <div className="space-y-4">
-            {/* Header with Add Button */}
-            <div className="flex items-center justify-between">
-                <div className="text-sm text-muted-foreground">
-                    保存済み: {clips.length} クリップ
-                </div>
-                <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-                    <DialogTrigger asChild>
-                        <Button size="sm">
-                            <Plus className="h-4 w-4 mr-1" />
-                            追加
+            {/* Search and Filter Section */}
+            <div className="space-y-3">
+                {/* Search Bar */}
+                <div className="relative">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                        placeholder="タイトル、URL、メモで検索..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="pl-9"
+                    />
+                    {searchQuery && (
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7"
+                            onClick={() => setSearchQuery('')}
+                        >
+                            <X className="h-4 w-4" />
                         </Button>
-                    </DialogTrigger>
-                    <DialogContent className="max-w-md">
-                        <DialogHeader>
-                            <DialogTitle>クリップを保存</DialogTitle>
-                        </DialogHeader>
-                        <ClipForm onSuccess={handleClipCreated} />
-                    </DialogContent>
-                </Dialog>
+                    )}
+                </div>
+
+                {/* Filters Row */}
+                <div className="flex items-center gap-2 flex-wrap">
+                    {/* Content Type Filter */}
+                    <Select value={filterType} onValueChange={setFilterType}>
+                        <SelectTrigger className="w-[130px] h-8 text-xs">
+                            <Filter className="h-3 w-3 mr-1" />
+                            <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="all">すべて</SelectItem>
+                            <SelectItem value="x">X (Twitter)</SelectItem>
+                            <SelectItem value="youtube">YouTube</SelectItem>
+                            <SelectItem value="blog">ブログ</SelectItem>
+                            <SelectItem value="note">note</SelectItem>
+                            <SelectItem value="other">その他</SelectItem>
+                        </SelectContent>
+                    </Select>
+
+                    {/* Importance Filter */}
+                    <div className="flex items-center gap-1 bg-muted/50 rounded-md px-2 py-1">
+                        <span className="text-[10px] text-muted-foreground mr-1">重要度</span>
+                        {[0, 1, 2, 3, 4, 5].map((star) => (
+                            <button
+                                key={star}
+                                onClick={() => setFilterImportance(star === filterImportance ? 0 : star)}
+                                className={`p-0.5 transition-colors ${star === 0
+                                    ? filterImportance === 0 ? 'text-primary' : 'text-muted-foreground'
+                                    : star <= filterImportance ? 'text-yellow-500' : 'text-gray-300'
+                                    }`}
+                                title={star === 0 ? 'フィルタ解除' : `${star}以上`}
+                            >
+                                {star === 0 ? (
+                                    <span className="text-[10px]">全</span>
+                                ) : (
+                                    <Star className="h-3.5 w-3.5 fill-current" />
+                                )}
+                            </button>
+                        ))}
+                    </div>
+
+                    <div className="flex-1" />
+
+                    {/* Add Button */}
+                    <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+                        <DialogTrigger asChild>
+                            <Button size="sm" className="h-8">
+                                <Plus className="h-4 w-4 mr-1" />
+                                追加
+                            </Button>
+                        </DialogTrigger>
+                        <DialogContent className="max-w-md">
+                            <DialogHeader>
+                                <DialogTitle>クリップを保存</DialogTitle>
+                            </DialogHeader>
+                            <ClipForm
+                                onSuccess={handleClipCreated}
+                                initialUrl={initialData?.url || (initialData?.text?.startsWith('http') ? initialData.text : undefined)}
+                                initialTitle={initialData?.title}
+                            />
+                        </DialogContent>
+                    </Dialog>
+                </div>
+
+                {/* Results Count */}
+                <div className="text-xs text-muted-foreground">
+                    {filteredClips.length === clips.length
+                        ? `${clips.length} クリップ`
+                        : `${filteredClips.length} / ${clips.length} クリップ`
+                    }
+                </div>
             </div>
 
             {/* Clips List */}
@@ -363,7 +473,7 @@ export function ClipList({ userId }: ClipListProps) {
                 </Card>
             ) : (
                 <div className="space-y-3">
-                    {clips.map((clip) => {
+                    {filteredClips.map((clip) => {
                         const config = contentTypeConfig[clip.contentType]
                         const Icon = config.icon
 
