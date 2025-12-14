@@ -111,10 +111,21 @@ export default function Home() {
   }
 
   const handleLoadDemoData = async () => {
-    if (!user) return
+    console.log('handleLoadDemoData called, user:', user)
+    if (!user) {
+      console.log('No user, returning early')
+      toast({
+        title: "ログインが必要です",
+        description: "デモデータを読み込むにはログインしてください。",
+        variant: "destructive"
+      })
+      return
+    }
     setIsLoadingDemo(true)
+    console.log('Loading demo data for user:', user.id)
     try {
       const demoTrades = demoDataService.getDemoTrades(user.id)
+      console.log('Generated demo trades:', demoTrades.length)
       const demoInsights = demoDataService.getDemoInsights(user.id)
       const demoRules = demoDataService.getDemoRules(user.id)
 
