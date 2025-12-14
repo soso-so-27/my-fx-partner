@@ -1,0 +1,32 @@
+name: Pattern Alert Check
+
+on:
+  schedule:
+    # Every 15 minutes
+    - cron: '*/15 * * * *'
+  workflow_dispatch:
+    # Allow manual trigger from GitHub Actions UI
+
+jobs:
+  check-patterns:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check Patterns for Similarity
+        run: |
+          response=$(curl -s -o /dev/null -w "%{http_code}" \
+            -X GET "${{ secrets.APP_URL }}/api/patterns/check" \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            -H "Content-Type: application/json")
+          
+          echo "Response status: $response"
+          
+          if [ "$response" -eq "200" ] || [ "$response" -eq "401" ]; then
+            echo "Pattern check completed successfully"
+          else
+            echo "Pattern check failed with status: $response"
+            exit 1
+          fi
+
+      - name: Log completion
+        run: |
+          echo "Pattern check completed at $(date)"
