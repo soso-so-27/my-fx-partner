@@ -113,7 +113,7 @@ export default function JournalPage() {
                     </TabsContent>
 
                     {/* Clips Tab - Knowledge Clip library */}
-                    <TabsContent value="clips" className="flex-1 min-h-0 mt-0 overflow-auto data-[state=inactive]:hidden">
+                    <TabsContent value="clips" className="mt-0 overflow-auto data-[state=inactive]:hidden">
                         <ClipList userId={session?.user?.email || ""} sharedData={sharedData} />
                     </TabsContent>
                 </Tabs>
