@@ -8,7 +8,7 @@ import { cn } from "@/lib/utils"
 import { tradeService } from "@/lib/trade-service"
 import { analysisEngine } from "@/lib/analysis-engine"
 import { Loader2, Settings, Share2, TrendingUp, TrendingDown, Target, PlusCircle } from "lucide-react"
-import { useAuth } from "@/contexts/auth-context"
+import { useSession } from "next-auth/react"
 import { ProtectedRoute } from "@/components/auth/protected-route"
 import { demoDataService } from "@/lib/demo-data-service"
 import { tradeRuleService } from "@/lib/trade-rule-service"
@@ -24,7 +24,7 @@ import html2canvas from "html2canvas"
 import { insightService } from "@/lib/insight-service"
 
 export default function Home() {
-  const { user } = useAuth()
+  const { data: session } = useSession()
   const { toast } = useToast()
   const [trades, setTrades] = useState<Trade[]>([])
   const [monthlyStats, setMonthlyStats] = useState<{
@@ -45,8 +45,8 @@ export default function Home() {
   const calendarRef = useRef<HTMLDivElement>(null)
 
   const loadData = async () => {
-    if (!user) return
-    const allTrades = await tradeService.getTrades(user.id)
+    if (!session?.user?.email) return
+    const allTrades = await tradeService.getTrades(session.user.email)
     setTrades(allTrades)
 
     // Calculate Monthly Stats
@@ -74,7 +74,7 @@ export default function Home() {
 
   useEffect(() => {
     loadData()
-  }, [user, currentMonth])
+  }, [session, currentMonth])
 
   const handleDayClick = (date: Date, dayTrades: Trade[]) => {
     setSelectedDate(date)
@@ -111,8 +111,9 @@ export default function Home() {
   }
 
   const handleLoadDemoData = async () => {
-    console.log('handleLoadDemoData called, user:', user)
-    if (!user) {
+    const userId = session?.user?.email
+    console.log('handleLoadDemoData called, userId:', userId)
+    if (!userId) {
       console.log('No user, returning early')
       toast({
         title: "ログインが必要です",
@@ -122,12 +123,12 @@ export default function Home() {
       return
     }
     setIsLoadingDemo(true)
-    console.log('Loading demo data for user:', user.id)
+    console.log('Loading demo data for user:', userId)
     try {
-      const demoTrades = demoDataService.getDemoTrades(user.id)
+      const demoTrades = demoDataService.getDemoTrades(userId)
       console.log('Generated demo trades:', demoTrades.length)
-      const demoInsights = demoDataService.getDemoInsights(user.id)
-      const demoRules = demoDataService.getDemoRules(user.id)
+      const demoInsights = demoDataService.getDemoInsights(userId)
+      const demoRules = demoDataService.getDemoRules(userId)
 
       for (const trade of demoTrades) {
         await tradeService.createTrade({
@@ -146,7 +147,7 @@ export default function Home() {
           notes: trade.notes,
           tags: trade.tags,
           isVerified: trade.isVerified
-        }, user.id)
+        }, userId)
       }
 
       for (const insight of demoInsights) {
@@ -155,7 +156,7 @@ export default function Home() {
           mode: insight.mode,
           userNote: insight.userNote,
           tags: insight.tags
-        }, user.id)
+        }, userId)
       }
 
       for (const rule of demoRules) {
@@ -164,7 +165,7 @@ export default function Home() {
           category: rule.category,
           description: rule.description,
           isActive: rule.isActive
-        }, user.id)
+        }, userId)
       }
 
       toast({
