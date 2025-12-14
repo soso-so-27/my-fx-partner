@@ -16,6 +16,7 @@ import { useToast } from "@/components/ui/use-toast"
 import { SyncButton } from "@/components/ui/sync-button"
 import { MonthlyCalendar } from "@/components/ui/monthly-calendar"
 import { GoalCard } from "@/components/home/goal-card"
+import { QuickRecordDialog } from "@/components/trade/quick-record-dialog"
 import { Trade } from "@/types/trade"
 import { startOfMonth, format, isSameDay } from "date-fns"
 import { ja } from "date-fns/locale"
@@ -40,6 +41,7 @@ export default function Home() {
   const [selectedDate, setSelectedDate] = useState<Date | null>(null)
   const [selectedDayTrades, setSelectedDayTrades] = useState<Trade[]>([])
   const [isCapturing, setIsCapturing] = useState(false)
+  const [isRecordDialogOpen, setIsRecordDialogOpen] = useState(false)
   const calendarRef = useRef<HTMLDivElement>(null)
 
   const loadData = async () => {
@@ -315,12 +317,10 @@ export default function Home() {
                     <p className="text-sm text-muted-foreground text-center">
                       この日のトレードはありません
                     </p>
-                    <Link href={`/chat?message=${encodeURIComponent(`${format(selectedDate, 'M月d日', { locale: ja })}のトレードを登録したい`)}`}>
-                      <Button size="sm" variant="outline" className="gap-1.5">
-                        <PlusCircle className="h-4 w-4" />
-                        トレードを登録
-                      </Button>
-                    </Link>
+                    <Button size="sm" variant="outline" className="gap-1.5" onClick={() => setIsRecordDialogOpen(true)}>
+                      <PlusCircle className="h-4 w-4" />
+                      トレードを登録
+                    </Button>
                   </div>
                 )}
               </CardContent>
@@ -387,6 +387,19 @@ export default function Home() {
           </Card>
         )}
       </div>
+
+      {/* Quick Record Dialog */}
+      <QuickRecordDialog
+        open={isRecordDialogOpen}
+        onOpenChange={setIsRecordDialogOpen}
+        onSuccess={() => {
+          loadData()
+          toast({
+            title: "トレードを記録しました",
+            description: "カレンダーに反映されました。"
+          })
+        }}
+      />
     </ProtectedRoute>
   )
 }
