@@ -150,27 +150,12 @@ export default function Home() {
         }, userId)
       }
 
-      for (const insight of demoInsights) {
-        await insightService.createInsight({
-          content: insight.content,
-          mode: insight.mode,
-          userNote: insight.userNote,
-          tags: insight.tags
-        }, userId)
-      }
-
-      for (const rule of demoRules) {
-        await tradeRuleService.createRule({
-          title: rule.title,
-          category: rule.category,
-          description: rule.description,
-          isActive: rule.isActive
-        }, userId)
-      }
+      // Note: Insights and Rules creation skipped for now
+      // (requires API route updates to bypass RLS)
 
       toast({
         title: "デモデータを読み込みました",
-        description: "アプリの使用感を体験してください。",
+        description: "サンプルトレードがカレンダーに表示されます。",
       })
       await loadData()
     } catch (error) {
