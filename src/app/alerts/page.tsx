@@ -1,7 +1,7 @@
 "use client"
 
-import { useState, useEffect } from "react"
-import { Bell, ChevronRight, Clock, TrendingUp, Target, Loader2, ThumbsUp, ThumbsDown, ExternalLink } from "lucide-react"
+import { useState, useEffect, useMemo } from "react"
+import { Bell, ChevronRight, Clock, TrendingUp, Target, Loader2, ThumbsUp, ThumbsDown, ExternalLink, Filter, CheckCheck } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { ProtectedRoute } from "@/components/auth/protected-route"
 import { Badge } from "@/components/ui/badge"
@@ -12,7 +12,16 @@ import {
     DialogHeader,
     DialogTitle,
 } from "@/components/ui/dialog"
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select"
 import { useToast } from "@/components/ui/use-toast"
+import { format, isToday, isYesterday, isThisWeek, isThisMonth, startOfDay } from "date-fns"
+import { ja } from "date-fns/locale"
 
 interface Alert {
     id: string
@@ -33,6 +42,8 @@ export default function AlertsPage() {
     const [isLoading, setIsLoading] = useState(true)
     const [selectedAlert, setSelectedAlert] = useState<Alert | null>(null)
     const [isDetailOpen, setIsDetailOpen] = useState(false)
+    const [patternFilter, setPatternFilter] = useState<string>('all')
+    const [periodFilter, setPeriodFilter] = useState<string>('all')
     const { toast } = useToast()
 
     const fetchAlerts = async () => {
@@ -52,6 +63,87 @@ export default function AlertsPage() {
     useEffect(() => {
         fetchAlerts()
     }, [])
+
+    // Get unique patterns for filter
+    const uniquePatterns = useMemo(() => {
+        const patterns = [...new Set(alerts.map(a => a.patternName))]
+        return patterns.sort()
+    }, [alerts])
+
+    // Filter alerts
+    const filteredAlerts = useMemo(() => {
+        return alerts.filter(alert => {
+            // Pattern filter
+            if (patternFilter !== 'all' && alert.patternName !== patternFilter) {
+                return false
+            }
+            // Period filter
+            if (periodFilter !== 'all') {
+                const alertDate = new Date(alert.triggeredAt)
+                if (periodFilter === 'today' && !isToday(alertDate)) return false
+                if (periodFilter === 'week' && !isThisWeek(alertDate, { weekStartsOn: 1 })) return false
+                if (periodFilter === 'month' && !isThisMonth(alertDate)) return false
+            }
+            return true
+        })
+    }, [alerts, patternFilter, periodFilter])
+
+    // Group alerts by date
+    const groupedAlerts = useMemo(() => {
+        const groups: { label: string; alerts: Alert[] }[] = []
+        const dateMap = new Map<string, Alert[]>()
+
+        filteredAlerts.forEach(alert => {
+            const date = startOfDay(new Date(alert.triggeredAt))
+            let label: string
+            if (isToday(date)) {
+                label = '今日'
+            } else if (isYesterday(date)) {
+                label = '昨日'
+            } else if (isThisWeek(date, { weekStartsOn: 1 })) {
+                label = format(date, 'E曜日', { locale: ja })
+            } else {
+                label = format(date, 'M月d日', { locale: ja })
+            }
+
+            if (!dateMap.has(label)) {
+                dateMap.set(label, [])
+            }
+            dateMap.get(label)!.push(alert)
+        })
+
+        dateMap.forEach((alerts, label) => {
+            groups.push({ label, alerts })
+        })
+
+        return groups
+    }, [filteredAlerts])
+
+    // Mark all as read
+    const handleMarkAllRead = async () => {
+        const unreadAlerts = alerts.filter(a => !a.isRead)
+        if (unreadAlerts.length === 0) return
+
+        try {
+            await Promise.all(
+                unreadAlerts.map(alert =>
+                    fetch(`/api/alerts/${alert.id}`, {
+                        method: 'PATCH',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ isRead: true })
+                    })
+                )
+            )
+            setAlerts(alerts.map(a => ({ ...a, isRead: true })))
+            toast({
+                title: 'すべて既読にしました',
+                description: `${unreadAlerts.length}件の通知を既読にしました`
+            })
+        } catch (error) {
+            console.error('Error marking all as read:', error)
+            toast({ title: 'エラーが発生しました', variant: 'destructive' })
+        }
+    }
 
     const handleAlertClick = async (alert: Alert) => {
         setSelectedAlert(alert)
@@ -138,53 +230,87 @@ export default function AlertsPage() {
                         </Card>
                     ) : (
                         <>
-                            {alerts.map((alert) => (
-                                <Card
-                                    key={alert.id}
-                                    className={`hover:bg-muted/50 transition-colors cursor-pointer ${!alert.isRead ? "border-primary/50 bg-primary/5" : ""
-                                        }`}
-                                    onClick={() => handleAlertClick(alert)}
-                                >
-                                    <CardContent className="p-4">
-                                        <div className="flex items-center justify-between">
-                                            <div className="flex-1">
-                                                <div className="flex items-center gap-2 mb-1">
-                                                    <span className="font-semibold">{alert.patternName}</span>
-                                                    {!alert.isRead && (
-                                                        <Badge className="bg-primary text-primary-foreground text-xs">
-                                                            NEW
-                                                        </Badge>
-                                                    )}
-                                                </div>
-                                                <div className="flex items-center gap-3 text-sm text-muted-foreground">
-                                                    <span className="flex items-center gap-1">
-                                                        <TrendingUp className="h-3 w-3" />
-                                                        {alert.currencyPair}
-                                                    </span>
-                                                    <span>|</span>
-                                                    <span>{alert.timeframe}</span>
-                                                    <span>|</span>
-                                                    <span className="flex items-center gap-1">
-                                                        <Clock className="h-3 w-3" />
-                                                        {formatTimeAgo(new Date(alert.triggeredAt))}
-                                                    </span>
-                                                </div>
-                                            </div>
-                                            <div className="flex items-center gap-3">
-                                                <div className="text-right">
-                                                    <div className={`text-lg font-bold ${alert.similarityScore >= 80 ? 'text-green-600' :
-                                                            alert.similarityScore >= 60 ? 'text-yellow-600' : 'text-muted-foreground'
-                                                        }`}>
-                                                        {alert.similarityScore}%
-                                                    </div>
-                                                    <div className="text-xs text-muted-foreground">一致度</div>
-                                                </div>
-                                                <ChevronRight className="h-5 w-5 text-muted-foreground" />
-                                            </div>
+                            {/* Filter Controls */}
+                            <div className="flex items-center gap-2 flex-wrap">
+                                <Select value={patternFilter} onValueChange={setPatternFilter}>
+                                    <SelectTrigger className="w-[130px] h-8 text-xs">
+                                        <Filter className="h-3 w-3 mr-1" />
+                                        <SelectValue placeholder="パターン" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="all">すべて</SelectItem>
+                                        {uniquePatterns.map(pattern => (
+                                            <SelectItem key={pattern} value={pattern}>{pattern}</SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+
+                                <Select value={periodFilter} onValueChange={setPeriodFilter}>
+                                    <SelectTrigger className="w-[100px] h-8 text-xs">
+                                        <Clock className="h-3 w-3 mr-1" />
+                                        <SelectValue placeholder="期間" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="all">すべて</SelectItem>
+                                        <SelectItem value="today">今日</SelectItem>
+                                        <SelectItem value="week">今週</SelectItem>
+                                        <SelectItem value="month">今月</SelectItem>
+                                    </SelectContent>
+                                </Select>
+
+                                <div className="flex-1" />
+
+                                {unreadCount > 0 && (
+                                    <Button variant="outline" size="sm" className="h-8 text-xs gap-1" onClick={handleMarkAllRead}>
+                                        <CheckCheck className="h-3 w-3" />
+                                        すべて既読
+                                    </Button>
+                                )}
+                            </div>
+
+                            <div className="text-xs text-muted-foreground">
+                                {filteredAlerts.length === alerts.length ? `${alerts.length}件` : `${filteredAlerts.length} / ${alerts.length}件`}
+                            </div>
+
+                            {groupedAlerts.length === 0 ? (
+                                <div className="text-center py-8 text-muted-foreground">フィルター条件に一致する通知がありません</div>
+                            ) : (
+                                groupedAlerts.map((group) => (
+                                    <div key={group.label} className="space-y-2">
+                                        <div className="flex items-center gap-2">
+                                            <div className="text-xs font-medium text-muted-foreground">{group.label}</div>
+                                            <div className="flex-1 h-px bg-border" />
+                                            <div className="text-xs text-muted-foreground">{group.alerts.length}件</div>
                                         </div>
-                                    </CardContent>
-                                </Card>
-                            ))}
+                                        {group.alerts.map((alert) => (
+                                            <Card key={alert.id} className={`hover:bg-muted/50 transition-colors cursor-pointer ${!alert.isRead ? "border-primary/50 bg-primary/5" : ""}`} onClick={() => handleAlertClick(alert)}>
+                                                <CardContent className="p-4">
+                                                    <div className="flex items-center justify-between">
+                                                        <div className="flex-1">
+                                                            <div className="flex items-center gap-2 mb-1">
+                                                                <span className="font-semibold">{alert.patternName}</span>
+                                                                {!alert.isRead && <Badge className="bg-primary text-primary-foreground text-xs">NEW</Badge>}
+                                                            </div>
+                                                            <div className="flex items-center gap-3 text-sm text-muted-foreground">
+                                                                <span className="flex items-center gap-1"><TrendingUp className="h-3 w-3" />{alert.currencyPair}</span>
+                                                                <span>|</span><span>{alert.timeframe}</span><span>|</span>
+                                                                <span className="flex items-center gap-1"><Clock className="h-3 w-3" />{formatTimeAgo(new Date(alert.triggeredAt))}</span>
+                                                            </div>
+                                                        </div>
+                                                        <div className="flex items-center gap-3">
+                                                            <div className="text-right">
+                                                                <div className={`text-lg font-bold ${alert.similarityScore >= 80 ? 'text-green-600' : alert.similarityScore >= 60 ? 'text-yellow-600' : 'text-muted-foreground'}`}>{alert.similarityScore}%</div>
+                                                                <div className="text-xs text-muted-foreground">一致度</div>
+                                                            </div>
+                                                            <ChevronRight className="h-5 w-5 text-muted-foreground" />
+                                                        </div>
+                                                    </div>
+                                                </CardContent>
+                                            </Card>
+                                        ))}
+                                    </div>
+                                ))
+                            )}
                         </>
                     )}
 
@@ -217,7 +343,7 @@ export default function AlertsPage() {
                                 {/* Similarity Score - Prominent display */}
                                 <div className="text-center p-4 bg-muted/30 rounded-lg">
                                     <div className={`text-4xl font-bold ${selectedAlert.similarityScore >= 80 ? 'text-green-600' :
-                                            selectedAlert.similarityScore >= 60 ? 'text-yellow-600' : 'text-muted-foreground'
+                                        selectedAlert.similarityScore >= 60 ? 'text-yellow-600' : 'text-muted-foreground'
                                         }`}>
                                         {selectedAlert.similarityScore}%
                                     </div>
