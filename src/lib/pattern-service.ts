@@ -13,6 +13,8 @@ export interface Pattern {
     direction?: 'long' | 'short' | null
     tags: string[]
     isActive: boolean
+    similarityThreshold: number
+    checkFrequency: string
     createdAt: Date
     updatedAt: Date
 }
@@ -25,6 +27,8 @@ export interface PatternInput {
     timeframe: string
     direction?: 'long' | 'short' | null
     tags?: string[]
+    similarityThreshold?: number
+    checkFrequency?: string
 }
 
 export interface Alert {
@@ -138,6 +142,8 @@ export const patternService = {
         if (input.timeframe !== undefined) updateData.timeframe = input.timeframe
         if (input.direction !== undefined) updateData.direction = input.direction
         if (input.tags !== undefined) updateData.tags = input.tags
+        if (input.similarityThreshold !== undefined) updateData.similarity_threshold = input.similarityThreshold
+        if (input.checkFrequency !== undefined) updateData.check_frequency = input.checkFrequency
 
         const supabase = getSupabaseAdmin()
         const { data, error } = await supabase
@@ -330,6 +336,8 @@ function mapPattern(row: Record<string, unknown>): Pattern {
         direction: row.direction as 'long' | 'short' | null,
         tags: (row.tags as string[]) || [],
         isActive: row.is_active as boolean,
+        similarityThreshold: (row.similarity_threshold as number) || 70,
+        checkFrequency: (row.check_frequency as string) || '15m',
         createdAt: new Date(row.created_at as string),
         updatedAt: new Date(row.updated_at as string),
     }

@@ -7,7 +7,7 @@ import { Card, CardContent } from '@/components/ui/card'
 import { cn } from "@/lib/utils"
 import { tradeService } from "@/lib/trade-service"
 import { analysisEngine } from "@/lib/analysis-engine"
-import { Loader2, Settings, Share2, TrendingUp, TrendingDown, Target } from "lucide-react"
+import { Loader2, Settings, Share2, TrendingUp, TrendingDown, Target, PlusCircle } from "lucide-react"
 import { useAuth } from "@/contexts/auth-context"
 import { ProtectedRoute } from "@/components/auth/protected-route"
 import { demoDataService } from "@/lib/demo-data-service"
@@ -311,9 +311,17 @@ export default function Home() {
                     ))}
                   </div>
                 ) : (
-                  <p className="text-sm text-muted-foreground text-center py-4">
-                    この日のトレードはありません
-                  </p>
+                  <div className="flex flex-col items-center py-4 gap-3">
+                    <p className="text-sm text-muted-foreground text-center">
+                      この日のトレードはありません
+                    </p>
+                    <Link href={`/chat?message=${encodeURIComponent(`${format(selectedDate, 'M月d日', { locale: ja })}のトレードを登録したい`)}`}>
+                      <Button size="sm" variant="outline" className="gap-1.5">
+                        <PlusCircle className="h-4 w-4" />
+                        トレードを登録
+                      </Button>
+                    </Link>
+                  </div>
                 )}
               </CardContent>
             </Card>
