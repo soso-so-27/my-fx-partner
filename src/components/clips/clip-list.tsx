@@ -54,11 +54,11 @@ interface Clip {
 
 interface ClipListProps {
     userId: string
-    initialData?: {
+    sharedData?: {
         url?: string
         title?: string
         text?: string
-    }
+    } | null
 }
 
 // Content type icons and colors
@@ -268,7 +268,7 @@ function ClipForm({ onSuccess, initialUrl, initialTitle }: { onSuccess: () => vo
 }
 
 // Main ClipList Component
-export function ClipList({ userId, initialData }: ClipListProps) {
+export function ClipList({ userId, sharedData }: ClipListProps) {
     const [clips, setClips] = useState<Clip[]>([])
     const [isLoading, setIsLoading] = useState(true)
     const [isDialogOpen, setIsDialogOpen] = useState(false)
@@ -279,12 +279,12 @@ export function ClipList({ userId, initialData }: ClipListProps) {
     const [filterImportance, setFilterImportance] = useState<number>(0)
     const { toast } = useToast()
 
-    // Auto-open dialog if there is shared data
+    // Auto-open dialog if there is shared data from Web Share Target
     useEffect(() => {
-        if (initialData?.url || initialData?.text) {
+        if (sharedData?.url || sharedData?.text) {
             setIsDialogOpen(true)
         }
-    }, [initialData])
+    }, [sharedData])
 
     const fetchClips = async () => {
         try {
@@ -438,8 +438,8 @@ export function ClipList({ userId, initialData }: ClipListProps) {
                             </DialogHeader>
                             <ClipForm
                                 onSuccess={handleClipCreated}
-                                initialUrl={initialData?.url || (initialData?.text?.startsWith('http') ? initialData.text : undefined)}
-                                initialTitle={initialData?.title}
+                                initialUrl={sharedData?.url || (sharedData?.text?.startsWith('http') ? sharedData.text : undefined)}
+                                initialTitle={sharedData?.title}
                             />
                         </DialogContent>
                     </Dialog>

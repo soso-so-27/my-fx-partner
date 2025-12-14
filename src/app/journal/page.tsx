@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import { useSearchParams } from "next/navigation"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { ProtectedRoute } from "@/components/auth/protected-route"
 import { JournalNotes } from "@/components/journal/journal-notes"
@@ -10,22 +11,46 @@ import { BookOpen, Target, Bookmark, FileText } from "lucide-react"
 import { useSession } from "next-auth/react"
 import { tradeService } from "@/lib/trade-service"
 import { Trade } from "@/types/trade"
+import { useToast } from "@/components/ui/use-toast"
+
+// Type for shared data from Web Share Target
+interface SharedData {
+    title?: string
+    text?: string
+    url?: string
+}
 
 export default function JournalPage() {
-    const initialData = undefined;
+    const searchParams = useSearchParams()
+    const { toast } = useToast()
+
+    // Parse shared data from URL params (Web Share Target)
+    const sharedData: SharedData | null = (() => {
+        const title = searchParams.get('share_title')
+        const text = searchParams.get('share_text')
+        const url = searchParams.get('share_url')
+        if (title || text || url) {
+            return { title: title || undefined, text: text || undefined, url: url || undefined }
+        }
+        return null
+    })()
 
     const { data: session, status } = useSession()
     const [trades, setTrades] = useState<Trade[]>([])
-    const [activeTab, setActiveTab] = useState("records")
+    const [activeTab, setActiveTab] = useState(sharedData ? "clips" : "records")
     const [refreshTrigger, setRefreshTrigger] = useState(0)
     const [isLoading, setIsLoading] = useState(true)
 
+    // Handle shared data - switch to clips tab and show toast
     useEffect(() => {
-        // Switch to clips tab if sharing
-        if (initialData) {
+        if (sharedData && sharedData.url) {
             setActiveTab("clips")
+            toast({
+                title: "共有を受け取りました",
+                description: "クリップとして保存できます",
+            })
         }
-    }, [initialData])
+    }, [])
 
     useEffect(() => {
         const loadTrades = async () => {
@@ -89,7 +114,7 @@ export default function JournalPage() {
 
                     {/* Clips Tab - Knowledge Clip library */}
                     <TabsContent value="clips" className="flex-1 min-h-0 mt-0 overflow-auto data-[state=inactive]:hidden">
-                        <ClipList userId={session?.user?.email || ""} initialData={initialData} />
+                        <ClipList userId={session?.user?.email || ""} sharedData={sharedData} />
                     </TabsContent>
                 </Tabs>
             </div>
