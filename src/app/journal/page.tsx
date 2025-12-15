@@ -5,9 +5,8 @@ import { useSearchParams } from "next/navigation"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { ProtectedRoute } from "@/components/auth/protected-route"
 import { JournalNotes } from "@/components/journal/journal-notes"
-import { PatternList } from "@/components/patterns/pattern-list"
 import { ClipList } from "@/components/clips/clip-list"
-import { BookOpen, Target, Bookmark, FileText } from "lucide-react"
+import { BookOpen, Bookmark, FileText } from "lucide-react"
 import { useSession } from "next-auth/react"
 import { tradeService } from "@/lib/trade-service"
 import { Trade } from "@/types/trade"
@@ -85,14 +84,10 @@ export default function JournalPage() {
                 </header>
 
                 <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col min-h-0 mt-4">
-                    <TabsList className="grid w-full grid-cols-3 mb-4 shrink-0">
+                    <TabsList className="grid w-full grid-cols-2 mb-4 shrink-0">
                         <TabsTrigger value="records" className="flex items-center gap-1.5">
                             <FileText className="h-4 w-4" />
                             <span>記録</span>
-                        </TabsTrigger>
-                        <TabsTrigger value="patterns" className="flex items-center gap-1.5">
-                            <Target className="h-4 w-4" />
-                            <span>パターン</span>
                         </TabsTrigger>
                         <TabsTrigger value="clips" className="flex items-center gap-1.5">
                             <Bookmark className="h-4 w-4" />
@@ -103,11 +98,6 @@ export default function JournalPage() {
                     {/* Records Tab - Trade journal entries */}
                     <TabsContent value="records" className="flex-1 min-h-0 mt-0 data-[state=inactive]:hidden">
                         <JournalNotes />
-                    </TabsContent>
-
-                    {/* Patterns Tab - Pattern Alert library */}
-                    <TabsContent value="patterns" className="flex-1 min-h-0 mt-0 overflow-auto data-[state=inactive]:hidden">
-                        <PatternList userId={session?.user?.email || ""} />
                     </TabsContent>
 
                     {/* Clips Tab - Knowledge Clip library */}
