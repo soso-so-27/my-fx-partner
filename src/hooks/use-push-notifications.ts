@@ -99,9 +99,12 @@ export function usePushNotifications() {
                 throw new Error('VAPID public key not configured')
             }
 
-            // Convert VAPID key inline
-            const padding = '='.repeat((4 - VAPID_PUBLIC_KEY.length % 4) % 4)
-            const base64 = (VAPID_PUBLIC_KEY + padding)
+            // Trim any whitespace from the key
+            const vapidKey = VAPID_PUBLIC_KEY.trim()
+
+            // Convert VAPID key from base64url to Uint8Array
+            const padding = '='.repeat((4 - vapidKey.length % 4) % 4)
+            const base64 = (vapidKey + padding)
                 .replace(/-/g, '+')
                 .replace(/_/g, '/')
 
