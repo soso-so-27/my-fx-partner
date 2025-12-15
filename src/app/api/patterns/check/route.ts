@@ -16,7 +16,8 @@ import { authOptions } from '@/lib/auth-options'
 import { getSupabaseAdmin } from '@/lib/supabase-admin'
 import { fetchOHLCData } from '@/lib/forex-rate'
 import { calculateCosineSimilarity, similarityToPercent } from '@/lib/pattern-similarity'
-import { generateMockFeatureVector } from '@/lib/feature-vector'
+import { extractBasicFeatures, generateMockFeatureVector } from '@/lib/feature-vector'
+import { chartRenderer } from '@/lib/chart-renderer'
 
 // Cron secret for verifying cron job requests
 const CRON_SECRET = process.env.CRON_SECRET
@@ -78,13 +79,16 @@ export async function GET(request: Request) {
                     50
                 )
 
-                // Get pattern's feature vector (or generate mock if not exists)
+                if (ohlcData.length === 0) continue
+
+                // Get pattern's feature vector (or generate mock if not exists for old data)
                 const patternVector = pattern.feature_vector ||
                     generateMockFeatureVector(pattern.id)
 
                 // Generate current chart's feature vector
-                // For MVP, we use a simplified approach based on OHLC data
-                const currentVector = generateVectorFromOHLC(ohlcData)
+                // NEW: Render chart to image -> Extract Features (Apple to Apple comparison)
+                const chartImageBuffer = await chartRenderer.renderToBuffer(ohlcData, 500, 300)
+                const currentVector = await extractBasicFeatures(chartImageBuffer)
 
                 // Calculate similarity
                 const similarity = calculateCosineSimilarity(patternVector, currentVector)
@@ -118,7 +122,7 @@ export async function GET(request: Request) {
                                 user_id: pattern.user_id,
                                 pattern_id: pattern.id,
                                 similarity: similarityPercent / 100, // Convert to decimal 0-1
-                                chart_snapshot_url: null,
+                                chart_snapshot_url: null, // Could upload the rendered buffer here if we had storage setup
                                 status: 'unread',
                             })
                             .select()
@@ -197,43 +201,4 @@ export async function GET(request: Request) {
             { status: 500 }
         )
     }
-}
-
-/**
- * Generate a feature vector from OHLC data
- * This is a simplified approach for MVP
- */
-function generateVectorFromOHLC(ohlcData: { open: number; high: number; low: number; close: number }[]): number[] {
-    const vector: number[] = []
-
-    if (ohlcData.length === 0) {
-        // Return zero vector if no data
-        return new Array(64).fill(0)
-    }
-
-    // Normalize prices to 0-1 range
-    const closes = ohlcData.map(d => d.close)
-    const minPrice = Math.min(...closes)
-    const maxPrice = Math.max(...closes)
-    const priceRange = maxPrice - minPrice || 1
-
-    // Sample at regular intervals to create 64-dimensional vector
-    const targetSize = 64
-    const step = Math.max(1, Math.floor(ohlcData.length / targetSize))
-
-    for (let i = 0; i < targetSize; i++) {
-        const idx = Math.min(i * step, ohlcData.length - 1)
-        const candle = ohlcData[idx]
-
-        // Normalize close price
-        const normalizedClose = (candle.close - minPrice) / priceRange
-        vector.push(normalizedClose)
-    }
-
-    // Pad with zeros if needed
-    while (vector.length < targetSize) {
-        vector.push(0)
-    }
-
-    return vector
 }

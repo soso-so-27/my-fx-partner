@@ -25,6 +25,7 @@ import { RULE_TEMPLATES } from "@/lib/rule-templates"
 import { tradeRuleService } from "@/lib/trade-rule-service"
 import { ModeToggle } from "@/components/ui/mode-toggle"
 import { NotificationSettings } from "@/components/settings/notification-settings"
+import { DataManagementCard } from "@/components/settings/data-management-card"
 
 export default function SettingsPage() {
     const [mounted, setMounted] = useState(false)
@@ -319,6 +320,9 @@ export default function SettingsPage() {
                         </CardContent>
                     </Card>
 
+                    {/* Data Management */}
+                    <DataManagementCard />
+
                     {/* Import Data (Phase 3) */}
                     <Card>
                         <CardHeader>
@@ -343,6 +347,7 @@ export default function SettingsPage() {
                     </Card>
 
                     {/* Marketing Demo Data (Debug) - Only for Admin/Demo users */}
+                    {/* Marketing Demo Data (Debug) - Hidden as requested
                     {(user?.email === "nakanishisoya@gmail.com" || user?.email === "demo@example.com") && (
                         <Card className="border-solo-gold/20 bg-solo-gold/5">
                             <CardHeader>
@@ -360,6 +365,7 @@ export default function SettingsPage() {
                             </CardContent>
                         </Card>
                     )}
+                    */}
 
                     {/* App Settings */}
                     <Card>

@@ -33,6 +33,9 @@ export type MarketSession = 'tokyo' | 'london' | 'newyork' | 'sydney'
 // PnL source
 export type PnlSource = 'manual' | 'email' | 'calculated'
 
+// Data source - for data isolation
+export type DataSource = 'gmail_sync' | 'manual' | 'demo'
+
 // Rule compliance status
 export interface RuleCompliance {
     ruleId: string
@@ -89,6 +92,10 @@ export interface Trade {
     broker?: string
     originalEmailId?: string
 
+    // Data source and modification tracking
+    dataSource: DataSource         // 'gmail_sync' | 'manual' | 'demo'
+    wasModified?: boolean          // true if Gmail data was manually edited
+
     // Meta
     isFrequentPair?: boolean       // User's frequently traded pair
 }
@@ -133,6 +140,9 @@ export interface CreateTradeInput {
     verificationSource?: string
     broker?: string
     originalEmailId?: string
+
+    // Optional - data source
+    dataSource?: DataSource
 }
 
 // Trade statistics

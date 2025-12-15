@@ -50,13 +50,18 @@ export async function POST(request: NextRequest) {
 
         // Check pattern limit (Free: 1, Pro: 5, Premium: 10+)
         const currentCount = await patternService.getPatternCount(userId)
-        const limit = 1 // TODO: Get from user's plan
+
+        // Fetch tier and limits
+        const { getUserTier, TierLimits } = await import('@/lib/tier-service')
+        const tier = await getUserTier(supabase, userId)
+        const limit = TierLimits[tier].patterns
 
         if (currentCount >= limit) {
             return NextResponse.json({
-                error: 'Pattern limit reached. Upgrade to Pro for more patterns.',
+                error: `Pattern limit reached (${limit}). Upgrade to Pro for more patterns.`,
                 currentCount,
-                limit
+                limit,
+                tier
             }, { status: 403 })
         }
 

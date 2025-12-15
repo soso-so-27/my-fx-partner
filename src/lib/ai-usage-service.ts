@@ -1,4 +1,5 @@
 import { SupabaseClient } from '@supabase/supabase-js'
+import { UserTier } from '@/lib/tier-service'
 
 const LIMITS = {
     free: {
@@ -8,11 +9,15 @@ const LIMITS = {
     pro: {
         highQuality: 50,
         lightweight: 1000
+    },
+    premium: {
+        highQuality: 1000,
+        lightweight: 10000
     }
 }
 
 export const AIUsageService = {
-    async checkLimit(supabase: SupabaseClient, userId: string, tier: 'free' | 'pro' = 'free'): Promise<{ allowed: boolean, remaining: number }> {
+    async checkLimit(supabase: SupabaseClient, userId: string, tier: UserTier = 'free'): Promise<{ allowed: boolean, remaining: number }> {
         // 1. Get current usage
         // For simplicity, we just check a daily record or total record. 
         // Let's assume usage record is created daily or managed per month.

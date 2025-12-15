@@ -36,7 +36,8 @@ export const demoDataService = {
             notes: "東京時間の仲値に向けた上昇を狙いエントリー。150.20のサポートが機能した。",
             tags: ["順張り", "東京時間", "仲値"],
             isVerified: false,
-            isFrequentPair: true
+            isFrequentPair: true,
+            dataSource: "demo"
         })
 
         // 2. Losing Trade (EURUSD, London Session)
@@ -68,7 +69,8 @@ export const demoDataService = {
             notes: "ロンドン初動の騙しに引っかかった。戻り売りを狙ったが、指標発表で急騰し損切り。",
             tags: ["逆張り", "ロンドン時間", "指標"],
             isVerified: false,
-            isFrequentPair: true
+            isFrequentPair: true,
+            dataSource: "demo"
         })
 
         // 3. Small Win (GBP/JPY, NY Session)
@@ -98,7 +100,8 @@ export const demoDataService = {
             notes: "NY時間の押し目買い。ボラティリティが高かったためロットを落としてエントリー。",
             tags: ["順張り", "NY時間", "リスク管理"],
             isVerified: false,
-            isFrequentPair: true
+            isFrequentPair: true,
+            dataSource: "demo"
         })
 
         return trades

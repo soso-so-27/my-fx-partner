@@ -2,9 +2,13 @@ import { supabase } from '@/lib/supabase/client'
 import { Trade, CreateTradeInput } from '@/types/trade'
 
 export const tradeService = {
-    async getTrades(userId?: string): Promise<Trade[]> {
+    async getTrades(userId?: string, dataSource?: string): Promise<Trade[]> {
         // Use API route to handle auth and profile lookup securely
-        const response = await fetch('/api/trades')
+        const url = dataSource && dataSource !== 'all'
+            ? `/api/trades?dataSource=${dataSource}`
+            : '/api/trades'
+
+        const response = await fetch(url)
 
         if (!response.ok) {
             console.error('Error fetching trades')
@@ -13,6 +17,13 @@ export const tradeService = {
 
         const data = await response.json()
         return (data || []).map(mapDbTradeToTrade)
+    },
+
+    async cleanupDemoData(): Promise<boolean> {
+        const response = await fetch('/api/trades?dataSource=demo', {
+            method: 'DELETE'
+        })
+        return response.ok
     },
 
     async getTradeById(id: string): Promise<Trade | undefined> {
@@ -105,6 +116,9 @@ function mapDbTradeToTrade(dbTrade: any): Trade {
         verificationSource: dbTrade.verification_source,
         broker: dbTrade.broker,
         originalEmailId: dbTrade.original_email_id,
+
+        dataSource: dbTrade.data_source || 'manual',
+        wasModified: dbTrade.was_modified || false,
 
         isFrequentPair: dbTrade.is_frequent_pair,
         ruleCompliance: dbTrade.rule_compliance || []

@@ -68,7 +68,8 @@ export function MarketingSeedButton() {
                         pnlSource: trade.pnlSource,
                         tags: trade.tags,
                         isVerified: trade.isVerified,
-                        broker: trade.broker
+                        broker: trade.broker,
+                        dataSource: 'demo'
                     }, user.id)
                     successCount++
                 } catch (e) {
@@ -95,12 +96,13 @@ export function MarketingSeedButton() {
 
     const handleCleanup = async () => {
         if (!user) return
-        if (!confirm("デモデータ（#DEMOタグ付き）を全て削除しますか？\n※この操作は取り消せません。")) return
+        if (!confirm("デモデータを全て削除しますか？\n※この操作は取り消せません。\n※手動入力やGmail同期データは保護されます。")) return
         setCleaning(true)
 
         try {
             const trades = await tradeService.getTrades(user.id)
-            const demoTrades = trades.filter(t => t.tags?.includes("#DEMO"))
+            // Filter by dataSource='demo' or tag #DEMO for backward compatibility
+            const demoTrades = trades.filter(t => t.dataSource === 'demo' || t.tags?.includes("#DEMO"))
 
             let deletedCount = 0
             // Delete one by one (could be optimized but safe)
@@ -180,18 +182,7 @@ export function MarketingSeedButton() {
                 </Button>
             </div>
 
-            <div className="flex justify-end">
-                <Button
-                    onClick={handleCleanup}
-                    disabled={cleaning}
-                    variant="ghost"
-                    size="sm"
-                    className="text-muted-foreground hover:text-destructive text-xs flex items-center gap-1"
-                >
-                    {cleaning ? <Loader2 className="h-3 w-3 animate-spin" /> : <Trash2 className="h-3 w-3" />}
-                    デモデータを削除 (#DEMO)
-                </Button>
-            </div>
+            {/* Cleanup button moved to Data Management settings */}
         </div>
     )
 }

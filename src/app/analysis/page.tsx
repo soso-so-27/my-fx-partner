@@ -11,11 +11,12 @@ import { BestTradeCard } from "@/components/analysis/best-trade-card"
 import { PeriodFilter } from "@/components/ui/period-filter"
 import { Period, filterByPeriod } from "@/lib/date-utils"
 import { ProtectedRoute } from "@/components/auth/protected-route"
+import { DataSourceFilter, DataSourceFilterType } from "@/components/ui/data-source-filter"
+
 import { TagFilter } from "@/components/ui/tag-filter"
 import { PnLChart } from "@/components/charts/pnl-chart"
 import { PairPerformanceChart } from "@/components/charts/pair-performance-chart"
 import { useAuth } from "@/contexts/auth-context"
-
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { TradeHistoryList } from "@/components/history/trade-history-list"
 import { BarChart3, ChevronDown, ChevronUp } from "lucide-react"
@@ -27,6 +28,7 @@ export default function AnalysisPage() {
     const [loading, setLoading] = useState(true)
     const [period, setPeriod] = useState<Period>('all')
     const [selectedTags, setSelectedTags] = useState<string[]>([])
+    const [dataSourceFilter, setDataSourceFilter] = useState<DataSourceFilterType>('real') // Default to real data
     const [bestTrade, setBestTrade] = useState<Trade | null>(null)
     const [showPairChart, setShowPairChart] = useState(false)
 
@@ -37,8 +39,10 @@ export default function AnalysisPage() {
                 return
             }
             try {
-                const trades = await tradeService.getTrades(user.id)
+                // Fetch filtered trades directly from DB
+                const trades = await tradeService.getTrades(user.id, dataSourceFilter)
                 let filtered = filterByPeriod(trades, period)
+
                 if (selectedTags.length > 0) {
                     filtered = filtered.filter(trade =>
                         trade.tags && trade.tags.some(tag => selectedTags.includes(tag))
@@ -64,7 +68,7 @@ export default function AnalysisPage() {
             }
         }
         loadStats()
-    }, [user, period, selectedTags])
+    }, [user, period, selectedTags, dataSourceFilter])
 
     if (loading) {
         return (
@@ -107,7 +111,10 @@ export default function AnalysisPage() {
                     <TabsContent value="stats">
                         {/* Filters */}
                         <div className="mb-6 space-y-3">
-                            <PeriodFilter value={period} onChange={setPeriod} />
+                            <div className="flex flex-wrap gap-2">
+                                <PeriodFilter value={period} onChange={setPeriod} />
+                                <DataSourceFilter value={dataSourceFilter} onChange={setDataSourceFilter} />
+                            </div>
                             <TagFilter selectedTags={selectedTags} onChange={setSelectedTags} />
                         </div>
 
@@ -202,7 +209,7 @@ export default function AnalysisPage() {
                     </TabsContent>
 
                     <TabsContent value="history">
-                        <TradeHistoryList />
+                        <TradeHistoryList trades={filteredTrades} />
                     </TabsContent>
                 </Tabs>
             </div>

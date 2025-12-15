@@ -53,6 +53,7 @@ export const marketingSeeds = {
                 tags: [],
                 isVerified: false,
                 isFrequentPair: false,
+                dataSource: "demo",
                 broker: config.brokerName
             }
 

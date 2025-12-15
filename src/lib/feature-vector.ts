@@ -10,48 +10,61 @@
  * - Shape features
  */
 
+import sharp from 'sharp'
 import { createHash } from 'crypto'
+import { ImageFeatures } from './types/feature-types'
 
-export interface ImageFeatures {
-    vector: number[]
-    hash: string
-    dimensions: {
-        width: number
-        height: number
-    }
-}
+export type { ImageFeatures } // Re-export for convenience if needed, or just let consumers import from types
+
 
 /**
  * Generate a simple perceptual hash from image data
- * This is a lightweight alternative to CNN-based feature extraction
  */
 export function generatePerceptualHash(imageData: Buffer): string {
-    // Create a hash of the image content
     return createHash('sha256').update(imageData).digest('hex')
 }
 
 /**
- * Extract basic statistical features from image buffer
- * For MVP, we'll use a simplified approach
+ * Extract robust features from image buffer using Sharp
+ * 
+ * Strategy:
+ * 1. Resize to fixed 8x8 grid (64 pixels) for structure analysis
+ * 2. Convert to grayscale for brightness pattern (structure)
+ * 3. Extract RGB components for color distribution (bullish/bearish dominance)
+ * 4. Combine into a normalized feature vector
+ * 
+ * Output Vector Size: 64 (Brightness) + 3 (RGB Avg) = 67 dimensions
  */
-export function extractBasicFeatures(imageData: Buffer): number[] {
-    const features: number[] = []
+export async function extractBasicFeatures(imageData: Buffer): Promise<number[]> {
+    try {
+        // 1. Structural Features (64 dimensions)
+        // Resize to 8x8 and convert to grayscale to get the "shape" of the chart
+        const structureBuffer = await sharp(imageData)
+            .resize(8, 8, { fit: 'fill' })
+            .grayscale()
+            .raw()
+            .toBuffer()
 
-    // Sample pixels at regular intervals to create a feature vector
-    const sampleSize = 64 // 64 samples = 64-dimensional vector
-    const step = Math.floor(imageData.length / sampleSize)
+        // Normalize 0-255 to 0-1
+        const structureFeatures = Array.from(structureBuffer).map(b => b / 255)
 
-    for (let i = 0; i < sampleSize; i++) {
-        const idx = i * step
-        if (idx < imageData.length) {
-            // Normalize byte value to 0-1 range
-            features.push(imageData[idx] / 255)
-        } else {
-            features.push(0)
-        }
+        // 2. Color Features (3 dimensions)
+        // Global color statistics to detect Red (Bear) vs Green (Bull) dominance
+        const { dominant } = await sharp(imageData).stats()
+        const colorFeatures = [
+            dominant.r / 255,
+            dominant.g / 255,
+            dominant.b / 255
+        ]
+
+        // Combine
+        return [...structureFeatures, ...colorFeatures]
+
+    } catch (error) {
+        console.error('Feature extraction failed:', error)
+        // Fallback to zero vector if image processing fails
+        return new Array(67).fill(0)
     }
-
-    return features
 }
 
 /**
@@ -71,7 +84,8 @@ export async function generateFeatureVectorFromUrl(imageUrl: string): Promise<{
         const arrayBuffer = await response.arrayBuffer()
         const buffer = Buffer.from(arrayBuffer)
 
-        const vector = extractBasicFeatures(buffer)
+        // Now async
+        const vector = await extractBasicFeatures(buffer)
         const hash = generatePerceptualHash(buffer)
 
         return { vector, hash }

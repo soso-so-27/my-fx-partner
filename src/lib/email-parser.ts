@@ -1,4 +1,5 @@
 import { CreateTradeInput } from "@/types/trade"
+import OpenAI from "openai"
 
 export interface ParsedTrade extends CreateTradeInput {
     broker: string
@@ -6,32 +7,51 @@ export interface ParsedTrade extends CreateTradeInput {
 }
 
 export const emailParser = {
-    parse(subject: string, body: string, emailId: string): ParsedTrade | null {
+    async parse(subject: string, body: string, emailId: string): Promise<ParsedTrade | null> {
         // 1. ブローカー検出
         const broker = this.detectBroker(subject, body)
+
+        let result: ParsedTrade | null = null
 
         // 2. ブローカー別パーサーに振り分け
         switch (broker) {
             case 'XMTrading':
-                return this.parseXM(body, emailId)
+                result = this.parseXM(body, emailId)
+                break
             case 'Exness':
-                return this.parseExness(body, emailId)
+                result = this.parseExness(body, emailId)
+                break
             case 'OANDA':
-                return this.parseOANDA(body, emailId)
+                result = this.parseOANDA(body, emailId)
+                break
             case 'IC Markets':
-                return this.parseICMarkets(body, emailId)
+                result = this.parseICMarkets(body, emailId)
+                break
             case 'Pepperstone':
-                return this.parsePepperstone(body, emailId)
+                result = this.parsePepperstone(body, emailId)
+                break
             case 'GMO':
-                return this.parseGMO(body, emailId)
+                result = this.parseGMO(body, emailId)
+                break
             case 'DMM':
-                return this.parseDMM(body, emailId)
+                result = this.parseDMM(body, emailId)
+                break
             case 'SBI':
-                return this.parseSBI(body, emailId)
+                result = this.parseSBI(body, emailId)
+                break
             default:
-                // 汎用パーサー（フォールバック）
-                return this.parseGeneric(body, emailId)
+                // 汎用パーサー（フォールバック1）
+                result = this.parseGeneric(body, emailId)
+                break
         }
+
+        // 3. LLMフォールバック (RegExで失敗した場合)
+        if (!result) {
+            console.log("Regex parsing failed, trying LLM fallback...")
+            result = await this.parseWithLLM(subject, body, emailId)
+        }
+
+        return result
     },
 
     detectBroker(subject: string, body: string): string | null {
@@ -485,5 +505,90 @@ export const emailParser = {
             console.error("SBI Parsing Error", e)
             return null
         }
+    },
+
+    // ===================
+    // LLM Fallback (GPT-4o-mini)
+    // ===================
+    async parseWithLLM(subject: string, body: string, emailId: string): Promise<ParsedTrade | null> {
+        try {
+            const openai = new OpenAI({
+                apiKey: process.env.OPENAI_API_KEY
+            })
+
+            const systemPrompt = `
+You are a specialized FX trade email parser.
+Your task is to extract trade details from a trade confirmation email and return them in a strict JSON format.
+If the email does not contain valid trade confirmation data, return null.
+
+Required JSON Structure:
+{
+  "pair": string (e.g. "USDJPY", "EURUSD"),
+  "direction": "BUY" | "SELL",
+  "entryPrice": number (if new entry),
+  "exitPrice": number (if settlement/exit),
+  "lotSize": number,
+  "entryTime": string (ISO 8601),
+  "exitTime": string (ISO 8601, only if settlement),
+  "pnl": { "amount": number, "currency": "JPY" | "USD" } (only if settlement),
+  "broker": string (inferred from email),
+  "isSettlement": boolean
+}
+
+Rules:
+- If it is a "New Order" (Entry), exitPrice and pnl should be null.
+- If it is a "Settlement" (Exit), entryPrice should be 0 (or extracted if available as 'open price'), and exitPrice/pnl must be present.
+- Normalize pairs to "USDJPY" format (no slashes).
+- If cannot parse, return null JSON.
+`
+            const userPrompt = `
+Subject: ${subject}
+Body:
+${body}
+`
+            const response = await openai.chat.completions.create({
+                model: "gpt-4o-mini",
+                messages: [
+                    { role: "system", content: systemPrompt },
+                    { role: "user", content: userPrompt }
+                ],
+                temperature: 0,
+                response_format: { type: "json_object" }
+            })
+
+            const content = response.choices[0].message.content
+            if (!content) return null
+
+            const data = JSON.parse(content)
+            if (!data || !data.pair) return null
+
+            // Map to ParsedTrade interface
+            return {
+                pair: data.pair,
+                direction: data.direction,
+                entryPrice: data.entryPrice || 0,
+                exitPrice: data.exitPrice || undefined,
+                lotSize: data.lotSize,
+                entryTime: data.entryTime || new Date().toISOString(),
+                exitTime: data.exitTime || undefined,
+                pnl: data.pnl?.amount ? {
+                    amount: data.pnl.amount,
+                    currency: data.pnl.currency || 'JPY',
+                    pips: 0 // Cannot reliably calc pips without knowing entry in settlement sometimes
+                } : undefined,
+                pnlSource: data.pnl?.amount ? 'email' : undefined,
+                notes: `Auto-imported via AI Fallback (${data.broker || 'Unknown'})`,
+                broker: data.broker || "Unknown",
+                originalEmailId: emailId,
+                isVerified: true,
+                verificationSource: "gmail_import_ai",
+                tags: ["AI_Import", data.broker || "Unknown", data.isSettlement ? "決済" : "新規"]
+            }
+
+        } catch (e) {
+            console.error("LLM Parsing Error", e)
+            return null
+        }
     }
 }
+

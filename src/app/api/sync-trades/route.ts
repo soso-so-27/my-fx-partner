@@ -43,27 +43,48 @@ export async function POST() {
 
         // Get Supabase session to ensure we have the token
         const supabase = await createClient()
+        // Note: getUser() is safer than getSession() in server context, but for simple token retrieval:
         const { data: { session: supabaseSession }, error: sessionError } = await supabase.auth.getSession()
 
-        if (sessionError || !supabaseSession) {
-            console.error("Supabase Session Error:", sessionError)
-            return NextResponse.json({ error: "Supabase Session not found" }, { status: 401 })
-        }
+        // Handle case where session might be missing but we have NextAuth session
+        // If we are in this route, we are authenticated via NextAuth (Google).
+        // However, we need a Supabase USER ID to insert data.
 
-        // Create a direct client with the access token to ensure RLS works
-        const authenticatedSupabase = createSupabaseClient(
-            process.env.NEXT_PUBLIC_SUPABASE_URL!,
-            process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-            {
-                global: {
-                    headers: {
-                        Authorization: `Bearer ${supabaseSession.access_token}`
+        let userId: string
+        let authenticatedSupabase = supabase
+
+        if (sessionError || !supabaseSession) {
+            console.warn("Supabase Session not found via auth.getSession(), falling back to Service Role")
+
+            // If explicit Supabase session is missing, we must use Service Role to operate on behalf of the user
+            // We need to look up or create the user profile based on the Google Email
+            const { getSupabaseAdmin, getOrCreateUserProfile } = await import('@/lib/supabase-admin')
+            const adminClient = getSupabaseAdmin()
+
+            // We know session.user.email exists from the check at the top
+            if (!session.user?.email) throw new Error("User email is missing")
+
+            userId = await getOrCreateUserProfile(adminClient, session.user.email, session.user.name || undefined)
+
+            // Use admin client for operations since we don't have a user JWT
+            authenticatedSupabase = adminClient
+        } else {
+            // Create a direct client with the access token to ensure RLS works
+            // IMPORTANT: reusing the 'supabase' client created by createClient() is usually sufficient
+            // if the cookies are set correctly. But if we want to be explicit:
+            authenticatedSupabase = createSupabaseClient(
+                process.env.NEXT_PUBLIC_SUPABASE_URL!,
+                process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+                {
+                    global: {
+                        headers: {
+                            Authorization: `Bearer ${supabaseSession.access_token}`
+                        }
                     }
                 }
-            }
-        )
-
-        const userId = supabaseSession.user.id
+            )
+            userId = supabaseSession.user.id
+        }
 
         // Process emails in chronological order (oldest first) so entries are saved before settlements
         const sortedMessages = [...messages].reverse()
@@ -97,7 +118,7 @@ export async function POST() {
             const body = rawBody.replace(/<[^>]*>/g, ' ')
 
 
-            const parsedTrade = emailParser.parse(subject, body, msg.id)
+            const parsedTrade = await emailParser.parse(subject, body, msg.id)
 
             if (parsedTrade) {
                 // Check for duplicates using the authenticated client
@@ -218,7 +239,8 @@ export async function POST() {
                         is_verified: parsedTrade.isVerified,
                         verification_source: parsedTrade.verificationSource,
                         broker: parsedTrade.broker,
-                        original_email_id: parsedTrade.originalEmailId
+                        original_email_id: parsedTrade.originalEmailId,
+                        data_source: 'gmail_sync'
                     }
 
                     const { data: trade, error } = await authenticatedSupabase

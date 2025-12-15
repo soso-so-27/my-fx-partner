@@ -104,8 +104,8 @@ export async function POST(request: NextRequest) {
         const userId = await getOrCreateUserProfile(supabaseAdmin, session.user.email)
 
         // 1. Check Usage Limits
-        // TODO: Tier information should be fetched from profile/subscription
-        const tier = 'free'
+        const { getUserTier } = await import('@/lib/tier-service')
+        const tier = await getUserTier(supabaseAdmin, userId)
         const { allowed, remaining } = await AIUsageService.checkLimit(supabaseAdmin, userId, tier)
 
         if (!allowed) {

@@ -20,11 +20,15 @@ import { Edit2, Trash2, ShieldCheck, Plus } from "lucide-react"
 import { useAuth } from "@/contexts/auth-context"
 import { QuickRecordDialog } from "@/components/trade/quick-record-dialog"
 
-export function TradeHistoryList() {
+interface TradeHistoryListProps {
+    trades?: Trade[]
+}
+
+export function TradeHistoryList({ trades }: TradeHistoryListProps) {
     const { user } = useAuth()
     const [allTrades, setAllTrades] = useState<Trade[]>([])
     const [filteredTrades, setFilteredTrades] = useState<Trade[]>([])
-    const [loading, setLoading] = useState(true)
+    const [loading, setLoading] = useState(!trades)
     const [period, setPeriod] = useState<Period>('all')
     const [selectedTags, setSelectedTags] = useState<string[]>([])
     const [searchQuery, setSearchQuery] = useState('')
@@ -33,6 +37,13 @@ export function TradeHistoryList() {
     const [showAddDialog, setShowAddDialog] = useState(false)
 
     useEffect(() => {
+        if (trades) {
+            setAllTrades(trades)
+            setFilteredTrades(trades)
+            setLoading(false)
+            return
+        }
+
         const loadTrades = async () => {
             if (!user) {
                 setLoading(false)
@@ -49,7 +60,7 @@ export function TradeHistoryList() {
             }
         }
         loadTrades()
-    }, [user])
+    }, [user, trades])
 
     useEffect(() => {
         let filtered = filterByPeriod(allTrades, period)
@@ -117,10 +128,23 @@ export function TradeHistoryList() {
                             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                                 <CardTitle className="text-base font-medium font-numbers flex items-center gap-2">
                                     {trade.pair} <span className="text-muted-foreground text-sm">({trade.direction})</span>
+                                    {/* Verified (Real) Badge */}
                                     {trade.isVerified && (
                                         <Badge variant="secondary" className="bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-900/20 dark:text-emerald-400 dark:border-emerald-700/40 gap-1 h-5 px-1.5">
                                             <ShieldCheck className="h-3 w-3" />
                                             <span className="text-[10px]">Real</span>
+                                        </Badge>
+                                    )}
+                                    {/* Demo Badge */}
+                                    {(trade.dataSource === 'demo' || trade.tags?.includes('#DEMO')) && (
+                                        <Badge variant="outline" className="text-muted-foreground border-muted-foreground/30 gap-1 h-5 px-1.5">
+                                            <span className="text-[10px]">Demo</span>
+                                        </Badge>
+                                    )}
+                                    {/* Modified Badge */}
+                                    {trade.wasModified && (
+                                        <Badge variant="secondary" className="bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-900/20 dark:text-amber-400 dark:border-amber-700/40 gap-1 h-5 px-1.5">
+                                            <span className="text-[10px]">Edited</span>
                                         </Badge>
                                     )}
                                 </CardTitle>

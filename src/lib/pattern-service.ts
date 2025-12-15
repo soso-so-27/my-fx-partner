@@ -1,5 +1,5 @@
 import { getSupabaseAdmin } from './supabase-admin'
-import { generateMockFeatureVector } from './feature-vector'
+import { generateFeatureVectorFromUrl } from './feature-vector'
 
 // Types
 export interface Pattern {
@@ -53,15 +53,85 @@ export const SUPPORTED_CURRENCY_PAIRS = [
 ] as const
 
 // Timeframes supported (MVP)
+// Timeframes supported (MVP) - Minimum 15m as per user request (Cron constraints)
 export const SUPPORTED_TIMEFRAMES = [
-    { value: '5m', label: '5分' },
     { value: '15m', label: '15分' },
     { value: '1h', label: '1時間' },
     { value: '4h', label: '4時間' },
+    { value: '1d', label: '日足' },
 ] as const
 
 // Pattern Service
 export const patternService = {
+    // ... (existing methods)
+
+    // Find matching patterns for a given chart image and timeframe
+    async findMatches(
+        userId: string,
+        chartImageUrl: string,
+        timeframe: string
+    ): Promise<{ pattern: Pattern; similarity: number }[]> {
+        const supabase = getSupabaseAdmin()
+
+        // 1. Fetch active patterns for this user AND timeframe
+        const { data: patternsData, error } = await supabase
+            .from('patterns')
+            .select('*')
+            .eq('user_id', userId)
+            .eq('is_active', true)
+            .eq('timeframe', timeframe) // Strict timeframe matching
+
+        if (error || !patternsData || patternsData.length === 0) {
+            return []
+        }
+
+        // 2. Generate vector for the input chart
+        let targetVector: number[] = []
+        try {
+            const { vector } = await generateFeatureVectorFromUrl(chartImageUrl)
+            targetVector = vector
+        } catch (e) {
+            console.error('Error generating vector for target chart:', e)
+            return []
+        }
+
+        // 3. Compare against all candidate patterns
+        // We need to map DB rows to the format expected by comparePatternToMultiple
+        // Note: patternsData has 'feature_vector' column.
+
+        // Dynamic import to avoid circular dependency issues if any, or just standard import
+        const { comparePatternToMultiple } = await import('./pattern-similarity')
+
+        const candidates = patternsData.map(p => ({
+            id: p.id,
+            vector: p.feature_vector as number[]
+        }))
+
+        const matches = comparePatternToMultiple(targetVector, candidates)
+
+        // 4. Filter by threshold and map back to Pattern objects
+        // We do this manually to attach the full Pattern object
+        const results: { pattern: Pattern; similarity: number }[] = []
+
+        for (const match of matches) {
+            const patternRow = patternsData.find(p => p.id === match.id)
+            if (!patternRow) continue
+
+            const pattern = mapPattern(patternRow)
+            // Use the pattern's specific threshold, or default to 70%
+            const threshold = pattern.similarityThreshold || 70
+
+            if (match.percent >= threshold) {
+                results.push({
+                    pattern,
+                    similarity: match.similarity
+                })
+            }
+        }
+
+        return results
+    },
+
     // Get all patterns for a user
     async getPatterns(userId: string): Promise<Pattern[]> {
         const supabase = getSupabaseAdmin()
@@ -79,6 +149,7 @@ export const patternService = {
 
         return (data || []).map(mapPattern)
     },
+
 
     // Get a single pattern by ID
     async getPattern(patternId: string): Promise<Pattern | null> {
@@ -101,9 +172,16 @@ export const patternService = {
     async createPattern(userId: string, input: PatternInput): Promise<Pattern | null> {
         const supabase = getSupabaseAdmin()
 
-        // Generate a temporary pattern ID for feature vector generation
-        const tempId = `temp-${Date.now()}-${Math.random().toString(36).substring(7)}`
-        const featureVector = generateMockFeatureVector(tempId)
+        // Generate feature vector from the uploaded image URL
+        // Now using real analysis via Sharp
+        let featureVector: number[] = []
+        try {
+            const result = await generateFeatureVectorFromUrl(input.imageUrl)
+            featureVector = result.vector
+        } catch (e) {
+            console.error('Failed to generate feature vector for pattern:', input.name, e)
+            featureVector = new Array(67).fill(0)
+        }
 
         const { data, error } = await supabase
             .from('patterns')

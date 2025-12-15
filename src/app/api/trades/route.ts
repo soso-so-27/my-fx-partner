@@ -29,13 +29,31 @@ export async function GET(request: NextRequest) {
         const supabaseAdmin = getSupabaseAdmin()
         const userId = await getOrCreateUserProfile(supabaseAdmin, session.user.email, session.user.name || undefined)
 
-        console.log(`DEBUG: GET trades for userId: ${userId}`)
+        const { searchParams } = new URL(request.url)
+        const dataSource = searchParams.get('dataSource')
+        console.log(`DEBUG: GET trades for userId: ${userId}, dataSource: ${dataSource}`)
 
-        const { data, error } = await supabaseAdmin
+        let query = supabaseAdmin
             .from('trades')
             .select('*')
             .eq('user_id', userId)
-            .order('entry_time', { ascending: false })
+
+        // Filter based on dataSource
+        if (dataSource) {
+            if (dataSource === 'real') {
+                query = query.in('data_source', ['gmail_sync', 'manual'])
+            } else if (dataSource === 'demo') {
+                query = query.in('data_source', ['demo'])
+                // Also include tagged legacy demo data if specifically asking for demo
+                // query = query.or(`data_source.eq.demo,tags.cs.{'#DEMO'}`) // This is complex in ORM, simplified for now
+            } else if (dataSource === 'all') {
+                // No filter
+            } else {
+                query = query.eq('data_source', dataSource)
+            }
+        }
+
+        const { data, error } = await query.order('entry_time', { ascending: false })
 
         if (error) {
             console.error('Error fetching trades:', error)
@@ -96,7 +114,8 @@ export async function POST(request: NextRequest) {
             verification_source: body.verificationSource,
             broker: body.broker,
             original_email_id: body.originalEmailId,
-            rule_compliance: body.ruleCompliance || []
+            rule_compliance: body.ruleCompliance || [],
+            data_source: body.dataSource || 'manual' // Default to manual if not specified
         }
 
         const { data, error } = await supabaseAdmin
@@ -126,20 +145,30 @@ export async function DELETE(request: NextRequest) {
         }
 
         const supabaseAdmin = getSupabaseAdmin()
+        const userId = await getOrCreateUserProfile(supabaseAdmin, session.user.email, session.user.name || undefined)
+
         const { searchParams } = new URL(request.url)
         const id = searchParams.get('id')
+        const dataSource = searchParams.get('dataSource')
 
-        if (!id) {
-            return NextResponse.json({ error: 'Missing trade ID' }, { status: 400 })
-        }
+        if (id) {
+            const { error: deleteError } = await supabaseAdmin
+                .from('trades')
+                .delete()
+                .eq('id', id)
 
-        const { error } = await supabaseAdmin
-            .from('trades')
-            .delete()
-            .eq('id', id)
+            if (deleteError) throw deleteError
+        } else if (dataSource === 'demo') {
+            // Bulk delete demo data
+            const { error: deleteError } = await supabaseAdmin
+                .from('trades')
+                .delete()
+                .eq('user_id', userId) // Security: Ensure own user
+                .eq('data_source', 'demo')
 
-        if (error) {
-            return NextResponse.json({ error: error.message }, { status: 500 })
+            if (deleteError) throw deleteError
+        } else {
+            return NextResponse.json({ error: 'Missing trade ID or valid dataSource' }, { status: 400 })
         }
 
         return NextResponse.json({ success: true })
@@ -182,6 +211,24 @@ export async function PATCH(request: NextRequest) {
         if (updates.chartImages) dbUpdates.chart_images = updates.chartImages
         if (updates.notes) dbUpdates.notes = updates.notes
         if (updates.tags) dbUpdates.tags = updates.tags
+        if (updates.dataSource) dbUpdates.data_source = updates.dataSource
+        if (updates.wasModified !== undefined) dbUpdates.was_modified = updates.wasModified
+
+        // Check current trade status to handle modification tracking
+        const { data: currentTrade } = await supabaseAdmin
+            .from('trades')
+            .select('data_source, was_modified')
+            .eq('id', id)
+            .single()
+
+        // If editing a Gmail-synced trade, mark as modified and unverified
+        if (currentTrade?.data_source === 'gmail_sync') {
+            dbUpdates.was_modified = true
+            // Only force unverified if it wasn't already manually set in this update
+            if (updates.isVerified === undefined) {
+                dbUpdates.is_verified = false
+            }
+        }
 
         const { error } = await supabaseAdmin
             .from('trades')
