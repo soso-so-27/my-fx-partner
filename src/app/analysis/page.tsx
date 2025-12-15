@@ -32,7 +32,10 @@ export default function AnalysisPage() {
 
     useEffect(() => {
         const loadStats = async () => {
-            if (!user) return
+            if (!user) {
+                setLoading(false)
+                return
+            }
             try {
                 const trades = await tradeService.getTrades(user.id)
                 let filtered = filterByPeriod(trades, period)
@@ -63,8 +66,25 @@ export default function AnalysisPage() {
         loadStats()
     }, [user, period, selectedTags])
 
-    if (loading || !stats) {
-        return <div className="p-4">Loading analysis...</div>
+    if (loading) {
+        return (
+            <ProtectedRoute>
+                <div className="container mx-auto p-4 flex items-center justify-center h-[50vh]">
+                    <div className="text-muted-foreground">分析データを読み込み中...</div>
+                </div>
+            </ProtectedRoute>
+        )
+    }
+
+    if (!stats) {
+        return (
+            <ProtectedRoute>
+                <div className="container mx-auto p-4 text-center py-12">
+                    <p className="text-muted-foreground">トレード記録がありません</p>
+                    <p className="text-sm text-muted-foreground mt-2">ジャーナルからトレードを記録してください</p>
+                </div>
+            </ProtectedRoute>
+        )
     }
 
     return (
