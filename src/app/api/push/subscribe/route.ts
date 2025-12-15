@@ -12,9 +12,9 @@ export async function POST(req: NextRequest) {
         }
 
         const supabase = getSupabaseAdmin()
-        const userProfile = await getOrCreateUserProfile(supabase, session.user.email)
+        const userId = await getOrCreateUserProfile(supabase, session.user.email)
 
-        if (!userProfile) {
+        if (!userId) {
             return NextResponse.json({ error: 'User profile not found' }, { status: 404 })
         }
 
@@ -28,12 +28,12 @@ export async function POST(req: NextRequest) {
         const { error } = await supabase
             .from('push_subscriptions')
             .upsert({
-                user_id: userProfile.id,
+                user_id: userId,
                 endpoint: subscription.endpoint,
                 keys: subscription.keys,
                 updated_at: new Date().toISOString()
             }, {
-                onConflict: 'user_id,endpoint'
+                onConflict: 'endpoint'
             })
 
         if (error) {
@@ -57,9 +57,9 @@ export async function DELETE(req: NextRequest) {
         }
 
         const supabase = getSupabaseAdmin()
-        const userProfile = await getOrCreateUserProfile(supabase, session.user.email)
+        const userId = await getOrCreateUserProfile(supabase, session.user.email)
 
-        if (!userProfile) {
+        if (!userId) {
             return NextResponse.json({ error: 'User profile not found' }, { status: 404 })
         }
 
@@ -68,7 +68,7 @@ export async function DELETE(req: NextRequest) {
         const { error } = await supabase
             .from('push_subscriptions')
             .delete()
-            .eq('user_id', userProfile.id)
+            .eq('user_id', userId)
             .eq('endpoint', endpoint)
 
         if (error) {
