@@ -1,7 +1,7 @@
 "use client"
 
-import { useState, useEffect } from 'react'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { useState, useEffect, useRef } from 'react'
+import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -36,7 +36,9 @@ import {
     Loader2,
     Search,
     X,
-    Filter
+    Filter,
+    Undo2,
+    Send
 } from 'lucide-react'
 
 // Types
@@ -279,6 +281,14 @@ export function ClipList({ userId, sharedData }: ClipListProps) {
     const [filterImportance, setFilterImportance] = useState<number>(0)
     const { toast } = useToast()
 
+    // Quick Add State
+    const [quickUrl, setQuickUrl] = useState('')
+    const [isQuickAdding, setIsQuickAdding] = useState(false)
+
+    // Undo State
+    const [deletedClip, setDeletedClip] = useState<Clip | null>(null)
+    const undoTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+
     // Auto-open dialog if there is shared data from Web Share Target
     useEffect(() => {
         if (sharedData?.url || sharedData?.text) {
@@ -322,26 +332,93 @@ export function ClipList({ userId, sharedData }: ClipListProps) {
         return matchesSearch && matchesType && matchesImportance
     })
 
-    const handleDelete = async (id: string) => {
-        if (!confirm('このクリップを削除しますか？')) return
+    // Quick Add Handler
+    const handleQuickAdd = async () => {
+        if (!quickUrl.trim()) return
 
+        setIsQuickAdding(true)
         try {
-            const res = await fetch(`/api/clips/${id}`, { method: 'DELETE' })
+            // Auto-detect content type
+            let contentType = 'other'
+            if (quickUrl.includes('twitter.com') || quickUrl.includes('x.com')) {
+                contentType = 'x'
+            } else if (quickUrl.includes('youtube.com') || quickUrl.includes('youtu.be')) {
+                contentType = 'youtube'
+            } else if (quickUrl.includes('note.com')) {
+                contentType = 'note'
+            } else {
+                contentType = 'blog'
+            }
+
+            const res = await fetch('/api/clips', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    url: quickUrl,
+                    contentType,
+                    importance: 3,
+                }),
+            })
+
             if (res.ok) {
-                setClips(clips.filter(c => c.id !== id))
-                toast({
-                    title: "削除しました",
-                    description: "クリップが削除されました",
-                })
+                toast({ title: "クリップを保存しました" })
+                setQuickUrl('')
+                fetchClips()
+            } else {
+                const data = await res.json()
+                toast({ title: data.error || "保存に失敗", variant: "destructive" })
             }
         } catch (error) {
-            console.error('Error deleting clip:', error)
-            toast({
-                title: "エラー",
-                description: "削除に失敗しました",
-                variant: "destructive",
-            })
+            toast({ title: "保存に失敗しました", variant: "destructive" })
+        } finally {
+            setIsQuickAdding(false)
         }
+    }
+
+    // Delete with Undo
+    const handleDelete = async (clip: Clip) => {
+        // Clear any existing undo timeout
+        if (undoTimeoutRef.current) {
+            clearTimeout(undoTimeoutRef.current)
+        }
+
+        // Optimistic delete
+        setDeletedClip(clip)
+        setClips(clips.filter(c => c.id !== clip.id))
+
+        toast({
+            title: "削除しました",
+            action: (
+                <Button variant="ghost" size="sm" onClick={() => handleUndo(clip)}>
+                    <Undo2 className="h-4 w-4 mr-1" />
+                    元に戻す
+                </Button>
+            ),
+            duration: 5000
+        })
+
+        // Actually delete after 5 seconds
+        undoTimeoutRef.current = setTimeout(async () => {
+            try {
+                await fetch(`/api/clips/${clip.id}`, { method: 'DELETE' })
+                setDeletedClip(null)
+            } catch (error) {
+                // Restore on error
+                setClips(prev => [clip, ...prev])
+                toast({ title: "削除に失敗しました", variant: "destructive" })
+            }
+        }, 5000)
+    }
+
+    const handleUndo = (clip: Clip) => {
+        if (undoTimeoutRef.current) {
+            clearTimeout(undoTimeoutRef.current)
+        }
+        setClips(prev => [clip, ...prev].sort((a, b) =>
+            new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+        ))
+        setDeletedClip(null)
+        toast({ title: "元に戻しました" })
     }
 
     const handleClipCreated = () => {
@@ -359,6 +436,30 @@ export function ClipList({ userId, sharedData }: ClipListProps) {
 
     return (
         <div className="space-y-2">
+            {/* Quick Add URL */}
+            <div className="flex gap-2 mb-2">
+                <Input
+                    placeholder="URLを貼り付けて即保存..."
+                    value={quickUrl}
+                    onChange={(e) => setQuickUrl(e.target.value)}
+                    onKeyDown={(e) => {
+                        if (e.key === 'Enter') handleQuickAdd()
+                    }}
+                    className="flex-1"
+                />
+                <Button
+                    onClick={handleQuickAdd}
+                    disabled={!quickUrl.trim() || isQuickAdding}
+                    size="sm"
+                >
+                    {isQuickAdding ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                        <Send className="h-4 w-4" />
+                    )}
+                </Button>
+            </div>
+
             {/* Search and Filter Section */}
             <div className="space-y-1.5">
                 {/* Search Bar */}
@@ -533,7 +634,7 @@ export function ClipList({ userId, sharedData }: ClipListProps) {
                                         className="h-6 w-6 text-muted-foreground hover:text-destructive"
                                         onClick={(e) => {
                                             e.stopPropagation()
-                                            handleDelete(clip.id)
+                                            handleDelete(clip)
                                         }}
                                     >
                                         <Trash2 className="h-3 w-3" />
