@@ -19,9 +19,11 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { useToast } from "@/components/ui/use-toast"
 import { format, isToday, isYesterday, isThisWeek, isThisMonth, startOfDay } from "date-fns"
 import { ja } from "date-fns/locale"
+import { PatternList } from "@/components/patterns/pattern-list"
 
 interface Alert {
     id: string
@@ -212,122 +214,144 @@ export default function AlertsPage() {
                     </Badge>
                 </header>
 
-                <div className="space-y-4">
-                    {isLoading ? (
-                        <div className="flex justify-center py-12">
-                            <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-                        </div>
-                    ) : alerts.length === 0 ? (
-                        <Card>
-                            <CardContent className="flex flex-col items-center justify-center py-12">
-                                <div className="h-16 w-16 rounded-full bg-muted flex items-center justify-center mb-4">
-                                    <Bell className="h-8 w-8 text-muted-foreground" />
+                <Tabs defaultValue="alerts" className="w-full">
+                    <TabsList className="grid w-full grid-cols-2 mb-4">
+                        <TabsTrigger value="alerts" className="flex items-center gap-1">
+                            <Bell className="h-3.5 w-3.5" />
+                            アラート
+                            {unreadCount > 0 && (
+                                <Badge variant="destructive" className="ml-1 h-5 min-w-5 px-1.5 text-[10px]">
+                                    {unreadCount}
+                                </Badge>
+                            )}
+                        </TabsTrigger>
+                        <TabsTrigger value="patterns" className="flex items-center gap-1">
+                            <Target className="h-3.5 w-3.5" />
+                            パターン管理
+                        </TabsTrigger>
+                    </TabsList>
+
+                    <TabsContent value="alerts" className="space-y-4">
+                        {isLoading ? (
+                            <div className="flex justify-center py-12">
+                                <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+                            </div>
+                        ) : alerts.length === 0 ? (
+                            <Card>
+                                <CardContent className="flex flex-col items-center justify-center py-12">
+                                    <div className="h-16 w-16 rounded-full bg-muted flex items-center justify-center mb-4">
+                                        <Bell className="h-8 w-8 text-muted-foreground" />
+                                    </div>
+                                    <h3 className="font-semibold mb-2">まだ通知がありません</h3>
+                                    <p className="text-sm text-muted-foreground text-center max-w-xs">
+                                        パターンを登録すると、類似したチャートが出現した時に通知が届きます。
+                                    </p>
+                                </CardContent>
+                            </Card>
+                        ) : (
+                            <>
+                                {/* Filter Controls */}
+                                <div className="flex items-center gap-2 flex-wrap">
+                                    <Select value={patternFilter} onValueChange={setPatternFilter}>
+                                        <SelectTrigger className="w-[130px] h-8 text-xs">
+                                            <Filter className="h-3 w-3 mr-1" />
+                                            <SelectValue placeholder="パターン" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="all">すべて</SelectItem>
+                                            {uniquePatterns.map(pattern => (
+                                                <SelectItem key={pattern} value={pattern}>{pattern}</SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+
+                                    <Select value={periodFilter} onValueChange={setPeriodFilter}>
+                                        <SelectTrigger className="w-[100px] h-8 text-xs">
+                                            <Clock className="h-3 w-3 mr-1" />
+                                            <SelectValue placeholder="期間" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="all">すべて</SelectItem>
+                                            <SelectItem value="today">今日</SelectItem>
+                                            <SelectItem value="week">今週</SelectItem>
+                                            <SelectItem value="month">今月</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+
+                                    <div className="flex-1" />
+
+                                    {unreadCount > 0 && (
+                                        <Button variant="outline" size="sm" className="h-8 text-xs gap-1" onClick={handleMarkAllRead}>
+                                            <CheckCheck className="h-3 w-3" />
+                                            すべて既読
+                                        </Button>
+                                    )}
                                 </div>
-                                <h3 className="font-semibold mb-2">まだ通知がありません</h3>
-                                <p className="text-sm text-muted-foreground text-center max-w-xs">
-                                    パターンを登録すると、類似したチャートが出現した時に通知が届きます。
+
+                                <div className="text-xs text-muted-foreground">
+                                    {filteredAlerts.length === alerts.length ? `${alerts.length}件` : `${filteredAlerts.length} / ${alerts.length}件`}
+                                </div>
+
+                                {groupedAlerts.length === 0 ? (
+                                    <div className="text-center py-8 text-muted-foreground">フィルター条件に一致する通知がありません</div>
+                                ) : (
+                                    groupedAlerts.map((group) => (
+                                        <div key={group.label} className="space-y-2">
+                                            <div className="flex items-center gap-2">
+                                                <div className="text-xs font-medium text-muted-foreground">{group.label}</div>
+                                                <div className="flex-1 h-px bg-border" />
+                                                <div className="text-xs text-muted-foreground">{group.alerts.length}件</div>
+                                            </div>
+                                            {group.alerts.map((alert) => (
+                                                <Card key={alert.id} className={`hover:bg-muted/50 transition-colors cursor-pointer ${alert.status === 'unread' ? "border-primary/50 bg-primary/5" : ""}`} onClick={() => handleAlertClick(alert)}>
+                                                    <CardContent className="p-4">
+                                                        <div className="flex items-center justify-between">
+                                                            <div className="flex-1">
+                                                                <div className="flex items-center gap-2 mb-1">
+                                                                    <span className="font-semibold">{alert.patternName}</span>
+                                                                    {alert.status === 'unread' && <Badge className="bg-primary text-primary-foreground text-xs">NEW</Badge>}
+                                                                </div>
+                                                                <div className="flex items-center gap-3 text-sm text-muted-foreground">
+                                                                    <span className="flex items-center gap-1"><TrendingUp className="h-3 w-3" />{alert.currencyPair}</span>
+                                                                    <span>|</span><span>{alert.timeframe}</span><span>|</span>
+                                                                    <span className="flex items-center gap-1"><Clock className="h-3 w-3" />{formatTimeAgo(new Date(alert.createdAt))}</span>
+                                                                </div>
+                                                            </div>
+                                                            <div className="flex items-center gap-3">
+                                                                <div className="text-right">
+                                                                    <div className={`text-lg font-bold ${Math.round(alert.similarity * 100) >= 80 ? 'text-green-600' : Math.round(alert.similarity * 100) >= 60 ? 'text-yellow-600' : 'text-muted-foreground'}`}>{Math.round(alert.similarity * 100)}%</div>
+                                                                    <div className="text-xs text-muted-foreground">一致度</div>
+                                                                </div>
+                                                                <ChevronRight className="h-5 w-5 text-muted-foreground" />
+                                                            </div>
+                                                        </div>
+                                                    </CardContent>
+                                                </Card>
+                                            ))}
+                                        </div>
+                                    ))
+                                )}
+                            </>
+                        )}
+
+                        {/* Info Card */}
+                        <Card className="border-dashed">
+                            <CardHeader className="pb-2">
+                                <CardTitle className="text-sm">Pattern Alert とは？</CardTitle>
+                            </CardHeader>
+                            <CardContent>
+                                <p className="text-sm text-muted-foreground">
+                                    あなたが登録した「得意パターン」に類似したチャートが出現した時に、自動で通知します。
+                                    「パターン管理」タブからパターンを登録してください。
                                 </p>
                             </CardContent>
                         </Card>
-                    ) : (
-                        <>
-                            {/* Filter Controls */}
-                            <div className="flex items-center gap-2 flex-wrap">
-                                <Select value={patternFilter} onValueChange={setPatternFilter}>
-                                    <SelectTrigger className="w-[130px] h-8 text-xs">
-                                        <Filter className="h-3 w-3 mr-1" />
-                                        <SelectValue placeholder="パターン" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="all">すべて</SelectItem>
-                                        {uniquePatterns.map(pattern => (
-                                            <SelectItem key={pattern} value={pattern}>{pattern}</SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
+                    </TabsContent>
 
-                                <Select value={periodFilter} onValueChange={setPeriodFilter}>
-                                    <SelectTrigger className="w-[100px] h-8 text-xs">
-                                        <Clock className="h-3 w-3 mr-1" />
-                                        <SelectValue placeholder="期間" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="all">すべて</SelectItem>
-                                        <SelectItem value="today">今日</SelectItem>
-                                        <SelectItem value="week">今週</SelectItem>
-                                        <SelectItem value="month">今月</SelectItem>
-                                    </SelectContent>
-                                </Select>
-
-                                <div className="flex-1" />
-
-                                {unreadCount > 0 && (
-                                    <Button variant="outline" size="sm" className="h-8 text-xs gap-1" onClick={handleMarkAllRead}>
-                                        <CheckCheck className="h-3 w-3" />
-                                        すべて既読
-                                    </Button>
-                                )}
-                            </div>
-
-                            <div className="text-xs text-muted-foreground">
-                                {filteredAlerts.length === alerts.length ? `${alerts.length}件` : `${filteredAlerts.length} / ${alerts.length}件`}
-                            </div>
-
-                            {groupedAlerts.length === 0 ? (
-                                <div className="text-center py-8 text-muted-foreground">フィルター条件に一致する通知がありません</div>
-                            ) : (
-                                groupedAlerts.map((group) => (
-                                    <div key={group.label} className="space-y-2">
-                                        <div className="flex items-center gap-2">
-                                            <div className="text-xs font-medium text-muted-foreground">{group.label}</div>
-                                            <div className="flex-1 h-px bg-border" />
-                                            <div className="text-xs text-muted-foreground">{group.alerts.length}件</div>
-                                        </div>
-                                        {group.alerts.map((alert) => (
-                                            <Card key={alert.id} className={`hover:bg-muted/50 transition-colors cursor-pointer ${alert.status === 'unread' ? "border-primary/50 bg-primary/5" : ""}`} onClick={() => handleAlertClick(alert)}>
-                                                <CardContent className="p-4">
-                                                    <div className="flex items-center justify-between">
-                                                        <div className="flex-1">
-                                                            <div className="flex items-center gap-2 mb-1">
-                                                                <span className="font-semibold">{alert.patternName}</span>
-                                                                {alert.status === 'unread' && <Badge className="bg-primary text-primary-foreground text-xs">NEW</Badge>}
-                                                            </div>
-                                                            <div className="flex items-center gap-3 text-sm text-muted-foreground">
-                                                                <span className="flex items-center gap-1"><TrendingUp className="h-3 w-3" />{alert.currencyPair}</span>
-                                                                <span>|</span><span>{alert.timeframe}</span><span>|</span>
-                                                                <span className="flex items-center gap-1"><Clock className="h-3 w-3" />{formatTimeAgo(new Date(alert.createdAt))}</span>
-                                                            </div>
-                                                        </div>
-                                                        <div className="flex items-center gap-3">
-                                                            <div className="text-right">
-                                                                <div className={`text-lg font-bold ${Math.round(alert.similarity * 100) >= 80 ? 'text-green-600' : Math.round(alert.similarity * 100) >= 60 ? 'text-yellow-600' : 'text-muted-foreground'}`}>{Math.round(alert.similarity * 100)}%</div>
-                                                                <div className="text-xs text-muted-foreground">一致度</div>
-                                                            </div>
-                                                            <ChevronRight className="h-5 w-5 text-muted-foreground" />
-                                                        </div>
-                                                    </div>
-                                                </CardContent>
-                                            </Card>
-                                        ))}
-                                    </div>
-                                ))
-                            )}
-                        </>
-                    )}
-
-                    {/* Info Card */}
-                    <Card className="border-dashed">
-                        <CardHeader className="pb-2">
-                            <CardTitle className="text-sm">Pattern Alert とは？</CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                            <p className="text-sm text-muted-foreground">
-                                あなたが登録した「得意パターン」に類似したチャートが出現した時に、自動で通知します。
-                                ジャーナル &gt; パターン からパターンを登録してください。
-                            </p>
-                        </CardContent>
-                    </Card>
-                </div>
+                    <TabsContent value="patterns" className="space-y-4">
+                        <PatternList userId="" />
+                    </TabsContent>
+                </Tabs>
 
                 {/* Alert Detail Dialog */}
                 <Dialog open={isDetailOpen} onOpenChange={setIsDetailOpen}>
