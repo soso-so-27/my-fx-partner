@@ -107,7 +107,7 @@ export async function GET(request: Request) {
                         .from('alerts')
                         .select('id')
                         .eq('pattern_id', pattern.id)
-                        .gte('triggered_at', new Date(Date.now() - 60 * 60 * 1000).toISOString())
+                        .gte('created_at', new Date(Date.now() - 60 * 60 * 1000).toISOString())
                         .single()
 
                     if (!recentAlert) {
@@ -117,10 +117,9 @@ export async function GET(request: Request) {
                             .insert({
                                 user_id: pattern.user_id,
                                 pattern_id: pattern.id,
-                                similarity_score: similarityPercent,
-                                matched_image_url: null, // Will be set when chart image is generated
-                                triggered_at: new Date().toISOString(),
-                                is_read: false,
+                                similarity: similarityPercent / 100, // Convert to decimal 0-1
+                                chart_snapshot_url: null,
+                                status: 'unread',
                             })
                             .select()
                             .single()

@@ -29,11 +29,11 @@ interface Alert {
     patternName: string
     currencyPair: string
     timeframe: string
-    similarityScore: number
-    matchedImageUrl: string | null
-    triggeredAt: string
-    isRead: boolean
-    feedback: 'positive' | 'negative' | null
+    similarity: number
+    chartSnapshotUrl: string | null
+    createdAt: string
+    status: 'unread' | 'read' | 'acted' | 'dismissed'
+    userFeedback: 'thumbs_up' | 'thumbs_down' | null
     patternImageUrl?: string
 }
 
@@ -79,7 +79,7 @@ export default function AlertsPage() {
             }
             // Period filter
             if (periodFilter !== 'all') {
-                const alertDate = new Date(alert.triggeredAt)
+                const alertDate = new Date(alert.createdAt)
                 if (periodFilter === 'today' && !isToday(alertDate)) return false
                 if (periodFilter === 'week' && !isThisWeek(alertDate, { weekStartsOn: 1 })) return false
                 if (periodFilter === 'month' && !isThisMonth(alertDate)) return false
@@ -94,7 +94,7 @@ export default function AlertsPage() {
         const dateMap = new Map<string, Alert[]>()
 
         filteredAlerts.forEach(alert => {
-            const date = startOfDay(new Date(alert.triggeredAt))
+            const date = startOfDay(new Date(alert.createdAt))
             let label: string
             if (isToday(date)) {
                 label = '今日'
@@ -121,7 +121,7 @@ export default function AlertsPage() {
 
     // Mark all as read
     const handleMarkAllRead = async () => {
-        const unreadAlerts = alerts.filter(a => !a.isRead)
+        const unreadAlerts = alerts.filter(a => a.status === 'unread')
         if (unreadAlerts.length === 0) return
 
         try {
@@ -130,11 +130,11 @@ export default function AlertsPage() {
                     fetch(`/api/alerts/${alert.id}`, {
                         method: 'PATCH',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ isRead: true })
+                        body: JSON.stringify({ status: 'read' })
                     })
                 )
             )
-            setAlerts(alerts.map(a => ({ ...a, isRead: true })))
+            setAlerts(alerts.map(a => ({ ...a, status: 'read' as const })))
             toast({
                 title: 'すべて既読にしました',
                 description: `${unreadAlerts.length}件の通知を既読にしました`
@@ -150,15 +150,15 @@ export default function AlertsPage() {
         setIsDetailOpen(true)
 
         // Mark as read
-        if (!alert.isRead) {
+        if (alert.status === 'unread') {
             try {
                 await fetch(`/api/alerts/${alert.id}`, {
                     method: 'PATCH',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ isRead: true })
+                    body: JSON.stringify({ status: 'read' })
                 })
                 setAlerts(alerts.map(a =>
-                    a.id === alert.id ? { ...a, isRead: true } : a
+                    a.id === alert.id ? { ...a, status: 'read' as const } : a
                 ))
             } catch (error) {
                 console.error('Error marking alert as read:', error)
@@ -171,15 +171,16 @@ export default function AlertsPage() {
             const res = await fetch(`/api/alerts/${alertId}`, {
                 method: 'PATCH',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ feedback })
+                body: JSON.stringify({ userFeedback: feedback === 'positive' ? 'thumbs_up' : 'thumbs_down' })
             })
 
             if (res.ok) {
+                const dbFeedback = feedback === 'positive' ? 'thumbs_up' : 'thumbs_down'
                 setAlerts(alerts.map(a =>
-                    a.id === alertId ? { ...a, feedback } : a
+                    a.id === alertId ? { ...a, userFeedback: dbFeedback } : a
                 ))
                 if (selectedAlert?.id === alertId) {
-                    setSelectedAlert({ ...selectedAlert, feedback })
+                    setSelectedAlert({ ...selectedAlert, userFeedback: dbFeedback })
                 }
                 toast({
                     title: feedback === 'positive' ? 'ありがとうございます！' : 'フィードバックを記録しました',
@@ -191,7 +192,7 @@ export default function AlertsPage() {
         }
     }
 
-    const unreadCount = alerts.filter(a => !a.isRead).length
+    const unreadCount = alerts.filter(a => a.status === 'unread').length
 
     return (
         <ProtectedRoute>
@@ -283,23 +284,23 @@ export default function AlertsPage() {
                                             <div className="text-xs text-muted-foreground">{group.alerts.length}件</div>
                                         </div>
                                         {group.alerts.map((alert) => (
-                                            <Card key={alert.id} className={`hover:bg-muted/50 transition-colors cursor-pointer ${!alert.isRead ? "border-primary/50 bg-primary/5" : ""}`} onClick={() => handleAlertClick(alert)}>
+                                            <Card key={alert.id} className={`hover:bg-muted/50 transition-colors cursor-pointer ${alert.status === 'unread' ? "border-primary/50 bg-primary/5" : ""}`} onClick={() => handleAlertClick(alert)}>
                                                 <CardContent className="p-4">
                                                     <div className="flex items-center justify-between">
                                                         <div className="flex-1">
                                                             <div className="flex items-center gap-2 mb-1">
                                                                 <span className="font-semibold">{alert.patternName}</span>
-                                                                {!alert.isRead && <Badge className="bg-primary text-primary-foreground text-xs">NEW</Badge>}
+                                                                {alert.status === 'unread' && <Badge className="bg-primary text-primary-foreground text-xs">NEW</Badge>}
                                                             </div>
                                                             <div className="flex items-center gap-3 text-sm text-muted-foreground">
                                                                 <span className="flex items-center gap-1"><TrendingUp className="h-3 w-3" />{alert.currencyPair}</span>
                                                                 <span>|</span><span>{alert.timeframe}</span><span>|</span>
-                                                                <span className="flex items-center gap-1"><Clock className="h-3 w-3" />{formatTimeAgo(new Date(alert.triggeredAt))}</span>
+                                                                <span className="flex items-center gap-1"><Clock className="h-3 w-3" />{formatTimeAgo(new Date(alert.createdAt))}</span>
                                                             </div>
                                                         </div>
                                                         <div className="flex items-center gap-3">
                                                             <div className="text-right">
-                                                                <div className={`text-lg font-bold ${alert.similarityScore >= 80 ? 'text-green-600' : alert.similarityScore >= 60 ? 'text-yellow-600' : 'text-muted-foreground'}`}>{alert.similarityScore}%</div>
+                                                                <div className={`text-lg font-bold ${Math.round(alert.similarity * 100) >= 80 ? 'text-green-600' : Math.round(alert.similarity * 100) >= 60 ? 'text-yellow-600' : 'text-muted-foreground'}`}>{Math.round(alert.similarity * 100)}%</div>
                                                                 <div className="text-xs text-muted-foreground">一致度</div>
                                                             </div>
                                                             <ChevronRight className="h-5 w-5 text-muted-foreground" />
@@ -342,10 +343,10 @@ export default function AlertsPage() {
                             <div className="space-y-4">
                                 {/* Similarity Score - Prominent display */}
                                 <div className="text-center p-4 bg-muted/30 rounded-lg">
-                                    <div className={`text-4xl font-bold ${selectedAlert.similarityScore >= 80 ? 'text-green-600' :
-                                        selectedAlert.similarityScore >= 60 ? 'text-yellow-600' : 'text-muted-foreground'
+                                    <div className={`text-4xl font-bold ${Math.round(selectedAlert.similarity * 100) >= 80 ? 'text-green-600' :
+                                        Math.round(selectedAlert.similarity * 100) >= 60 ? 'text-yellow-600' : 'text-muted-foreground'
                                         }`}>
-                                        {selectedAlert.similarityScore}%
+                                        {Math.round(selectedAlert.similarity * 100)}%
                                     </div>
                                     <p className="text-sm text-muted-foreground mt-1">類似度スコア</p>
                                 </div>
@@ -371,9 +372,9 @@ export default function AlertsPage() {
                                     <div className="space-y-1">
                                         <p className="text-xs text-muted-foreground text-center">検出パターン</p>
                                         <div className="aspect-video bg-muted rounded-lg overflow-hidden">
-                                            {selectedAlert.matchedImageUrl ? (
+                                            {selectedAlert.chartSnapshotUrl ? (
                                                 <img
-                                                    src={selectedAlert.matchedImageUrl}
+                                                    src={selectedAlert.chartSnapshotUrl}
                                                     alt="Matched Pattern"
                                                     className="w-full h-full object-cover"
                                                 />
@@ -392,7 +393,7 @@ export default function AlertsPage() {
                                     <span className="text-muted-foreground">{selectedAlert.timeframe}</span>
                                     <span className="text-muted-foreground flex items-center gap-1">
                                         <Clock className="h-3 w-3" />
-                                        {formatTimeAgo(new Date(selectedAlert.triggeredAt))}
+                                        {formatTimeAgo(new Date(selectedAlert.createdAt))}
                                     </span>
                                 </div>
 
@@ -401,19 +402,19 @@ export default function AlertsPage() {
                                     <p className="text-sm text-center mb-3">この通知は役に立ちましたか？</p>
                                     <div className="flex justify-center gap-3">
                                         <Button
-                                            variant={selectedAlert.feedback === 'positive' ? 'default' : 'outline'}
+                                            variant={selectedAlert.userFeedback === 'thumbs_up' ? 'default' : 'outline'}
                                             size="sm"
                                             onClick={() => handleFeedback(selectedAlert.id, 'positive')}
-                                            className={selectedAlert.feedback === 'positive' ? 'bg-green-600 hover:bg-green-700' : ''}
+                                            className={selectedAlert.userFeedback === 'thumbs_up' ? 'bg-green-600 hover:bg-green-700' : ''}
                                         >
                                             <ThumbsUp className="h-4 w-4 mr-1" />
                                             役立った
                                         </Button>
                                         <Button
-                                            variant={selectedAlert.feedback === 'negative' ? 'default' : 'outline'}
+                                            variant={selectedAlert.userFeedback === 'thumbs_down' ? 'default' : 'outline'}
                                             size="sm"
                                             onClick={() => handleFeedback(selectedAlert.id, 'negative')}
-                                            className={selectedAlert.feedback === 'negative' ? 'bg-red-600 hover:bg-red-700' : ''}
+                                            className={selectedAlert.userFeedback === 'thumbs_down' ? 'bg-red-600 hover:bg-red-700' : ''}
                                         >
                                             <ThumbsDown className="h-4 w-4 mr-1" />
                                             役立たなかった
