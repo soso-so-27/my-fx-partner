@@ -1,22 +1,19 @@
 // Service Worker for Push Notifications
-/// <reference lib="webworker" />
-
-const sw = self as unknown as ServiceWorkerGlobalScope
 
 // Install event
-sw.addEventListener('install', (event) => {
+self.addEventListener('install', (event) => {
     console.log('Service Worker: Installing...')
-    event.waitUntil(sw.skipWaiting())
+    event.waitUntil(self.skipWaiting())
 })
 
 // Activate event
-sw.addEventListener('activate', (event) => {
+self.addEventListener('activate', (event) => {
     console.log('Service Worker: Activated')
-    event.waitUntil(sw.clients.claim())
+    event.waitUntil(self.clients.claim())
 })
 
 // Push notification received
-sw.addEventListener('push', (event) => {
+self.addEventListener('push', (event) => {
     console.log('Service Worker: Push received')
 
     if (!event.data) {
@@ -27,7 +24,7 @@ sw.addEventListener('push', (event) => {
     try {
         const data = event.data.json()
 
-        const options: NotificationOptions = {
+        const options = {
             body: data.body || 'パターンアラートを確認してください',
             icon: '/icon-192.png',
             badge: '/icon-72.png',
@@ -51,7 +48,7 @@ sw.addEventListener('push', (event) => {
         }
 
         event.waitUntil(
-            sw.registration.showNotification(
+            self.registration.showNotification(
                 data.title || 'パターンアラート',
                 options
             )
@@ -62,7 +59,7 @@ sw.addEventListener('push', (event) => {
 })
 
 // Notification click handler
-sw.addEventListener('notificationclick', (event) => {
+self.addEventListener('notificationclick', (event) => {
     console.log('Notification clicked:', event.action)
     event.notification.close()
 
@@ -73,7 +70,7 @@ sw.addEventListener('notificationclick', (event) => {
     const url = event.notification.data?.url || '/alerts'
 
     event.waitUntil(
-        sw.clients.matchAll({ type: 'window', includeUncontrolled: true })
+        self.clients.matchAll({ type: 'window', includeUncontrolled: true })
             .then((clientList) => {
                 // Check if any client is already open
                 for (const client of clientList) {
@@ -83,16 +80,14 @@ sw.addEventListener('notificationclick', (event) => {
                     }
                 }
                 // Open new window if no client is open
-                if (sw.clients.openWindow) {
-                    return sw.clients.openWindow(url)
+                if (self.clients.openWindow) {
+                    return self.clients.openWindow(url)
                 }
             })
     )
 })
 
 // Background sync (for offline actions)
-sw.addEventListener('sync', (event: any) => {
+self.addEventListener('sync', (event) => {
     console.log('Background sync:', event.tag)
 })
-
-export { }
