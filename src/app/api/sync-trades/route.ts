@@ -267,6 +267,11 @@ export async function POST() {
 
     } catch (error: any) {
         console.error("Sync Error:", error)
-        return NextResponse.json({ error: error.message }, { status: 500 })
+        return NextResponse.json({
+            error: "Sync Error",
+            details: error.message,
+            step: error.step || "unknown",
+            stack: process.env.NODE_ENV === "development" ? error.stack : undefined
+        }, { status: 500 })
     }
 }

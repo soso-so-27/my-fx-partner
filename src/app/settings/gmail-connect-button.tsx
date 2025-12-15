@@ -32,7 +32,8 @@ export function GmailConnectButton() {
                         variant: "destructive"
                     })
                 } else {
-                    throw new Error(data.error)
+                    // Update: use details if available for better debugging
+                    throw new Error(data.details || data.error)
                 }
             }
         } catch (error: any) {
