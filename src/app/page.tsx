@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { useEffect, useState, useRef } from "react"
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { cn } from "@/lib/utils"
 import { tradeService } from "@/lib/trade-service"
 import { analysisEngine } from "@/lib/analysis-engine"
@@ -42,6 +43,7 @@ export default function Home() {
   const [selectedDayTrades, setSelectedDayTrades] = useState<Trade[]>([])
   const [isCapturing, setIsCapturing] = useState(false)
   const [isRecordDialogOpen, setIsRecordDialogOpen] = useState(false)
+  const [selectedTrade, setSelectedTrade] = useState<Trade | null>(null)
   const calendarRef = useRef<HTMLDivElement>(null)
 
   const loadData = async () => {
@@ -335,7 +337,11 @@ export default function Home() {
                 {selectedDayTrades.length > 0 ? (
                   <div className="space-y-2">
                     {selectedDayTrades.map((trade, i) => (
-                      <div key={i} className="flex items-center justify-between py-2 border-b border-border/50 last:border-0">
+                      <div
+                        key={i}
+                        className="flex items-center justify-between py-2 border-b border-border/50 last:border-0 cursor-pointer hover:bg-muted/50 transition-colors px-2 -mx-2 rounded-md"
+                        onClick={() => setSelectedTrade(trade)}
+                      >
                         <div className="flex items-center gap-2">
                           <span className="font-bold text-sm">{trade.pair}</span>
                           <span className={cn(
@@ -444,6 +450,56 @@ export default function Home() {
           })
         }}
       />
+
+      {/* Trade Detail Dialog */}
+      <Dialog open={!!selectedTrade} onOpenChange={(open) => !open && setSelectedTrade(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>トレード詳細</DialogTitle>
+          </DialogHeader>
+          {selectedTrade && (
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="text-xs text-muted-foreground font-bold">通貨ペア</label>
+                  <p className="font-medium">{selectedTrade.pair}</p>
+                </div>
+                <div>
+                  <label className="text-xs text-muted-foreground font-bold">売買</label>
+                  <p className={cn(
+                    "font-medium",
+                    selectedTrade.direction === 'BUY' ? "text-red-600" : "text-blue-600"
+                  )}>
+                    {selectedTrade.direction === 'BUY' ? '買い (Long)' : '売り (Short)'}
+                  </p>
+                </div>
+                <div>
+                  <label className="text-xs text-muted-foreground font-bold">損益</label>
+                  <p className={cn(
+                    "font-bold font-numbers",
+                    (selectedTrade.pnl?.pips ?? 0) > 0 ? "text-green-600" : "text-red-600"
+                  )}>
+                    {(selectedTrade.pnl?.pips ?? 0) > 0 ? '+' : ''}{selectedTrade.pnl?.pips ?? 0} pips
+                  </p>
+                </div>
+                <div>
+                  <label className="text-xs text-muted-foreground font-bold">日付</label>
+                  <p className="font-medium">
+                    {format(new Date(selectedTrade.entryTime), 'yyyy/MM/dd HH:mm', { locale: ja })}
+                  </p>
+                </div>
+              </div>
+
+              <div>
+                <label className="text-xs text-muted-foreground font-bold mb-1 block">メモ / 受信メール</label>
+                <div className="bg-muted p-3 rounded-md text-xs font-mono whitespace-pre-wrap max-h-[300px] overflow-y-auto break-all">
+                  {selectedTrade.notes || "（メモなし）"}
+                </div>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </ProtectedRoute>
   )
 }

@@ -5,7 +5,7 @@ import { Target, Plus, Trash2, Clock, TrendingUp, TrendingDown, Link2 } from "lu
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Pattern, SUPPORTED_CURRENCY_PAIRS, SUPPORTED_TIMEFRAMES } from "@/lib/pattern-service"
+import { Pattern, SUPPORTED_CURRENCY_PAIRS, SUPPORTED_TIMEFRAMES } from "@/lib/shared/pattern-constants"
 import { PatternDetailDialog } from "./pattern-detail-dialog"
 import {
     Dialog,

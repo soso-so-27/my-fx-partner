@@ -10,10 +10,11 @@ import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
 import { useState, useEffect } from "react"
 import { useAuth } from "@/contexts/auth-context"
+import { useSession } from "next-auth/react"
 import { profileService } from "@/lib/profile-service"
 import { UserProfile } from "@/types/user-profile"
 import { useToast } from "@/components/ui/use-toast"
-import { User, Upload } from "lucide-react"
+import { User, Upload, Copy } from "lucide-react"
 import {
     Select,
     SelectContent,
@@ -38,6 +39,7 @@ export default function SettingsPage() {
     const [saving, setSaving] = useState(false)
     const [selectedTemplateId, setSelectedTemplateId] = useState<string>("")
     const [applyingTemplate, setApplyingTemplate] = useState(false)
+    const { data: session } = useSession()
 
     useEffect(() => {
         setMounted(true)
@@ -316,6 +318,43 @@ export default function SettingsPage() {
                                     </p>
                                 </div>
                                 <GmailConnectButton />
+                            </div>
+
+                            {/* Email Forwarding */}
+                            <div className="flex items-center justify-between p-4 border rounded-lg bg-card mt-4">
+                                <div className="space-y-1 flex-1">
+                                    <h3 className="font-medium flex items-center gap-2">
+                                        メール転送連携
+                                        <span className="text-xs bg-blue-500/10 text-blue-500 px-2 py-0.5 rounded-full">New</span>
+                                    </h3>
+                                    <p className="text-sm text-muted-foreground">
+                                        約定メールを以下のアドレスに転送すると、自動でトレード履歴に取り込まれます。
+                                    </p>
+                                    <div className="mt-2 flex items-center gap-2">
+                                        {session?.user?.email ? (
+                                            <>
+                                                <code className="text-xs bg-muted px-2 py-1 rounded">
+                                                    {`import+${session.user.email.replace('@', '.')}@trade-solo.com`}
+                                                </code>
+                                                <Button
+                                                    variant="ghost"
+                                                    size="sm"
+                                                    onClick={() => {
+                                                        navigator.clipboard.writeText(`import+${session.user?.email?.replace('@', '.')}@trade-solo.com`)
+                                                        toast({ title: "コピーしました" })
+                                                    }}
+                                                >
+                                                    <Copy className="h-3 w-3" />
+                                                </Button>
+                                            </>
+                                        ) : (
+                                            <span className="text-xs text-muted-foreground">読み込み中...</span>
+                                        )}
+                                    </div>
+                                    <p className="text-xs text-muted-foreground mt-1">
+                                        ※ ご利用にはCloudflare Email Routingの設定が必要です。詳しくはドキュメントをご確認ください。
+                                    </p>
+                                </div>
                             </div>
                         </CardContent>
                     </Card>

@@ -17,7 +17,7 @@ import {
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { useToast } from '@/components/ui/use-toast'
-import { Pattern, SUPPORTED_TIMEFRAMES } from '@/lib/pattern-service'
+import { Pattern, SUPPORTED_TIMEFRAMES } from '@/lib/shared/pattern-constants'
 import {
     Target,
     Link2,

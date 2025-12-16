@@ -1,36 +1,10 @@
+import 'server-only'
 import { getSupabaseAdmin } from './supabase-admin'
 import { generateFeatureVectorFromUrl } from './feature-vector'
+import { Pattern, SUPPORTED_TIMEFRAMES, SUPPORTED_CURRENCY_PAIRS } from './shared/pattern-constants'
+import { comparePatternToMultiple } from './pattern-similarity'
 
 // Types
-export interface Pattern {
-    id: string
-    userId: string
-    name: string
-    description?: string
-    imageUrl: string
-    currencyPair: string
-    timeframe: string
-    direction?: 'long' | 'short' | null
-    tags: string[]
-    isActive: boolean
-    similarityThreshold: number
-    checkFrequency: string
-    createdAt: Date
-    updatedAt: Date
-}
-
-export interface PatternInput {
-    name: string
-    description?: string
-    imageUrl: string
-    currencyPair: string
-    timeframe: string
-    direction?: 'long' | 'short' | null
-    tags?: string[]
-    similarityThreshold?: number
-    checkFrequency?: string
-}
-
 export interface Alert {
     id: string
     userId: string
@@ -45,26 +19,12 @@ export interface Alert {
     pattern?: Pattern
 }
 
-// Currency pairs supported (MVP)
-export const SUPPORTED_CURRENCY_PAIRS = [
-    'USDJPY',
-    'EURUSD',
-    'GBPJPY',
-] as const
-
-// Timeframes supported (MVP)
-// Timeframes supported (MVP) - Minimum 15m as per user request (Cron constraints)
-export const SUPPORTED_TIMEFRAMES = [
-    { value: '15m', label: '15分' },
-    { value: '1h', label: '1時間' },
-    { value: '4h', label: '4時間' },
-    { value: '1d', label: '日足' },
-] as const
+export type PatternInput = Omit<Pattern, 'id' | 'userId' | 'featureVector' | 'createdAt' | 'updatedAt'>
+export type { Pattern }
+export { SUPPORTED_TIMEFRAMES, SUPPORTED_CURRENCY_PAIRS }
 
 // Pattern Service
 export const patternService = {
-    // ... (existing methods)
-
     // Find matching patterns for a given chart image and timeframe
     async findMatches(
         userId: string,
@@ -99,8 +59,6 @@ export const patternService = {
         // We need to map DB rows to the format expected by comparePatternToMultiple
         // Note: patternsData has 'feature_vector' column.
 
-        // Dynamic import to avoid circular dependency issues if any, or just standard import
-        const { comparePatternToMultiple } = await import('./pattern-similarity')
 
         const candidates = patternsData.map(p => ({
             id: p.id,
