@@ -163,7 +163,71 @@ async function fetchFromFMP(): Promise<{ events: EconomicEvent[], debug: any }> 
 
     } catch (error) {
         console.error('Error fetching from FMP:', error)
-        return { events: [], debug: { error: String(error) } }
+        // Fallback to Mock Data
+        return getMockData()
+    }
+}
+
+function getMockData(): { events: EconomicEvent[], debug: any } {
+    console.log('Generating Mock Data')
+    const today = new Date()
+    const mockEvents: EconomicEvent[] = []
+
+    // Generate dates
+    const dates = [
+        new Date(today),
+        new Date(today.getTime() + 1 * 24 * 60 * 60 * 1000),
+        new Date(today.getTime() + 2 * 24 * 60 * 60 * 1000),
+        new Date(today.getTime() + 3 * 24 * 60 * 60 * 1000)
+    ]
+
+    // Wednesday - FOMC / CPI type events
+    mockEvents.push({
+        id: 'mock-1',
+        date: formatEventDate(dates[0]),
+        time: '21:30',
+        currency: 'USD',
+        name: 'CPI (消費者物価指数) [Mock]',
+        importance: 5,
+        actual: '3.4%',
+        forecast: '3.2%',
+        previous: '3.1%'
+    })
+
+    // Thursday - Jobless Claims
+    mockEvents.push({
+        id: 'mock-2',
+        date: formatEventDate(dates[1]),
+        time: '21:30',
+        currency: 'USD',
+        name: '新規失業保険申請件数 [Mock]',
+        importance: 4,
+        actual: undefined,
+        forecast: '215K',
+        previous: '210K'
+    })
+
+    // Friday - BOJ or EU
+    mockEvents.push({
+        id: 'mock-3',
+        date: formatEventDate(dates[2]),
+        time: '15:30',
+        currency: 'JPY',
+        name: '日銀記者会見 [Mock]',
+        importance: 5,
+        actual: undefined,
+        forecast: undefined,
+        previous: undefined
+    })
+
+    return {
+        events: mockEvents,
+        debug: {
+            provider: 'Mock',
+            apiKeySet: !!process.env.FMP_API_KEY,
+            isMock: true,
+            error: 'API Error (403/500), using mock data'
+        }
     }
 }
 
