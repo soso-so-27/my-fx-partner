@@ -468,39 +468,50 @@ export default function Home() {
                     <Calendar className="h-3 w-3" />
                     今週の重要指標（★4以上）
                   </p>
-                  {economicEvents.length > 0 ? (
-                    <div className="space-y-1.5">
-                      {economicEvents.slice(0, 10).map((event: EconomicEvent, i: number) => (
-                        <div
-                          key={event.id || i}
-                          className="flex items-center justify-between text-xs py-1.5 border-t border-border/50 first:border-0"
-                        >
-                          <div className="flex items-center gap-2">
-                            <div className="text-center min-w-[40px]">
-                              <span className="text-muted-foreground">{event.date}</span>
-                              <br />
-                              <span className="text-[10px] text-muted-foreground">{event.time}</span>
+                  {(() => {
+                    const targetDateStr = selectedDate ? format(selectedDate, 'M/d') : ''
+                    const filteredEvents = economicEvents.filter(e => e.date === targetDateStr)
+
+                    if (eventsLoading) {
+                      return (
+                        <p className="text-xs text-muted-foreground text-center py-4">
+                          経済指標を読み込み中...
+                        </p>
+                      )
+                    }
+
+                    if (filteredEvents.length === 0) {
+                      return (
+                        <p className="text-xs text-muted-foreground text-center py-4">
+                          この日の重要指標はありません
+                        </p>
+                      )
+                    }
+
+                    return (
+                      <div className="space-y-1.5">
+                        {filteredEvents.map((event: EconomicEvent, i: number) => (
+                          <div
+                            key={event.id || i}
+                            className="flex items-center justify-between text-xs py-1.5 border-t border-border/50 first:border-0"
+                          >
+                            <div className="flex items-center gap-2">
+                              <div className="text-center min-w-[40px]">
+                                <span className="text-muted-foreground">{event.time}</span>
+                              </div>
+                              <Badge variant="outline" className="text-[9px] px-1">
+                                {event.currency}
+                              </Badge>
+                              <span className="truncate max-w-[150px]">{event.name}</span>
                             </div>
-                            <Badge variant="outline" className="text-[9px] px-1">
-                              {event.currency}
-                            </Badge>
-                            <span className="truncate max-w-[150px]">{event.name}</span>
+                            <span className="text-yellow-500 text-[10px]">
+                              {'★'.repeat(Math.min(event.importance, 5))}
+                            </span>
                           </div>
-                          <span className="text-yellow-500 text-[10px]">
-                            {'★'.repeat(Math.min(event.importance, 5))}
-                          </span>
-                        </div>
-                      ))}
-                    </div>
-                  ) : eventsLoading ? (
-                    <p className="text-xs text-muted-foreground text-center py-4">
-                      経済指標を読み込み中...
-                    </p>
-                  ) : (
-                    <p className="text-xs text-muted-foreground text-center py-4">
-                      今週の重要指標はありません
-                    </p>
-                  )}
+                        ))}
+                      </div>
+                    )
+                  })()}
                 </CardContent>
               </Card>
             </TabsContent>
