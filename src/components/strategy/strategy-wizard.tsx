@@ -13,6 +13,13 @@ import {
     ChevronRight, ChevronLeft, CheckCircle2, Target, Shield,
     TrendingUp, Zap, Clock, AlertTriangle, Info
 } from "lucide-react"
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select"
 import { cn } from "@/lib/utils"
 // Import shared types and constants
 import { WeeklyPlan, PAIR_OPTIONS, THEME_CANDIDATES, RULE_CANDIDATES } from "./types"
@@ -228,29 +235,35 @@ export function StrategyWizard({ onSave, onCancel }: StrategyWizardProps) {
                         </div>
                     </div>
                 )}
-
                 {/* Step 3: Trade Limit */}
                 {step === 3 && (
                     <div className="space-y-4">
                         <Label>Q5. 新規エントリー上限（週）</Label>
-                        <div className="grid grid-cols-4 gap-2">
-                            {[3, 5, 7, 10].map(num => (
-                                <Button
-                                    key={num}
-                                    variant={tradeLimit === num ? "default" : "outline"}
-                                    onClick={() => setTradeLimit(num)}
-                                >
-                                    {num}回
-                                </Button>
-                            ))}
-                        </div>
+                        <Select
+                            value={tradeLimit.toString()}
+                            onValueChange={(val) => setTradeLimit(parseInt(val))}
+                        >
+                            <SelectTrigger className="w-full">
+                                <SelectValue placeholder="回数を選択" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {[3, 5, 7, 10, 15, 20, 30, 50].map(num => (
+                                    <SelectItem key={num} value={num.toString()}>
+                                        {num}回
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
                         <Input
                             type="number"
                             placeholder="自由入力"
                             value={tradeLimit}
                             onChange={(e) => setTradeLimit(parseInt(e.target.value) || 0)}
-                            className="text-center"
+                            className="text-center mt-2"
                         />
+                        <p className="text-xs text-muted-foreground text-center">
+                            ※迷ったら少なめに設定しましょう
+                        </p>
                     </div>
                 )}
 
@@ -258,24 +271,34 @@ export function StrategyWizard({ onSave, onCancel }: StrategyWizardProps) {
                 {step === 4 && (
                     <div className="space-y-4">
                         <Label>Q6. 最大損失許容額（週）</Label>
-                        <div className="grid grid-cols-2 gap-2">
-                            {[-3000, -5000, -8000, -10000].map(num => (
-                                <Button
-                                    key={num}
-                                    variant={lossLimit === num ? "default" : "outline"}
-                                    onClick={() => setLossLimit(num)}
-                                >
-                                    {num.toLocaleString()}
-                                </Button>
-                            ))}
-                        </div>
+                        <Select
+                            value={lossLimit.toString()}
+                            onValueChange={(val) => setLossLimit(parseInt(val))}
+                        >
+                            <SelectTrigger className="w-full">
+                                <SelectValue placeholder="金額を選択" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {[
+                                    -10000, -30000, -50000, -100000, -300000, -500000,
+                                    -1000000, -3000000, -5000000, -10000000
+                                ].map(num => (
+                                    <SelectItem key={num} value={num.toString()}>
+                                        {num.toLocaleString()}円
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
                         <Input
                             type="number"
                             placeholder="自由入力(マイナス)"
                             value={lossLimit}
                             onChange={(e) => setLossLimit(parseInt(e.target.value) || 0)}
-                            className="text-center"
+                            className="text-center mt-2"
                         />
+                        <p className="text-xs text-muted-foreground text-center">
+                            ※この金額に達したら強制終了です
+                        </p>
                     </div>
                 )}
 

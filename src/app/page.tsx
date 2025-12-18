@@ -30,6 +30,7 @@ import html2canvas from "html2canvas"
 import { insightService } from "@/lib/insight-service"
 import { RelatedKnowledge } from "@/components/trade/related-knowledge"
 import { Badge } from "@/components/ui/badge"
+import { WeeklyPlan } from "@/components/strategy/types"
 
 // 30秒振り返りの質問選択肢
 const MISTAKE_OPTIONS = [
@@ -101,6 +102,25 @@ export default function Home() {
   const [reflectionSaved, setReflectionSaved] = useState(false)
   const [economicEvents, setEconomicEvents] = useState<EconomicEvent[]>([])
   const [eventsLoading, setEventsLoading] = useState(false)
+  const [weeklyPlan, setWeeklyPlan] = useState<WeeklyPlan | null>(null)
+
+  useEffect(() => {
+    const fetchStrategy = async () => {
+      try {
+        const todayStr = format(new Date(), 'yyyy-MM-dd')
+        const res = await fetch(`/api/strategy?date=${todayStr}`)
+        if (res.ok) {
+          const data = await res.json()
+          if (data.strategy && data.strategy.plan) {
+            setWeeklyPlan(data.strategy.plan)
+          }
+        }
+      } catch (e) {
+        console.error(e)
+      }
+    }
+    fetchStrategy()
+  }, [])
 
   const loadData = async () => {
     if (!session?.user?.email) return
@@ -518,43 +538,55 @@ export default function Home() {
 
             {/* Plan Tab */}
             <TabsContent value="plan" className="space-y-3 mt-3">
-              {/* Weekly Strategy Summary */}
-              <Card className="border-primary/20">
-                <CardContent className="p-3 space-y-3">
-                  <div className="flex items-center gap-1.5 text-sm font-medium">
-                    <Target className="h-3.5 w-3.5" />
-                    今週の作戦
-                  </div>
-
-                  <div className="p-2 bg-primary/5 rounded text-xs">
-                    今週は「守る週」：待つ練習
-                  </div>
-
-                  <div className="space-y-1.5">
-                    <div className="flex items-center gap-2 text-xs p-1.5 bg-muted/50 rounded">
-                      <Target className="h-3 w-3 text-muted-foreground" />
-                      新規上限：5回
+              {weeklyPlan ? (
+                <Card className="border-primary/20">
+                  <CardContent className="p-3 space-y-3">
+                    <div className="flex items-center gap-1.5 text-sm font-medium">
+                      <Target className="h-3.5 w-3.5" />
+                      今週の作戦: {weeklyPlan.theme.label}
                     </div>
-                    <div className="flex items-center gap-2 text-xs p-1.5 bg-muted/50 rounded">
-                      <AlertTriangle className="h-3 w-3 text-muted-foreground" />
-                      損失上限：-5,000円
-                    </div>
-                    <div className="flex items-center gap-2 text-xs p-1.5 bg-red-500/10 rounded text-red-600 dark:text-red-400">
-                      <Shield className="h-3 w-3" />
-                      2連敗で停止
-                    </div>
-                  </div>
 
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="w-full text-xs"
-                    onClick={() => window.location.href = '/today'}
-                  >
-                    戦略を編集
-                  </Button>
-                </CardContent>
-              </Card>
+                    <div className="p-2 bg-primary/5 rounded text-xs">
+                      {weeklyPlan.theme.condition || '条件なし'}
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <div className="flex items-center gap-2 text-xs p-1.5 bg-muted/50 rounded">
+                        <Target className="h-3 w-3 text-muted-foreground" />
+                        新規上限：{weeklyPlan.limits.trade_count}回
+                      </div>
+                      <div className="flex items-center gap-2 text-xs p-1.5 bg-muted/50 rounded">
+                        <AlertTriangle className="h-3 w-3 text-muted-foreground" />
+                        損失上限：{weeklyPlan.limits.loss_amount.toLocaleString()}円
+                      </div>
+                      {weeklyPlan.limits.consecutive_loss_stop !== 'none' && (
+                        <div className="flex items-center gap-2 text-xs p-1.5 bg-red-500/10 rounded text-red-600 dark:text-red-400">
+                          <Shield className="h-3 w-3" />
+                          {weeklyPlan.limits.consecutive_loss_stop}連敗で停止
+                        </div>
+                      )}
+                    </div>
+
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="w-full text-xs"
+                      onClick={() => window.location.href = '/today'}
+                    >
+                      戦略を編集
+                    </Button>
+                  </CardContent>
+                </Card>
+              ) : (
+                <Card className="border-dashed">
+                  <CardContent className="p-4 text-center">
+                    <p className="text-xs text-muted-foreground mb-2">まだ今週の作戦がありません</p>
+                    <Button size="sm" onClick={() => window.location.href = '/today'}>
+                      作戦を立てる
+                    </Button>
+                  </CardContent>
+                </Card>
+              )}
             </TabsContent>
 
             {/* Review Tab - Trades and Reflection */}
