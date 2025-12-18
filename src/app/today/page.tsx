@@ -65,7 +65,7 @@ export default function StrategyPage() {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    date: new Date().toISOString(),
+                    date: format(new Date(), 'yyyy-MM-dd'),
                     plan: newPlan
                 })
             })

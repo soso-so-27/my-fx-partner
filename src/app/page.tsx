@@ -126,8 +126,11 @@ export default function Home() {
         setWeeklyPlan(null)
       }
     }
-    fetchStrategy()
-  }, [selectedDate])
+
+    if (status === 'authenticated') {
+      fetchStrategy()
+    }
+  }, [selectedDate, status])
 
 
 
