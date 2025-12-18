@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { Home, BookOpen, Bell, Vote, TrendingUp, Settings } from "lucide-react"
+import { CalendarDays, Sparkles, Library, BarChart3, Settings } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { SyncButton } from "./sync-button"
 import { ModeToggle } from "./mode-toggle"
@@ -10,13 +10,12 @@ import { ModeToggle } from "./mode-toggle"
 export function DesktopNav() {
     const pathname = usePathname()
 
-    // Main navigation items (5 items matching mobile)
+    // Main navigation items (4 items matching mobile)
     const navItems = [
-        { href: '/', icon: Home, label: 'ホーム' },
-        { href: '/journal', icon: BookOpen, label: 'ジャーナル' },
-        { href: '/alerts', icon: Bell, label: '通知' },
-        { href: '/polls', icon: Vote, label: '投票' },
-        { href: '/analysis', icon: TrendingUp, label: '分析' },
+        { href: '/', icon: CalendarDays, label: 'カレンダー' },
+        { href: '/today', icon: Sparkles, label: '今日' },
+        { href: '/knowledge', icon: Library, label: 'ナレッジ' },
+        { href: '/analysis', icon: BarChart3, label: '分析' },
     ]
 
     // Don't show nav on login page

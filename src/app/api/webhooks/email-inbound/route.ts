@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getSupabaseAdmin } from '@/lib/supabase-admin'
 import { emailParser } from '@/lib/email-parser'
+import { isGmailVerificationEmail, extractConfirmationUrl } from '@/lib/gmail-verification-service'
 
 /**
  * Cloudflare Worker からのメール転送を受け取るエンドポイント
@@ -71,7 +72,49 @@ export async function POST(request: NextRequest) {
         }
         const userId = profile.id
 
-        // 5. メール解析 (既存のパーサーを使用)
+        // 5. Gmail転送の確認メールかチェック
+        if (isGmailVerificationEmail(payload.from || '', payload.subject || '')) {
+            console.log('[email-inbound] Detected Gmail verification email')
+
+            const confirmationUrl = extractConfirmationUrl(payload.body)
+
+            if (confirmationUrl) {
+                // Save to pending_verifications table
+                const { error: upsertError } = await supabase
+                    .from('pending_verifications')
+                    .upsert({
+                        user_id: userId,
+                        verification_type: 'gmail_forwarding',
+                        confirmation_url: confirmationUrl,
+                        raw_email_subject: payload.subject,
+                        created_at: new Date().toISOString(),
+                        confirmed_at: null
+                    }, {
+                        onConflict: 'user_id,verification_type'
+                    })
+
+                if (upsertError) {
+                    console.error('[email-inbound] Failed to save verification:', upsertError)
+                    return NextResponse.json({ error: 'Failed to save verification' }, { status: 500 })
+                }
+
+                console.log('[email-inbound] Saved Gmail verification for user:', userId)
+                return NextResponse.json({
+                    success: true,
+                    type: 'gmail_verification',
+                    message: 'Gmail verification email saved. User can confirm via settings page.'
+                })
+            } else {
+                console.log('[email-inbound] Could not extract confirmation URL from verification email')
+                return NextResponse.json({
+                    success: false,
+                    type: 'gmail_verification',
+                    message: 'Could not extract confirmation URL'
+                }, { status: 200 })
+            }
+        }
+
+        // 6. メール解析 (既存のパーサーを使用)
         const emailId = `email-forward-${Date.now()}`
         const parsedTrade = await emailParser.parse(
             payload.subject || '',
@@ -88,7 +131,7 @@ export async function POST(request: NextRequest) {
             }, { status: 200 })
         }
 
-        // 6. データベースに保存
+        // 7. データベースに保存
         const { data: insertedTrade, error: insertError } = await supabase
             .from('trades')
             .insert({
@@ -138,3 +181,4 @@ export async function POST(request: NextRequest) {
 export async function GET() {
     return NextResponse.json({ status: 'ok', service: 'email-inbound-webhook' })
 }
+

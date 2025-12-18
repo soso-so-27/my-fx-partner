@@ -19,6 +19,7 @@ import { PairPerformanceChart } from "@/components/charts/pair-performance-chart
 import { useAuth } from "@/contexts/auth-context"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { TradeHistoryList } from "@/components/history/trade-history-list"
+import { WeeklyReport } from "@/components/analysis/weekly-report"
 import { BarChart3, ChevronDown, ChevronUp } from "lucide-react"
 
 export default function AnalysisPage() {
@@ -80,16 +81,7 @@ export default function AnalysisPage() {
         )
     }
 
-    if (!stats) {
-        return (
-            <ProtectedRoute>
-                <div className="container mx-auto p-4 text-center py-12">
-                    <p className="text-muted-foreground">トレード記録がありません</p>
-                    <p className="text-sm text-muted-foreground mt-2">ジャーナルからトレードを記録してください</p>
-                </div>
-            </ProtectedRoute>
-        )
-    }
+    // Stats can be null if no trades - we'll handle empty state inside tabs
 
     return (
         <ProtectedRoute>
@@ -102,11 +94,16 @@ export default function AnalysisPage() {
                     <h1 className="text-base font-bold">分析</h1>
                 </header>
 
-                <Tabs defaultValue="stats" className="w-full">
-                    <TabsList className="grid w-full grid-cols-2 my-4">
-                        <TabsTrigger value="stats">統計レポート</TabsTrigger>
-                        <TabsTrigger value="history">トレード記録</TabsTrigger>
+                <Tabs defaultValue="weekly" className="w-full">
+                    <TabsList className="grid w-full grid-cols-3 my-4">
+                        <TabsTrigger value="weekly">週次レポート</TabsTrigger>
+                        <TabsTrigger value="stats">統計</TabsTrigger>
+                        <TabsTrigger value="history">記録</TabsTrigger>
                     </TabsList>
+
+                    <TabsContent value="weekly">
+                        <WeeklyReport trades={filteredTrades} userId={user?.id || ''} />
+                    </TabsContent>
 
                     <TabsContent value="stats">
                         {/* Filters */}
@@ -118,94 +115,103 @@ export default function AnalysisPage() {
                             <TagFilter selectedTags={selectedTags} onChange={setSelectedTags} />
                         </div>
 
-                        {/* Best Trade Showcase - Moved to Top */}
-                        {bestTrade && (
-                            <div className="mb-6">
-                                <h2 className="text-sm font-bold text-muted-foreground mb-2">ベストトレード</h2>
-                                <BestTradeCard trade={bestTrade} theme="minimal" />
+                        {!stats ? (
+                            <div className="text-center py-12">
+                                <p className="text-muted-foreground">トレード記録がありません</p>
+                                <p className="text-sm text-muted-foreground mt-2">ジャーナルからトレードを記録してください</p>
                             </div>
-                        )}
+                        ) : (
+                            <>
+                                {/* Best Trade Showcase - Moved to Top */}
+                                {bestTrade && (
+                                    <div className="mb-6">
+                                        <h2 className="text-sm font-bold text-muted-foreground mb-2">ベストトレード</h2>
+                                        <BestTradeCard trade={bestTrade} theme="minimal" />
+                                    </div>
+                                )}
 
-                        {/* Simplified Stats - 2x2 Grid with Compact Cards */}
-                        <div className="grid grid-cols-2 gap-3 mb-6">
-                            <Card className="p-3">
-                                <div className="text-xs text-muted-foreground mb-1">勝率</div>
-                                <div className={`text-2xl font-bold font-numbers ${stats.winRate === 0 ? '' : stats.winRate >= 50 ? 'text-profit' : 'text-loss'}`}>
-                                    {stats.winRate}%
+                                {/* Simplified Stats - 2x2 Grid with Compact Cards */}
+                                <div className="grid grid-cols-2 gap-3 mb-6">
+                                    <Card className="p-3">
+                                        <div className="text-xs text-muted-foreground mb-1">勝率</div>
+                                        <div className={`text-2xl font-bold font-numbers ${stats.winRate === 0 ? '' : stats.winRate >= 50 ? 'text-profit' : 'text-loss'}`}>
+                                            {stats.winRate}%
+                                        </div>
+                                    </Card>
+                                    <Card className="p-3">
+                                        <div className="text-xs text-muted-foreground mb-1">PF</div>
+                                        <div className={`text-2xl font-bold font-numbers ${stats.profitFactor === 0 ? '' : stats.profitFactor >= 1 ? 'text-profit' : 'text-loss'}`}>
+                                            {stats.profitFactor}
+                                        </div>
+                                    </Card>
+                                    <Card className="p-3">
+                                        <div className="text-xs text-muted-foreground mb-1">トレード数</div>
+                                        <div className="text-2xl font-bold font-numbers">{stats.totalTrades}</div>
+                                    </Card>
+                                    <Card className="p-3">
+                                        <div className="text-xs text-muted-foreground mb-1">決済損益</div>
+                                        <div className={`text-lg font-bold font-numbers truncate ${stats.totalPnl === 0 ? '' : stats.totalPnl > 0 ? 'text-profit' : 'text-loss'}`}>
+                                            {stats.totalPnl > 0 ? '+' : ''}¥{stats.totalPnl.toLocaleString()}
+                                        </div>
+                                    </Card>
                                 </div>
-                            </Card>
-                            <Card className="p-3">
-                                <div className="text-xs text-muted-foreground mb-1">PF</div>
-                                <div className={`text-2xl font-bold font-numbers ${stats.profitFactor === 0 ? '' : stats.profitFactor >= 1 ? 'text-profit' : 'text-loss'}`}>
-                                    {stats.profitFactor}
+
+                                {/* Core Value Cards */}
+                                <div className="space-y-4 mb-6">
+                                    <SocialCard stats={stats} theme="minimal" />
+                                    <RuleComplianceCard />
                                 </div>
-                            </Card>
-                            <Card className="p-3">
-                                <div className="text-xs text-muted-foreground mb-1">トレード数</div>
-                                <div className="text-2xl font-bold font-numbers">{stats.totalTrades}</div>
-                            </Card>
-                            <Card className="p-3">
-                                <div className="text-xs text-muted-foreground mb-1">合計損益</div>
-                                <div className={`text-lg font-bold font-numbers truncate ${stats.totalPnl === 0 ? '' : stats.totalPnl > 0 ? 'text-profit' : 'text-loss'}`}>
-                                    {stats.totalPnl > 0 ? '+' : ''}¥{stats.totalPnl.toLocaleString()}
-                                </div>
-                            </Card>
-                        </div>
 
-                        {/* Core Value Cards */}
-                        <div className="space-y-4 mb-6">
-                            <SocialCard stats={stats} theme="minimal" />
-                            <RuleComplianceCard />
-                        </div>
-
-                        {/* PnL Chart - Always Visible */}
-                        <Card className="mb-6">
-                            <CardHeader className="pb-2">
-                                <CardTitle className="text-sm">損益推移</CardTitle>
-                            </CardHeader>
-                            <CardContent className="pt-0">
-                                <PnLChart trades={filteredTrades} />
-                            </CardContent>
-                        </Card>
-
-                        {/* Pair Performance - Collapsible on Mobile */}
-                        <div className="mb-6">
-                            <button
-                                onClick={() => setShowPairChart(!showPairChart)}
-                                className="w-full flex items-center justify-between p-3 bg-muted/30 rounded-lg text-sm font-medium text-muted-foreground hover:bg-muted/50 transition-colors"
-                            >
-                                <span>通貨ペア別パフォーマンス</span>
-                                {showPairChart ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-                            </button>
-                            {showPairChart && (
-                                <Card className="mt-2">
-                                    <CardContent className="pt-4">
-                                        <PairPerformanceChart trades={filteredTrades} />
+                                {/* PnL Chart - Always Visible */}
+                                <Card className="mb-6">
+                                    <CardHeader className="pb-2">
+                                        <CardTitle className="text-sm">決済損益推移</CardTitle>
+                                    </CardHeader>
+                                    <CardContent className="pt-0">
+                                        <PnLChart trades={filteredTrades} />
                                     </CardContent>
                                 </Card>
-                            )}
-                        </div>
 
-                        {/* Detail Stats - Compact */}
-                        <Card className="mb-6">
-                            <CardHeader className="pb-2">
-                                <CardTitle className="text-sm">詳細統計</CardTitle>
-                            </CardHeader>
-                            <CardContent className="space-y-2 text-sm">
-                                <div className="flex justify-between items-center">
-                                    <span className="text-muted-foreground">平均利益</span>
-                                    <span className="font-numbers font-medium text-profit">+¥{stats.averageWin.toLocaleString()}</span>
+                                {/* Pair Performance - Collapsible on Mobile */}
+                                <div className="mb-6">
+                                    <button
+                                        onClick={() => setShowPairChart(!showPairChart)}
+                                        className="w-full flex items-center justify-between p-3 bg-muted/30 rounded-lg text-sm font-medium text-muted-foreground hover:bg-muted/50 transition-colors"
+                                    >
+                                        <span>通貨ペア別パフォーマンス</span>
+                                        {showPairChart ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                                    </button>
+                                    {showPairChart && (
+                                        <Card className="mt-2">
+                                            <CardContent className="pt-4">
+                                                <PairPerformanceChart trades={filteredTrades} />
+                                            </CardContent>
+                                        </Card>
+                                    )}
                                 </div>
-                                <div className="flex justify-between items-center">
-                                    <span className="text-muted-foreground">平均損失</span>
-                                    <span className="font-numbers font-medium text-loss">-¥{Math.abs(stats.averageLoss).toLocaleString()}</span>
-                                </div>
-                                <div className="flex justify-between items-center">
-                                    <span className="text-muted-foreground">ベストペア</span>
-                                    <span className="font-medium">{stats.bestPair}</span>
-                                </div>
-                            </CardContent>
-                        </Card>
+
+                                {/* Detail Stats - Compact */}
+                                <Card className="mb-6">
+                                    <CardHeader className="pb-2">
+                                        <CardTitle className="text-sm">詳細統計</CardTitle>
+                                    </CardHeader>
+                                    <CardContent className="space-y-2 text-sm">
+                                        <div className="flex justify-between items-center">
+                                            <span className="text-muted-foreground">平均利益</span>
+                                            <span className="font-numbers font-medium text-profit">+¥{stats.averageWin.toLocaleString()}</span>
+                                        </div>
+                                        <div className="flex justify-between items-center">
+                                            <span className="text-muted-foreground">平均損失</span>
+                                            <span className="font-numbers font-medium text-loss">-¥{Math.abs(stats.averageLoss).toLocaleString()}</span>
+                                        </div>
+                                        <div className="flex justify-between items-center">
+                                            <span className="text-muted-foreground">ベストペア</span>
+                                            <span className="font-medium">{stats.bestPair}</span>
+                                        </div>
+                                    </CardContent>
+                                </Card>
+                            </>
+                        )}
                     </TabsContent>
 
                     <TabsContent value="history">

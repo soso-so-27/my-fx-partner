@@ -167,7 +167,7 @@ export function QuickRecordDialog({ open, onOpenChange, onSuccess }: QuickRecord
                     </div>
 
                     <div>
-                        <Label>損益 (円)</Label>
+                        <Label>決済損益 (円)</Label>
                         <Input
                             type="number"
                             placeholder="5000"

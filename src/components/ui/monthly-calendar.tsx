@@ -5,7 +5,7 @@ import { Trade } from "@/types/trade"
 import { cn } from "@/lib/utils"
 import { startOfMonth, endOfMonth, startOfWeek, addDays, addMonths, subMonths, isSameMonth, isSameDay, format } from "date-fns"
 import { ja } from "date-fns/locale"
-import { ChevronLeft, ChevronRight } from "lucide-react"
+import { ChevronLeft, ChevronRight, Mail, Edit3, PenTool } from "lucide-react"
 import { Button } from "./button"
 
 interface MonthlyCalendarProps {
@@ -24,6 +24,9 @@ interface DayData {
     trades: Trade[]
     hasTraded: boolean
     isCurrentMonth: boolean
+    hasEmailTrade: boolean
+    hasManualTrade: boolean
+    hasEditedTrade: boolean
 }
 
 export function MonthlyCalendar({
@@ -77,7 +80,18 @@ export function MonthlyCalendar({
                 pnl,
                 trades: dayTrades,
                 hasTraded: dayTrades.length > 0,
-                isCurrentMonth: isSameMonth(day, currentMonth)
+                isCurrentMonth: isSameMonth(day, currentMonth),
+                hasEmailTrade: dayTrades.some(t =>
+                    t.verificationSource === 'email_forward' ||
+                    t.verificationSource === 'gmail_import' ||
+                    t.verificationSource === 'gmail_import_ai' ||
+                    t.tags?.includes('Forwarded')
+                ),
+                hasManualTrade: dayTrades.some(t =>
+                    !t.verificationSource ||
+                    t.verificationSource === 'manual'
+                ),
+                hasEditedTrade: dayTrades.some(t => t.wasModified)
             })
 
             if (currentWeek.length === 7) {
@@ -129,10 +143,10 @@ export function MonthlyCalendar({
             )}
 
             {/* Week day headers */}
-            <div className="grid grid-cols-7 gap-1">
+            <div className="grid grid-cols-7 gap-1.5">
                 {weekDays.map((day, i) => (
                     <div key={day} className={cn(
-                        "text-[10px] text-center font-medium py-1",
+                        "text-xs text-center font-medium py-2",
                         i === 5 && "text-blue-500",
                         i === 6 && "text-red-500",
                         i < 5 && "text-muted-foreground"
@@ -143,13 +157,13 @@ export function MonthlyCalendar({
             </div>
 
             {/* Calendar grid */}
-            <div className="grid grid-cols-7 gap-1">
+            <div className="grid grid-cols-7 gap-1.5">
                 {weeks.flat().map((day, i) => (
                     <div
                         key={i}
                         onClick={() => onDayClick?.(day.date, day.trades)}
                         className={cn(
-                            "aspect-square flex flex-col items-center justify-center rounded-lg text-xs transition-all cursor-pointer",
+                            "min-h-[70px] flex flex-col items-center justify-start pt-1.5 pb-1 rounded-lg text-xs transition-all cursor-pointer relative",
                             !day.isCurrentMonth && "opacity-30",
                             isToday(day.date) && "ring-2 ring-solo-gold ring-offset-1 ring-offset-background",
                             isSelected(day.date) && "bg-solo-gold/20 ring-2 ring-solo-gold",
@@ -160,22 +174,51 @@ export function MonthlyCalendar({
                             onDayClick && "active:scale-95"
                         )}
                     >
+                        {/* Day number */}
                         <span className={cn(
-                            "text-[11px] font-medium",
+                            "text-sm font-medium",
                             isToday(day.date) && "text-solo-gold font-bold",
                             !day.isCurrentMonth && "text-muted-foreground"
                         )}>
                             {format(day.date, 'd')}
                         </span>
+
+                        {/* PnL */}
                         {day.hasTraded && (
-                            <span className={cn(
-                                "font-bold font-numbers leading-tight mt-0.5",
-                                unit === 'amount' && Math.abs(day.pnl) > 9999 ? "text-[7px]" : "text-[9px]",
-                                day.pnl > 0 && "text-green-600 dark:text-green-400",
-                                day.pnl < 0 && "text-red-600 dark:text-red-400"
-                            )}>
-                                {day.pnl > 0 ? '+' : ''}{unit === 'amount' ? '¥' : ''}{Math.abs(day.pnl) >= 1000 ? `${(day.pnl / 1000).toFixed(1)}k` : day.pnl}
-                            </span>
+                            <div className="flex flex-col items-center">
+                                <span className={cn(
+                                    "font-bold font-numbers leading-tight mt-0.5",
+                                    unit === 'amount' && Math.abs(day.pnl) > 9999 ? "text-[8px]" : "text-[10px]",
+                                    day.pnl > 0 && "text-green-600 dark:text-green-400",
+                                    day.pnl < 0 && "text-red-600 dark:text-red-400"
+                                )}>
+                                    {day.pnl > 0 ? '+' : ''}{unit === 'amount' ? '¥' : ''}{Math.abs(day.pnl) >= 1000 ? `${(day.pnl / 1000).toFixed(1)}k` : day.pnl}
+                                </span>
+                                <span className="text-[8px] text-muted-foreground font-numbers">
+                                    {day.trades.length}件
+                                </span>
+                            </div>
+                        )}
+
+                        {/* Source icons */}
+                        {day.hasTraded && (
+                            <div className="flex items-center gap-0.5 mt-auto">
+                                {day.hasEmailTrade && (
+                                    <span className="w-3.5 h-3.5 rounded-full bg-blue-500/20 flex items-center justify-center" title="メール取り込み">
+                                        <Mail className="w-2 h-2 text-blue-600 dark:text-blue-400" />
+                                    </span>
+                                )}
+                                {day.hasManualTrade && (
+                                    <span className="w-3.5 h-3.5 rounded-full bg-purple-500/20 flex items-center justify-center" title="手動入力">
+                                        <PenTool className="w-2 h-2 text-purple-600 dark:text-purple-400" />
+                                    </span>
+                                )}
+                                {day.hasEditedTrade && (
+                                    <span className="w-3.5 h-3.5 rounded-full bg-amber-500/20 flex items-center justify-center" title="編集済み">
+                                        <Edit3 className="w-2 h-2 text-amber-600 dark:text-amber-400" />
+                                    </span>
+                                )}
+                            </div>
                         )}
                     </div>
                 ))}

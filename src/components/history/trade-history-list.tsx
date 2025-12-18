@@ -16,7 +16,7 @@ import { ExportControls } from "@/components/ui/export-controls"
 import { EditTradeDialog } from "@/components/trade/edit-trade-dialog"
 import { DeleteTradeDialog } from "@/components/trade/delete-trade-dialog"
 import { Button } from "@/components/ui/button"
-import { Edit2, Trash2, ShieldCheck, Plus } from "lucide-react"
+import { Edit2, Trash2, ShieldCheck, Plus, Mail } from "lucide-react"
 import { useAuth } from "@/contexts/auth-context"
 import { QuickRecordDialog } from "@/components/trade/quick-record-dialog"
 
@@ -145,6 +145,13 @@ export function TradeHistoryList({ trades }: TradeHistoryListProps) {
                                     {trade.wasModified && (
                                         <Badge variant="secondary" className="bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-900/20 dark:text-amber-400 dark:border-amber-700/40 gap-1 h-5 px-1.5">
                                             <span className="text-[10px]">Edited</span>
+                                        </Badge>
+                                    )}
+                                    {/* Email Forwarded Badge */}
+                                    {(trade.verificationSource === 'email_forward' || trade.verificationSource === 'gmail_import' || trade.verificationSource === 'gmail_import_ai' || trade.tags?.includes('Forwarded')) && (
+                                        <Badge variant="secondary" className="bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-900/20 dark:text-blue-400 dark:border-blue-700/40 gap-1 h-5 px-1.5">
+                                            <Mail className="h-3 w-3" />
+                                            <span className="text-[10px]">Email</span>
                                         </Badge>
                                     )}
                                 </CardTitle>

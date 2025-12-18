@@ -55,7 +55,7 @@ export function PnLChart({ trades }: PnLChartProps) {
                             borderRadius: '8px'
                         }}
                         labelStyle={{ color: '#fff' }}
-                        formatter={(value: number) => [`¥${value.toLocaleString()}`, '累計損益']}
+                        formatter={(value: number) => [`¥${value.toLocaleString()}`, '累計決済損益']}
                     />
                     <ReferenceLine y={0} stroke="#666" strokeDasharray="3 3" />
                     <Line

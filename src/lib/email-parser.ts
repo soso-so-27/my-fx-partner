@@ -201,7 +201,7 @@ export const emailParser = {
                     currency: 'JPY'
                 } : undefined,
                 pnlSource: (pnlAmount !== undefined || pnlPips !== undefined) ? 'email' : undefined,
-                notes: "Auto-imported via generic parser",
+                notes: "",
                 broker: "Generic",
                 originalEmailId: emailId,
                 isVerified: true,
@@ -234,7 +234,7 @@ export const emailParser = {
                 direction,
                 entryPrice: parseFloat(priceMatch[1]),
                 entryTime: new Date().toISOString(),
-                notes: "Auto-imported from XMTrading email",
+                notes: "",
                 broker: "XMTrading",
                 originalEmailId: emailId,
                 isVerified: true,
@@ -275,7 +275,7 @@ export const emailParser = {
                 direction,
                 entryPrice: parseFloat(priceMatch[1]),
                 entryTime: new Date().toISOString(),
-                notes: "Auto-imported from Exness email",
+                notes: "",
                 broker: "Exness",
                 originalEmailId: emailId,
                 isVerified: true,
@@ -316,7 +316,7 @@ export const emailParser = {
                 direction,
                 entryPrice: parseFloat(priceMatch[1]),
                 entryTime: new Date().toISOString(),
-                notes: "Auto-imported from OANDA email",
+                notes: "",
                 broker: "OANDA",
                 originalEmailId: emailId,
                 isVerified: true,
@@ -446,6 +446,13 @@ export const emailParser = {
             }
 
 
+            // 注文番号の検出（entry-exit紐付け用）
+            const orderNumberMatch = body.match(/注文番号[：:]\\s*(\\d+)/i)
+            const orderNumber = orderNumberMatch ? orderNumberMatch[1] : undefined
+
+            // 約定数量を保存（PnL計算用にrawで保持）
+            const rawQuantity = quantityMatch ? parseInt(quantityMatch[1].replace(/,/g, '')) : undefined
+
             // 新規注文の場合はエントリー情報として保存
             // 決済注文の場合はexitPriceとpnlを含める
             return {
@@ -454,17 +461,22 @@ export const emailParser = {
                 entryPrice: isSettlement ? 0 : rate, // 決済の場合、元のエントリー価格は別途必要
                 exitPrice: isSettlement ? rate : undefined,
                 lotSize,
+                lotSizeRaw: rawQuantity ? {
+                    value: rawQuantity,
+                    unit: '通貨',
+                    broker: 'GMOクリック証券'
+                } : undefined,
                 entryTime,
                 exitTime: isSettlement ? entryTime : undefined,
                 pnl,
                 pnlSource: pnl ? 'email' : undefined,
-                notes: isSettlement
-                    ? `GMO決済通知から自動取込 (約定レート: ${rate})`
-                    : `GMO新規注文通知から自動取込`,
+                notes: "",
                 broker: "GMOクリック証券",
                 originalEmailId: emailId,
                 isVerified: true,
                 verificationSource: "gmail_import",
+                tradeType: isSettlement ? 'exit' : 'entry',
+                orderNumber,
                 tags: ["GMO", "AutoImport", isSettlement ? "決済" : "新規"]
             }
         } catch (e) {
@@ -518,28 +530,32 @@ export const emailParser = {
 
             const systemPrompt = `
 You are a specialized FX trade email parser.
-Your task is to extract trade details from a trade confirmation email and return them in a strict JSON format.
-If the email does not contain valid trade confirmation data, return null.
+Extract trade details from a trade confirmation email and return JSON.
+If the email does not contain valid trade data, return {"valid": false}.
 
 Required JSON Structure:
 {
-  "pair": string (e.g. "USDJPY", "EURUSD"),
+  "valid": true,
+  "pair": string (e.g. "USDJPY", "EURUSD" - no slashes),
   "direction": "BUY" | "SELL",
-  "entryPrice": number (if new entry),
-  "exitPrice": number (if settlement/exit),
-  "lotSize": number,
-  "entryTime": string (ISO 8601),
-  "exitTime": string (ISO 8601, only if settlement),
-  "pnl": { "amount": number, "currency": "JPY" | "USD" } (only if settlement),
-  "broker": string (inferred from email),
-  "isSettlement": boolean
+  "tradeType": "entry" | "exit",
+  "entryPrice": number (for entry trades),
+  "exitPrice": number (for exit trades),
+  "rawQuantity": number (約定数量 in units, e.g. 360000),
+  "lotSize": number (standard lots, rawQuantity / 100000),
+  "orderNumber": string (注文番号 if available),
+  "entryTime": string (ISO 8601 with timezone),
+  "exitTime": string (ISO 8601, only for exit),
+  "broker": string (inferred from email)
 }
 
 Rules:
-- If it is a "New Order" (Entry), exitPrice and pnl should be null.
-- If it is a "Settlement" (Exit), entryPrice should be 0 (or extracted if available as 'open price'), and exitPrice/pnl must be present.
-- Normalize pairs to "USDJPY" format (no slashes).
-- If cannot parse, return null JSON.
+- tradeType: "entry" for new positions (新規), "exit" for settlements (決済)
+- For entry trades: set entryPrice, leave exitPrice null
+- For exit trades: set exitPrice, leave entryPrice as 0
+- rawQuantity: exact number of units (e.g. 360000, not 3.6 lots)
+- orderNumber: extract if present in email
+- Normalize pairs to "USDJPY" format (no slashes)
 `
             const userPrompt = `
 Subject: ${subject}
@@ -560,7 +576,7 @@ ${body}
             if (!content) return null
 
             const data = JSON.parse(content)
-            if (!data || !data.pair) return null
+            if (!data || !data.valid || !data.pair) return null
 
             // Map to ParsedTrade interface
             return {
@@ -569,20 +585,21 @@ ${body}
                 entryPrice: data.entryPrice || 0,
                 exitPrice: data.exitPrice || undefined,
                 lotSize: data.lotSize,
+                lotSizeRaw: data.rawQuantity ? {
+                    value: data.rawQuantity,
+                    unit: '通貨',
+                    broker: data.broker || 'Unknown'
+                } : undefined,
                 entryTime: data.entryTime || new Date().toISOString(),
                 exitTime: data.exitTime || undefined,
-                pnl: data.pnl?.amount ? {
-                    amount: data.pnl.amount,
-                    currency: data.pnl.currency || 'JPY',
-                    pips: 0 // Cannot reliably calc pips without knowing entry in settlement sometimes
-                } : undefined,
-                pnlSource: data.pnl?.amount ? 'email' : undefined,
-                notes: `Auto-imported via AI Fallback (${data.broker || 'Unknown'})`,
+                notes: "",
                 broker: data.broker || "Unknown",
                 originalEmailId: emailId,
                 isVerified: true,
                 verificationSource: "gmail_import_ai",
-                tags: ["AI_Import", data.broker || "Unknown", data.isSettlement ? "決済" : "新規"]
+                tradeType: data.tradeType || (data.exitPrice ? 'exit' : 'entry'),
+                orderNumber: data.orderNumber,
+                tags: ["AI_Import", data.broker || "Unknown", data.tradeType === 'exit' ? "決済" : "新規"]
             }
 
         } catch (e) {

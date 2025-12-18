@@ -4,8 +4,8 @@
     "description": "AIパートナーと一緒にFXトレードを振り返り、成長するためのジャーナルアプリ",
     "start_url": "/",
     "display": "standalone",
-    "background_color": "#0F1117",
-    "theme_color": "#C8A85F",
+    "background_color": "#F8F8FA",
+    "theme_color": "#F8F8FA",
     "orientation": "portrait-primary",
     "icons": [
         {

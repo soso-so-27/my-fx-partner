@@ -182,7 +182,7 @@ export function EditTradeDialog({ trade, open, onOpenChange, onSuccess }: EditTr
                             />
                         </div>
                         <div>
-                            <Label>損益</Label>
+                            <Label>決済損益</Label>
                             <Input
                                 type="number"
                                 value={formData.pnl}

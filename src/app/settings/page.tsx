@@ -1,146 +1,154 @@
 "use client"
 
 import { GmailConnectButton } from "./gmail-connect-button"
-import { MarketingSeedButton } from "@/components/debug/marketing-seed-button"
 import { ProtectedRoute } from "@/components/auth/protected-route"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
-import { useState, useEffect } from "react"
-import { useAuth } from "@/contexts/auth-context"
-import { useSession } from "next-auth/react"
-import { profileService } from "@/lib/profile-service"
-import { UserProfile } from "@/types/user-profile"
+import { Textarea } from "@/components/ui/textarea"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { useToast } from "@/components/ui/use-toast"
-import { User, Upload, Copy } from "lucide-react"
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from "@/components/ui/select"
-import { RULE_TEMPLATES } from "@/lib/rule-templates"
-import { tradeRuleService } from "@/lib/trade-rule-service"
+import { supabase } from "@/lib/supabase/client"
+import { useSession } from "next-auth/react"
+import { useEffect, useState } from "react"
+import { ArrowLeft, User, Upload, LogOut, Mail, Bell, Database, Settings2 } from "lucide-react"
+import Link from "next/link"
 import { ModeToggle } from "@/components/ui/mode-toggle"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { RULE_TEMPLATES } from "@/lib/rule-templates"
 import { NotificationSettings } from "@/components/settings/notification-settings"
 import { DataManagementCard } from "@/components/settings/data-management-card"
+import { EmailForwardingSetup } from "@/components/settings/email-forwarding-setup"
 
 export default function SettingsPage() {
-    const [mounted, setMounted] = useState(false)
-    const { user } = useAuth()
+    const { data: session } = useSession()
+    const user = session?.user
     const { toast } = useToast()
-    const [profile, setProfile] = useState<UserProfile | null>(null)
+    const [mounted, setMounted] = useState(false)
+
+    // Profile state
     const [displayName, setDisplayName] = useState("")
     const [bio, setBio] = useState("")
     const [avatarUrl, setAvatarUrl] = useState("")
     const [saving, setSaving] = useState(false)
-    const [selectedTemplateId, setSelectedTemplateId] = useState<string>("")
+
+    // Template state
+    const [selectedTemplateId, setSelectedTemplateId] = useState("")
     const [applyingTemplate, setApplyingTemplate] = useState(false)
-    const { data: session } = useSession()
 
     useEffect(() => {
         setMounted(true)
         loadProfile()
-    }, [user])
+    }, [])
 
-    const loadProfile = async () => {
-        if (!user) return
-        const userProfile = await profileService.getUserProfile(user.id)
-        if (userProfile) {
-            setProfile(userProfile)
-            setDisplayName(userProfile.displayName || "")
-            setBio(userProfile.bio || "")
-            setAvatarUrl(userProfile.avatarUrl || "")
+    async function loadProfile() {
+        if (!user?.email) return
+        const { data } = await supabase
+            .from("profiles")
+            .select("display_name, bio, avatar_url")
+            .eq("email", user.email)
+            .single()
+
+        if (data) {
+            setDisplayName(data.display_name || "")
+            setBio(data.bio || "")
+            setAvatarUrl(data.avatar_url || "")
         }
     }
 
-    const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    async function handleAvatarUpload(e: React.ChangeEvent<HTMLInputElement>) {
         const file = e.target.files?.[0]
         if (!file) return
 
         if (file.size > 2 * 1024 * 1024) {
-            toast({
-                title: "ファイルサイズが大きすぎます",
-                description: "2MB以下の画像を選択してください。",
-                variant: "destructive"
-            })
+            toast({ title: "ファイルサイズは2MB以下にしてください", variant: "destructive" })
             return
         }
 
-        if (!user) return
+        const formData = new FormData()
+        formData.append("file", file)
+        formData.append("type", "avatar")
 
         try {
-            const dataUrl = await profileService.uploadAvatar(user.id, file)
-            if (dataUrl) {
-                setAvatarUrl(dataUrl)
-            } else {
-                throw new Error("Upload failed")
-            }
-        } catch (error) {
-            toast({
-                title: "アップロードに失敗しました",
-                description: "もう一度お試しください。",
-                variant: "destructive"
+            const response = await fetch("/api/upload", {
+                method: "POST",
+                body: formData,
             })
+
+            if (!response.ok) throw new Error("Upload failed")
+
+            const { url } = await response.json()
+            setAvatarUrl(url)
+
+            // Auto-save avatar to DB
+            if (user?.email) {
+                await supabase
+                    .from("profiles")
+                    .update({ avatar_url: url })
+                    .eq("email", user.email)
+            }
+
+            toast({ title: "アイコンを保存しました" })
+        } catch {
+            toast({ title: "アップロードに失敗しました", variant: "destructive" })
         }
     }
 
-    const handleSaveProfile = async () => {
-        if (!user) return
+    async function handleSaveProfile() {
+        if (!user?.email) return
         setSaving(true)
+
         try {
-            await profileService.updateProfile(user.id, {
-                displayName: displayName || undefined,
-                bio: bio || undefined,
-                avatarUrl: avatarUrl || undefined
+            // Use API route to bypass RLS
+            const response = await fetch('/api/profiles', {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    display_name: displayName,
+                    bio: bio,
+                    avatar_url: avatarUrl,
+                })
             })
-            toast({
-                title: "保存しました",
-                description: "プロフィールを更新しました。"
-            })
-            await loadProfile()
-        } catch (error) {
-            toast({
-                title: "保存に失敗しました",
-                description: "もう一度お試しください。",
-                variant: "destructive"
-            })
+
+            if (!response.ok) throw new Error('Failed to save')
+            toast({ title: "プロフィールを保存しました" })
+        } catch {
+            toast({ title: "保存に失敗しました", variant: "destructive" })
         } finally {
             setSaving(false)
         }
     }
 
-    const handleApplyTemplate = async () => {
-        if (!user || !selectedTemplateId) return
+    async function handleApplyTemplate() {
+        if (!selectedTemplateId || !user?.email) return
         setApplyingTemplate(true)
+
         try {
             const template = RULE_TEMPLATES.find(t => t.id === selectedTemplateId)
-            if (!template) return
+            if (!template) throw new Error("Template not found")
 
-            // Create rules from template
-            for (const rule of template.rules) {
-                await tradeRuleService.createRule({
-                    title: rule.title,
-                    category: rule.category,
-                    description: rule.description,
-                    isActive: true
-                }, user.id)
-            }
+            const { data: profile } = await supabase
+                .from("profiles")
+                .select("id")
+                .eq("email", user.email)
+                .single()
 
-            toast({
-                title: "ルールを適用しました",
-                description: `${template.name}のルールを追加しました。`
-            })
-            setSelectedTemplateId("")
-        } catch (error) {
-            toast({
-                title: "適用に失敗しました",
-                description: "もう一度お試しください。",
-                variant: "destructive"
-            })
+            if (!profile) throw new Error("Profile not found")
+
+            await supabase.from("trading_rules").delete().eq("user_id", profile.id)
+
+            const rulesToInsert = template.rules.map(rule => ({
+                user_id: profile.id,
+                ...rule
+            }))
+
+            const { error } = await supabase.from("trading_rules").insert(rulesToInsert)
+            if (error) throw error
+
+            toast({ title: `「${template.name}」のルールを適用しました` })
+        } catch {
+            toast({ title: "ルールの適用に失敗しました", variant: "destructive" })
         } finally {
             setApplyingTemplate(false)
         }
@@ -152,124 +160,160 @@ export default function SettingsPage() {
         <ProtectedRoute>
             <div className="container mx-auto p-4 max-w-4xl pb-20">
                 <header className="sticky top-0 z-50 -mx-4 px-4 pt-[env(safe-area-inset-top)] pb-2 bg-background border-b border-border flex items-center gap-2 mb-4">
+                    <Link href="/">
+                        <Button variant="ghost" size="icon" className="h-8 w-8 -ml-2">
+                            <ArrowLeft className="h-5 w-5" />
+                        </Button>
+                    </Link>
                     <div className="h-7 w-7 rounded-full bg-muted/50 flex items-center justify-center">
                         <User className="h-4 w-4 text-solo-navy dark:text-solo-gold" />
                     </div>
                     <h1 className="text-base font-bold">設定</h1>
                 </header>
 
-                <div className="space-y-6">
-                    {/* Profile Settings */}
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>プロフィール設定</CardTitle>
-                        </CardHeader>
-                        <CardContent className="space-y-4">
-                            {/* Avatar */}
-                            <div className="space-y-2">
-                                <Label>アイコン画像</Label>
+                <Tabs defaultValue="account" className="space-y-4">
+                    <TabsList className="grid w-full grid-cols-3 h-auto">
+                        <TabsTrigger value="account" className="flex flex-col gap-1 py-2 text-xs">
+                            <User className="h-4 w-4" />
+                            アカウント
+                        </TabsTrigger>
+                        <TabsTrigger value="sync" className="flex flex-col gap-1 py-2 text-xs">
+                            <Mail className="h-4 w-4" />
+                            同期
+                        </TabsTrigger>
+                        <TabsTrigger value="customize" className="flex flex-col gap-1 py-2 text-xs">
+                            <Settings2 className="h-4 w-4" />
+                            カスタマイズ
+                        </TabsTrigger>
+                    </TabsList>
+
+                    {/* Account Tab */}
+                    <TabsContent value="account" className="space-y-4">
+                        {/* Profile */}
+                        <Card>
+                            <CardHeader className="pb-3">
+                                <CardTitle className="text-base">プロフィール</CardTitle>
+                            </CardHeader>
+                            <CardContent className="space-y-4">
                                 <div className="flex items-center gap-4">
-                                    <div className="h-20 w-20 rounded-full bg-muted flex items-center justify-center overflow-hidden border-2 border-solo-gold/20">
+                                    <div className="h-16 w-16 rounded-full bg-muted flex items-center justify-center overflow-hidden border-2 border-solo-gold/20">
                                         {avatarUrl ? (
                                             <img src={avatarUrl} alt="Avatar" className="h-full w-full object-cover" />
                                         ) : (
-                                            <User className="h-10 w-10 text-muted-foreground" />
+                                            <User className="h-8 w-8 text-muted-foreground" />
                                         )}
                                     </div>
+                                    <Label htmlFor="avatar-upload" className="cursor-pointer">
+                                        <div className="flex items-center gap-2 px-3 py-2 bg-muted hover:bg-muted/80 rounded-lg transition-colors text-sm">
+                                            <Upload className="h-4 w-4" />
+                                            変更
+                                        </div>
+                                        <input
+                                            id="avatar-upload"
+                                            type="file"
+                                            accept="image/*"
+                                            className="hidden"
+                                            onChange={handleAvatarUpload}
+                                        />
+                                    </Label>
+                                </div>
+
+                                <div className="space-y-2">
+                                    <Label htmlFor="displayName">表示名</Label>
+                                    <Input
+                                        id="displayName"
+                                        placeholder="例: トレーダー太郎"
+                                        value={displayName}
+                                        onChange={(e) => setDisplayName(e.target.value)}
+                                        maxLength={50}
+                                    />
+                                </div>
+
+                                <div className="space-y-2">
+                                    <Label htmlFor="bio">自己紹介</Label>
+                                    <Textarea
+                                        id="bio"
+                                        placeholder="例: FX歴3年。スキャルピング中心。"
+                                        value={bio}
+                                        onChange={(e) => setBio(e.target.value)}
+                                        maxLength={200}
+                                        rows={2}
+                                    />
+                                </div>
+
+                                <Button
+                                    onClick={handleSaveProfile}
+                                    disabled={saving}
+                                    className="w-full bg-solo-gold hover:bg-solo-gold/80 text-solo-black"
+                                    size="sm"
+                                >
+                                    {saving ? "保存中..." : "保存"}
+                                </Button>
+                            </CardContent>
+                        </Card>
+
+                        {/* Theme */}
+                        <Card>
+                            <CardContent className="py-4">
+                                <div className="flex items-center justify-between">
                                     <div>
-                                        <Label htmlFor="avatar-upload" className="cursor-pointer">
-                                            <div className="flex items-center gap-2 px-4 py-2 bg-muted hover:bg-muted/80 rounded-lg transition-colors">
-                                                <Upload className="h-4 w-4" />
-                                                <span className="text-sm">画像を選択</span>
-                                            </div>
-                                            <input
-                                                id="avatar-upload"
-                                                type="file"
-                                                accept="image/*"
-                                                className="hidden"
-                                                onChange={handleAvatarUpload}
-                                            />
-                                        </Label>
-                                        <p className="text-xs text-muted-foreground mt-1">
-                                            2MB以下 (JPG, PNG)
-                                        </p>
+                                        <p className="font-medium text-sm">テーマ</p>
+                                        <p className="text-xs text-muted-foreground">ライト/ダーク/システム</p>
                                     </div>
+                                    <ModeToggle />
                                 </div>
-                            </div>
+                            </CardContent>
+                        </Card>
 
-                            {/* Display Name */}
-                            <div className="space-y-2">
-                                <Label htmlFor="displayName">表示名</Label>
-                                <Input
-                                    id="displayName"
-                                    placeholder="例: トレーダー太郎"
-                                    value={displayName}
-                                    onChange={(e) => setDisplayName(e.target.value)}
-                                    maxLength={50}
-                                />
-                            </div>
+                        {/* Logout */}
+                        <Card className="border-destructive/20">
+                            <CardContent className="py-4">
+                                <Button
+                                    variant="outline"
+                                    className="w-full text-destructive border-destructive/30 hover:bg-destructive/10"
+                                    onClick={() => {
+                                        import("next-auth/react").then(({ signOut }) => {
+                                            signOut({ callbackUrl: "/login" })
+                                        })
+                                    }}
+                                >
+                                    <LogOut className="h-4 w-4 mr-2" />
+                                    ログアウト
+                                </Button>
+                            </CardContent>
+                        </Card>
+                    </TabsContent>
 
-                            {/* Bio */}
-                            <div className="space-y-2">
-                                <Label htmlFor="bio">自己紹介</Label>
-                                <Textarea
-                                    id="bio"
-                                    placeholder="例: FX歴3年。スキャルピング中心に取引しています。"
-                                    value={bio}
-                                    onChange={(e) => setBio(e.target.value)}
-                                    maxLength={200}
-                                    rows={3}
-                                />
-                                <p className="text-xs text-muted-foreground text-right">
-                                    {bio.length}/200
-                                </p>
-                            </div>
+                    {/* Sync Tab */}
+                    <TabsContent value="sync" className="space-y-4">
+                        <EmailForwardingSetup />
+                        {user?.email === "nakanishisoya@gmail.com" && (
+                            <>
+                                <NotificationSettings />
+                                <DataManagementCard />
+                            </>
+                        )}
+                    </TabsContent>
 
-                            <Button
-                                onClick={handleSaveProfile}
-                                disabled={saving}
-                                className="w-full bg-solo-gold hover:bg-solo-gold/80 text-solo-black"
-                            >
-                                {saving ? "保存中..." : "保存する"}
-                            </Button>
-                        </CardContent>
-                    </Card>
-
-                    {/* Theme Settings */}
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>外観設定</CardTitle>
-                        </CardHeader>
-                        <CardContent className="space-y-4">
-                            <div className="flex items-center justify-between">
-                                <div>
-                                    <Label>テーマ</Label>
-                                    <p className="text-sm text-muted-foreground">ライト・ダーク・システム設定から選択</p>
-                                </div>
-                                <ModeToggle />
-                            </div>
-                        </CardContent>
-                    </Card>
-
-                    {/* Trade Rules */}
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>トレードルール設定</CardTitle>
-                        </CardHeader>
-                        <CardContent className="space-y-4">
-                            <div className="space-y-2">
-                                <Label>テンプレートから一括登録</Label>
-                                <p className="text-sm text-muted-foreground">
-                                    スタイルに合わせたルールを自動で設定します。
-                                    <span className="text-red-500 text-xs ml-1">※既存のルールは上書きされます</span>
+                    {/* Customize Tab */}
+                    <TabsContent value="customize" className="space-y-4">
+                        {/* Trade Rules */}
+                        <Card>
+                            <CardHeader className="pb-3">
+                                <CardTitle className="text-base">トレードルール</CardTitle>
+                            </CardHeader>
+                            <CardContent className="space-y-3">
+                                <p className="text-xs text-muted-foreground">
+                                    テンプレートから一括登録
+                                    <span className="text-red-500 ml-1">※既存ルール上書き</span>
                                 </p>
                                 <div className="flex gap-2">
                                     <Select
                                         value={selectedTemplateId}
                                         onValueChange={setSelectedTemplateId}
                                     >
-                                        <SelectTrigger className="w-full">
-                                            <SelectValue placeholder="スタイルを選択..." />
+                                        <SelectTrigger className="flex-1">
+                                            <SelectValue placeholder="スタイルを選択" />
                                         </SelectTrigger>
                                         <SelectContent>
                                             {RULE_TEMPLATES.map((template) => (
@@ -283,169 +327,45 @@ export default function SettingsPage() {
                                         onClick={handleApplyTemplate}
                                         disabled={!selectedTemplateId || applyingTemplate}
                                         variant="outline"
+                                        size="sm"
                                     >
-                                        {applyingTemplate ? "適用中..." : "適用"}
+                                        {applyingTemplate ? "..." : "適用"}
                                     </Button>
                                 </div>
                                 {selectedTemplateId && (
-                                    <div className="bg-muted/50 p-3 rounded-md text-sm text-muted-foreground">
+                                    <p className="text-xs text-muted-foreground bg-muted/50 p-2 rounded">
                                         {RULE_TEMPLATES.find(t => t.id === selectedTemplateId)?.description}
-                                    </div>
+                                    </p>
                                 )}
-                            </div>
-                        </CardContent>
-                    </Card>
+                            </CardContent>
+                        </Card>
 
-                    {/* External Services */}
-                    {/* Notification Settings */}
-                    <NotificationSettings />
-
-                    {/* External Services */}
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>外部サービス連携</CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                            {/* External Service Connect */}
-                            <div className="flex items-center justify-between p-4 border rounded-lg bg-card">
-                                <div className="space-y-1">
-                                    <h3 className="font-medium flex items-center gap-2">
-                                        Gmail連携
-                                        <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full">Beta</span>
-                                    </h3>
-                                    <p className="text-sm text-muted-foreground">
-                                        約定メールを自動で取り込み、トレード履歴に「Real」バッジを付与します。
-                                    </p>
-                                </div>
-                                <GmailConnectButton />
-                            </div>
-
-                            {/* Email Forwarding */}
-                            <div className="flex items-center justify-between p-4 border rounded-lg bg-card mt-4">
-                                <div className="space-y-1 flex-1">
-                                    <h3 className="font-medium flex items-center gap-2">
-                                        メール転送連携
-                                        <span className="text-xs bg-blue-500/10 text-blue-500 px-2 py-0.5 rounded-full">New</span>
-                                    </h3>
-                                    <p className="text-sm text-muted-foreground">
-                                        約定メールを以下のアドレスに転送すると、自動でトレード履歴に取り込まれます。
-                                    </p>
-                                    <div className="mt-2 flex items-center gap-2">
-                                        {session?.user?.email ? (
-                                            <>
-                                                <code className="text-xs bg-muted px-2 py-1 rounded">
-                                                    {`import+${session.user.email.replace('@', '.')}@trade-solo.com`}
-                                                </code>
-                                                <Button
-                                                    variant="ghost"
-                                                    size="sm"
-                                                    onClick={() => {
-                                                        navigator.clipboard.writeText(`import+${session.user?.email?.replace('@', '.')}@trade-solo.com`)
-                                                        toast({ title: "コピーしました" })
-                                                    }}
-                                                >
-                                                    <Copy className="h-3 w-3" />
-                                                </Button>
-                                            </>
-                                        ) : (
-                                            <span className="text-xs text-muted-foreground">読み込み中...</span>
-                                        )}
-                                    </div>
-                                    <p className="text-xs text-muted-foreground mt-1">
-                                        ※ ご利用にはCloudflare Email Routingの設定が必要です。詳しくはドキュメントをご確認ください。
-                                    </p>
-                                </div>
-                            </div>
-                        </CardContent>
-                    </Card>
-
-                    {/* Data Management */}
-                    <DataManagementCard />
-
-                    {/* Import Data (Phase 3) */}
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>データインポート (Beta)</CardTitle>
-                        </CardHeader>
-                        <CardContent className="space-y-4">
-                            <div className="space-y-2">
-                                <Label>テキスト/CSV貼り付け</Label>
-                                <p className="text-sm text-muted-foreground">
-                                    MT4/MT5の履歴メールやCSVテキストを貼り付けてください。
+                        {/* Data Import */}
+                        <Card>
+                            <CardHeader className="pb-3">
+                                <CardTitle className="text-base">データインポート (Beta)</CardTitle>
+                            </CardHeader>
+                            <CardContent className="space-y-3">
+                                <p className="text-xs text-muted-foreground">
+                                    MT4/MT5の履歴やCSVを貼り付け
                                 </p>
                                 <Textarea
                                     placeholder="例: buy 0.1 USDJPY at 150.00..."
-                                    className="font-mono text-sm"
-                                    rows={5}
+                                    className="font-mono text-xs"
+                                    rows={3}
                                 />
-                                <Button variant="secondary" onClick={() => toast({ title: "解析機能は準備中です" })}>
+                                <Button
+                                    variant="secondary"
+                                    size="sm"
+                                    onClick={() => toast({ title: "解析機能は準備中です" })}
+                                >
                                     解析プレビュー
                                 </Button>
-                            </div>
-                        </CardContent>
-                    </Card>
-
-                    {/* Marketing Demo Data (Debug) - Only for Admin/Demo users */}
-                    {/* Marketing Demo Data (Debug) - Hidden as requested
-                    {(user?.email === "nakanishisoya@gmail.com" || user?.email === "demo@example.com") && (
-                        <Card className="border-solo-gold/20 bg-solo-gold/5">
-                            <CardHeader>
-                                <CardTitle className="text-solo-gold">Marketing Data Generator 🛠️</CardTitle>
-                            </CardHeader>
-                            <CardContent>
-                                <div className="space-y-4">
-                                    <p className="text-sm text-muted-foreground">
-                                        集客用ランディングページやデモアカウント用のデータを生成します。
-                                        <br />
-                                        ※既存のデータに追加されます。
-                                    </p>
-                                    <MarketingSeedButton />
-                                </div>
                             </CardContent>
                         </Card>
-                    )}
-                    */}
-
-                    {/* App Settings */}
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>アプリ設定</CardTitle>
-                        </CardHeader>
-                        <CardContent className="space-y-4">
-                            <div className="flex items-center justify-between">
-                                <div className="space-y-1">
-                                    <Label>テーマ設定</Label>
-                                    <p className="text-sm text-muted-foreground">
-                                        画面の明るさを切り替えます
-                                    </p>
-                                </div>
-                                <ModeToggle />
-                            </div>
-                        </CardContent>
-                    </Card>
-
-                    {/* Account Actions */}
-                    <Card className="border-destructive/20">
-                        <CardHeader>
-                            <CardTitle>アカウント</CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                            <Button
-                                variant="outline"
-                                className="w-full text-destructive border-destructive/30 hover:bg-destructive/10"
-                                onClick={() => {
-                                    // Use NextAuth signOut
-                                    import("next-auth/react").then(({ signOut }) => {
-                                        signOut({ callbackUrl: "/login" })
-                                    })
-                                }}
-                            >
-                                ログアウト
-                            </Button>
-                        </CardContent>
-                    </Card>
-                </div>
+                    </TabsContent>
+                </Tabs>
             </div>
-        </ProtectedRoute >
+        </ProtectedRoute>
     )
 }

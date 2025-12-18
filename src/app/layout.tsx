@@ -28,7 +28,7 @@ export const metadata: Metadata = {
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
-    statusBarStyle: "black-translucent",
+    statusBarStyle: "default",
     title: "SOLO",
   },
   icons: {
@@ -43,7 +43,10 @@ export const viewport: Viewport = {
   maximumScale: 1,
   userScalable: false,
   viewportFit: "cover",
-  themeColor: "#C8A85F",
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#F8F8FA" },
+    { media: "(prefers-color-scheme: dark)", color: "#0F1419" }
+  ],
 };
 
 export default function RootLayout({
@@ -53,12 +56,18 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="ja" suppressHydrationWarning>
+      <head>
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+        <meta name="theme-color" content="#F8F8FA" media="(prefers-color-scheme: light)" />
+        <meta name="theme-color" content="#0F1419" media="(prefers-color-scheme: dark)" />
+      </head>
       <body
         className={`${notoSansJP.variable} ${jetBrainsMono.variable} antialiased pb-16 md:pb-0 md:pt-16`}
       >
         <ThemeProvider
           attribute="class"
-          defaultTheme="dark"
+          defaultTheme="system"
           enableSystem
           disableTransitionOnChange
         >

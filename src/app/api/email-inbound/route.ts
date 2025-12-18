@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getSupabaseAdmin } from '@/lib/supabase-admin'
+import { emailParser } from '@/lib/email-parser'
 
 // Force Node.js runtime (not Edge)
 export const runtime = 'nodejs'
@@ -39,7 +40,6 @@ export async function POST(request: NextRequest) {
         }
 
         // 3. "to" アドレスからユーザーメールを抽出
-        // 形式: import+<email_replaced_dots>@trade-solo.com
         const userIdentifierMatch = payload.to.match(/import\+(.+)@trade-solo\.com/i)
         if (!userIdentifierMatch) {
             console.error('[email-inbound] Could not extract user identifier from "to":', payload.to)
@@ -47,26 +47,16 @@ export async function POST(request: NextRequest) {
         }
         const userIdentifier = userIdentifierMatch[1]
 
-        // Email Reconstruction Strategy
-        // userIdentifier is like "nakanishisoya.gmail.com" (originally nakanishisoya@gmail.com)
-        // We need to guess where the @ was.
-        // Strategy: Iterate through dot positions from right to left, replacing one dot with @, and check if user exists.
-
         const parts = userIdentifier.split('.')
         let userId: string | null = null
-        let matchedEmail: string | null = null
 
         const supabase = getSupabaseAdmin()
 
         // Try reconstructing email by replacing dots with @ from right to left
-        // e.g. for a.b.c: try a.b@c, then a@b.c
-        // We skip the very last part (TLD) so we start replacing from parts.length - 2
         for (let i = parts.length - 2; i >= 0; i--) {
             const local = parts.slice(0, i + 1).join('.')
             const domain = parts.slice(i + 1).join('.')
             const candidateEmail = `${local}@${domain}`
-
-            console.log(`[email-inbound] Checking candidate email: ${candidateEmail}`)
 
             const { data: profile } = await supabase
                 .from('profiles')
@@ -76,7 +66,6 @@ export async function POST(request: NextRequest) {
 
             if (profile) {
                 userId = profile.id
-                matchedEmail = candidateEmail
                 console.log(`[email-inbound] Found user for email: ${candidateEmail}`)
                 break
             }
@@ -84,24 +73,89 @@ export async function POST(request: NextRequest) {
 
         if (!userId) {
             console.error('[email-inbound] User not found for identifier:', userIdentifier)
-            // Return 422 Unprocessable Entity instead of 404 to distinguish from "Endpoint Not Found"
             return NextResponse.json({
                 error: 'User not found',
                 message: `Could not find user with identifier: ${userIdentifier}`,
-                tried: parts.join('.')
             }, { status: 422 })
         }
 
-        // 5. Simple regex parsing (no AI)
-        const parsedTrade = parseSimple(payload.subject || '', payload.body)
+        // 4. emailParser でトレード解析
+        const emailId = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+        const parsedTrade = await emailParser.parse(payload.subject || '', payload.body, emailId)
 
         if (!parsedTrade) {
             console.log('[email-inbound] Failed to parse trade from email')
             return NextResponse.json({
                 success: false,
                 message: 'Could not extract trade data from email',
-                suggestion: 'Please check if the email format is supported'
             }, { status: 200 })
+        }
+
+        console.log('[email-inbound] Parsed trade:', {
+            pair: parsedTrade.pair,
+            direction: parsedTrade.direction,
+            tradeType: parsedTrade.tradeType,
+            entryPrice: parsedTrade.entryPrice,
+            exitPrice: parsedTrade.exitPrice,
+            lotSizeRaw: parsedTrade.lotSizeRaw
+        })
+
+        // 5. 決済トレードの場合: 対応する新規エントリーを検索して紐付け
+        let linkedEntryId: string | undefined
+        let calculatedPnl: { amount: number; pips: number; currency: string } | undefined
+
+        if (parsedTrade.tradeType === 'exit' && parsedTrade.exitPrice) {
+            // 同じユーザー、同じペア、tradeType='entry'、未決済（linkedされていない）を検索
+            const { data: entryTrades } = await supabase
+                .from('trades')
+                .select('*')
+                .eq('user_id', userId)
+                .eq('pair_normalized', parsedTrade.pair.replace('/', ''))
+                .eq('trade_type', 'entry')
+                .is('exit_price', null)
+                .order('entry_time', { ascending: false })
+                .limit(1)
+
+            if (entryTrades && entryTrades.length > 0) {
+                const entryTrade = entryTrades[0]
+                linkedEntryId = entryTrade.id
+
+                // PnL計算: (決済レート - 新規レート) × 約定数量
+                const entryPrice = Number(entryTrade.entry_price)
+                const exitPrice = parsedTrade.exitPrice
+                const rawQuantity = parsedTrade.lotSizeRaw?.value || (parsedTrade.lotSize || 0.1) * 100000
+
+                // 方向を考慮したPnL計算
+                let priceDiff: number
+                if (entryTrade.direction === 'BUY') {
+                    priceDiff = exitPrice - entryPrice
+                } else {
+                    priceDiff = entryPrice - exitPrice
+                }
+
+                // JPYペアかどうかで計算方法を変更
+                const isJpyPair = parsedTrade.pair.includes('JPY')
+                let pnlAmount: number
+                let pnlPips: number
+
+                if (isJpyPair) {
+                    // JPYペア: 1pip = 0.01
+                    pnlPips = priceDiff * 100 // pipsに変換
+                    pnlAmount = priceDiff * rawQuantity
+                } else {
+                    // 非JPYペア: 1pip = 0.0001
+                    pnlPips = priceDiff * 10000
+                    pnlAmount = priceDiff * rawQuantity * 100 // USD換算概算
+                }
+
+                calculatedPnl = {
+                    amount: Math.round(pnlAmount),
+                    pips: Math.round(pnlPips * 10) / 10,
+                    currency: 'JPY'
+                }
+
+                console.log('[email-inbound] Linked to entry:', linkedEntryId, 'PnL:', calculatedPnl)
+            }
         }
 
         // 6. データベースに保存
@@ -110,16 +164,25 @@ export async function POST(request: NextRequest) {
             .insert({
                 user_id: userId,
                 pair: parsedTrade.pair,
+                pair_normalized: parsedTrade.pair.replace('/', ''),
                 direction: parsedTrade.direction,
-                entry_price: parsedTrade.entryPrice,
-                entry_time: new Date().toISOString(),
+                entry_price: parsedTrade.entryPrice || (linkedEntryId ? 0 : parsedTrade.exitPrice),
+                exit_price: parsedTrade.exitPrice,
+                entry_time: parsedTrade.entryTime,
+                exit_time: parsedTrade.exitTime,
                 lot_size: parsedTrade.lotSize,
-                broker: parsedTrade.broker || 'Manual Forward',
+                lot_size_raw: parsedTrade.lotSizeRaw,
+                pnl: calculatedPnl || parsedTrade.pnl,
+                pnl_source: calculatedPnl ? 'calculated' : (parsedTrade.pnlSource || 'email'),
+                broker: parsedTrade.broker,
                 is_verified: true,
-                verification_source: 'email_forward',
+                verification_source: 'gmail_import',
                 data_source: 'gmail_sync',
-                tags: ['Forwarded'],
-                notes: `Subject: ${payload.subject}\n\n${payload.body}`,
+                trade_type: parsedTrade.tradeType,
+                linked_entry_id: linkedEntryId,
+                order_number: parsedTrade.orderNumber,
+                tags: parsedTrade.tags || [],
+                notes: '',
             })
             .select('id')
             .single()
@@ -132,6 +195,19 @@ export async function POST(request: NextRequest) {
             }, { status: 500 })
         }
 
+        // 7. 紐付けられた場合、エントリー側も更新
+        if (linkedEntryId && calculatedPnl) {
+            await supabase
+                .from('trades')
+                .update({
+                    exit_price: parsedTrade.exitPrice,
+                    exit_time: parsedTrade.exitTime,
+                    pnl: calculatedPnl,
+                    pnl_source: 'calculated'
+                })
+                .eq('id', linkedEntryId)
+        }
+
         console.log('[email-inbound] Trade saved successfully:', insertedTrade?.id)
 
         return NextResponse.json({
@@ -139,7 +215,9 @@ export async function POST(request: NextRequest) {
             tradeId: insertedTrade?.id,
             pair: parsedTrade.pair,
             direction: parsedTrade.direction,
-            broker: parsedTrade.broker
+            tradeType: parsedTrade.tradeType,
+            linkedEntryId,
+            pnl: calculatedPnl
         })
 
     } catch (error) {

@@ -68,11 +68,11 @@ export function SocialCard({ stats, period = "Weekly Report", theme = 'minimal' 
                             <div className="absolute inset-0 bg-white/10 blur-xl rounded-full" />
                         )}
                         <p className="text-xs mb-1 uppercase tracking-widest opacity-70">
-                            損益
+                            決済損益
                         </p>
                         <p className={`text-5xl font-bold font-numbers tracking-tighter relative ${stats.totalPnl >= 0
-                                ? (theme === 'minimal' ? 'text-profit' : 'text-white')
-                                : (theme === 'minimal' ? 'text-loss' : 'text-white')
+                            ? (theme === 'minimal' ? 'text-profit' : 'text-white')
+                            : (theme === 'minimal' ? 'text-loss' : 'text-white')
                             }`}>
                             {stats.totalPnl >= 0 ? '+' : ''}{stats.totalPnl.toLocaleString()}
                             <span className={`text-xl ${theme === 'minimal' ? '' : 'opacity-80'}`}>pips</span>

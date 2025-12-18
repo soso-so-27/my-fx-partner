@@ -36,6 +36,10 @@ export type PnlSource = 'manual' | 'email' | 'calculated'
 // Data source - for data isolation
 export type DataSource = 'gmail_sync' | 'manual' | 'demo'
 
+// Trade type - entry or exit (settlement)
+export type TradeType = 'entry' | 'exit' | 'complete'  // complete = manual entry with full info
+
+
 // Rule compliance status
 export interface RuleCompliance {
     ruleId: string
@@ -96,6 +100,11 @@ export interface Trade {
     dataSource: DataSource         // 'gmail_sync' | 'manual' | 'demo'
     wasModified?: boolean          // true if Gmail data was manually edited
 
+    // Entry-Exit linking
+    tradeType?: TradeType          // 'entry' | 'exit' | 'complete'
+    linkedEntryId?: string         // For exit trades, links to the entry trade
+    orderNumber?: string           // Broker order number for matching
+
     // Meta
     isFrequentPair?: boolean       // User's frequently traded pair
 }
@@ -143,6 +152,11 @@ export interface CreateTradeInput {
 
     // Optional - data source
     dataSource?: DataSource
+
+    // Optional - entry-exit linking
+    tradeType?: TradeType
+    linkedEntryId?: string
+    orderNumber?: string
 }
 
 // Trade statistics

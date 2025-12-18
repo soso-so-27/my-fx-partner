@@ -120,6 +120,10 @@ function mapDbTradeToTrade(dbTrade: any): Trade {
         dataSource: dbTrade.data_source || 'manual',
         wasModified: dbTrade.was_modified || false,
 
+        tradeType: dbTrade.trade_type,
+        linkedEntryId: dbTrade.linked_entry_id,
+        orderNumber: dbTrade.order_number,
+
         isFrequentPair: dbTrade.is_frequent_pair,
         ruleCompliance: dbTrade.rule_compliance || []
     }

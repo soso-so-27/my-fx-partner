@@ -55,7 +55,7 @@ export function PairPerformanceChart({ trades }: PairPerformanceChartProps) {
                         labelStyle={{ color: '#fff' }}
                         formatter={(value: number, name: string, props: any) => [
                             `¥${value.toLocaleString()}`,
-                            `合計損益 (${props.payload.count}件)`
+                            `決済損益 (${props.payload.count}件)`
                         ]}
                     />
                     <ReferenceLine y={0} stroke="#666" strokeDasharray="3 3" />
