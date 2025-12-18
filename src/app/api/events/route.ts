@@ -109,14 +109,16 @@ async function fetchFromFMP(): Promise<{ events: EconomicEvent[], debug: any }> 
         }
         rawCount = events.length
 
-        // Filter
+        // Filter (Disabled for Debug)
         let filteredEvents = events.filter(event => {
-            // Country check
-            if (!ALLOWED_COUNTRIES.includes(event.country)) return false
+            // Country check - Allow all for now
+            // if (!ALLOWED_COUNTRIES.includes(event.country)) return false
 
-            // Impact checks (High & Medium)
-            const impact = event.impact?.toLowerCase()
-            return impact === 'high' || impact === 'medium'
+            // Impact checks - Allow all for now
+            // const impact = event.impact?.toLowerCase()
+            // return impact === 'high' || impact === 'medium'
+
+            return true
         })
 
         // Transform
@@ -153,7 +155,9 @@ async function fetchFromFMP(): Promise<{ events: EconomicEvent[], debug: any }> 
                 apiKeySet: true,
                 rawCount,
                 filteredCount: finalEvents.length,
-                dateRange: { from, to }
+                dateRange: { from, to },
+                availableCountries: Array.from(new Set(events.map(e => e.country))),
+                availableImpacts: Array.from(new Set(events.map(e => e.impact)))
             }
         }
 
