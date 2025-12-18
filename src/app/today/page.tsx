@@ -497,7 +497,7 @@ export default function StrategyPage() {
                             <CardHeader className="pb-2">
                                 <CardTitle className="text-sm flex items-center gap-2">
                                     <Calendar className="h-4 w-4" />
-                                    今週の重要指標（★4以上）
+                                    今週の重要指標（★3以上）
                                 </CardTitle>
                             </CardHeader>
                             <CardContent>

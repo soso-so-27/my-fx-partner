@@ -466,7 +466,7 @@ export default function Home() {
                 <CardContent className="p-3">
                   <p className="text-xs font-medium mb-2 flex items-center gap-1">
                     <Calendar className="h-3 w-3" />
-                    今週の重要指標（★4以上）
+                    今週の重要指標（★3以上）
                   </p>
                   {(() => {
                     const targetDateStr = selectedDate ? format(selectedDate, 'M/d') : ''

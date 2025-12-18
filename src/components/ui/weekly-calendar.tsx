@@ -129,7 +129,7 @@ export function WeeklyCalendar({
                         className={cn(
                             "flex flex-col items-center p-1.5 rounded-lg transition-colors cursor-pointer min-h-[60px]",
                             isToday(day.date) && "ring-2 ring-solo-gold ring-offset-1 ring-offset-background",
-                            isSelected(day.date) && "bg-primary/10",
+                            isSelected(day.date) && "bg-primary text-primary-foreground font-medium",
                             isFuture(day.date) && "opacity-40",
                             !day.hasTraded && !isFuture(day.date) && "bg-muted/30",
                             day.hasTraded && day.pnl > 0 && "bg-green-500/10",
@@ -145,9 +145,10 @@ export function WeeklyCalendar({
                             <>
                                 <span className={cn(
                                     "text-sm font-bold font-numbers",
-                                    day.pnl > 0 && "text-green-600 dark:text-green-400",
-                                    day.pnl < 0 && "text-red-600 dark:text-red-400",
-                                    day.pnl === 0 && "text-muted-foreground"
+                                    !isSelected(day.date) && day.pnl > 0 && "text-green-600 dark:text-green-400",
+                                    !isSelected(day.date) && day.pnl < 0 && "text-red-600 dark:text-red-400",
+                                    !isSelected(day.date) && day.pnl === 0 && "text-muted-foreground",
+                                    isSelected(day.date) && "text-primary-foreground" // Ensure text is visible on primary bg
                                 )}>
                                     {day.pnl > 0 ? '+' : ''}{Math.round(day.pnl)}
                                 </span>
