@@ -97,7 +97,7 @@ export default function StrategyPage() {
     const [economicEvents, setEconomicEvents] = useState<EconomicEvent[]>([])
     const [eventsLoading, setEventsLoading] = useState(false)
 
-    // Fetch economic events
+    // Fetch economic events & strategy
     useEffect(() => {
         const fetchEvents = async () => {
             setEventsLoading(true)
@@ -113,7 +113,34 @@ export default function StrategyPage() {
                 setEventsLoading(false)
             }
         }
+
+        const fetchStrategy = async () => {
+            try {
+                const todayStr = format(new Date(), 'yyyy-MM-dd')
+                const res = await fetch(`/api/strategy?date=${todayStr}`)
+                if (res.ok) {
+                    const data = await res.json()
+                    if (data.strategy && data.strategy.plan) {
+                        const p = data.strategy.plan
+                        setWeeklyPack({
+                            busyness: p.busyness || '',
+                            mental: p.mental || '',
+                            purpose: p.mode || '',
+                            tradeLimit: p.limits?.trade_count ?? 5,
+                            lossLimit: p.limits?.loss_amount ?? -5000,
+                            consecutiveLoss: p.limits?.consecutive_loss_stop || '2',
+                            theme: p.theme?.id || '',
+                            createdAt: data.strategy.created_at
+                        })
+                    }
+                }
+            } catch (error) {
+                console.error('Failed to fetch strategy:', error)
+            }
+        }
+
         fetchEvents()
+        fetchStrategy()
     }, [])
 
     const today = new Date()
@@ -122,9 +149,9 @@ export default function StrategyPage() {
 
     const canProceed = () => {
         switch (step) {
-            case 1: return busyness && mental && purpose
-            case 2: return tradeLimit && lossLimit && consecutiveLoss
-            case 3: return theme
+            case 1: return !!busyness && !!mental && !!purpose
+            case 2: return !!tradeLimit && !!lossLimit && !!consecutiveLoss
+            case 3: return !!theme
             default: return true
         }
     }
@@ -137,7 +164,7 @@ export default function StrategyPage() {
         if (step > 0) setStep((step - 1) as WizardStep)
     }
 
-    const handleSave = () => {
+    const handleSave = async () => {
         const pack: WeeklyPack = {
             busyness,
             mental,
@@ -151,7 +178,35 @@ export default function StrategyPage() {
         setWeeklyPack(pack)
         setWizardOpen(false)
         setStep(0)
-        // TODO: Save to database
+
+        // Save to API
+        try {
+            const planData = {
+                mode: purpose,
+                busyness,
+                mental,
+                limits: {
+                    trade_count: tradeLimit,
+                    loss_amount: lossLimit,
+                    consecutive_loss_stop: consecutiveLoss
+                },
+                theme: {
+                    id: theme,
+                    label: THEME_OPTIONS.find(t => t.id === theme)?.label
+                }
+            }
+
+            await fetch('/api/strategy', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    date: new Date().toISOString(),
+                    plan: planData
+                })
+            })
+        } catch (error) {
+            console.error('Failed to save strategy:', error)
+        }
     }
 
     const resetWizard = () => {
