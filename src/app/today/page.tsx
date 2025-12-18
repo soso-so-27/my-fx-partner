@@ -95,10 +95,12 @@ export default function StrategyPage() {
     const [consecutiveLoss, setConsecutiveLoss] = useState<string>('2')
     const [theme, setTheme] = useState<string>('')
     const [economicEvents, setEconomicEvents] = useState<EconomicEvent[]>([])
+    const [eventsLoading, setEventsLoading] = useState(false)
 
     // Fetch economic events
     useEffect(() => {
         const fetchEvents = async () => {
+            setEventsLoading(true)
             try {
                 const res = await fetch('/api/events')
                 if (res.ok) {
@@ -107,6 +109,8 @@ export default function StrategyPage() {
                 }
             } catch (error) {
                 console.error('Failed to fetch economic events:', error)
+            } finally {
+                setEventsLoading(false)
             }
         }
         fetchEvents()
@@ -520,9 +524,13 @@ export default function StrategyPage() {
                                             </div>
                                         ))}
                                     </div>
-                                ) : (
+                                ) : eventsLoading ? (
                                     <p className="text-sm text-muted-foreground text-center py-4">
                                         経済指標を読み込み中...
+                                    </p>
+                                ) : (
+                                    <p className="text-sm text-muted-foreground text-center py-4">
+                                        今週の重要指標はありません
                                     </p>
                                 )}
                             </CardContent>

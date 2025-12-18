@@ -151,6 +151,7 @@ export default function Home() {
     setTodayTrades(todayTradesFiltered)
 
     // Fetch economic events
+    setEventsLoading(true)
     try {
       const eventsRes = await fetch('/api/events')
       if (eventsRes.ok) {
@@ -159,6 +160,8 @@ export default function Home() {
       }
     } catch (error) {
       console.error('Failed to fetch economic events:', error)
+    } finally {
+      setEventsLoading(false)
     }
   }
 
@@ -489,9 +492,13 @@ export default function Home() {
                         </div>
                       ))}
                     </div>
-                  ) : (
+                  ) : eventsLoading ? (
                     <p className="text-xs text-muted-foreground text-center py-4">
                       経済指標を読み込み中...
+                    </p>
+                  ) : (
+                    <p className="text-xs text-muted-foreground text-center py-4">
+                      今週の重要指標はありません
                     </p>
                   )}
                 </CardContent>
