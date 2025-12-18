@@ -1,18 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 
-// Types for Financial Modeling Prep (FMP)
-interface FMPEvent {
-    event: string
-    date: string // "2024-12-18 08:30:00" (Typically EST/EDT)
-    country: string
-    actual?: number | null
-    estimate?: number | null
-    previous?: number | null
-    impact: string // "High", "Medium", "Low", "None"
-    currency: string
-    unit?: string
-}
-
+// Types for Frontend
 interface EconomicEvent {
     id: string
     date: string
@@ -26,21 +14,19 @@ interface EconomicEvent {
 }
 
 // Cache configuration
-// FMP Free Tier: 250 requests/day
-// 24 * 60 / 15 = 96 requests/day -> 15 min cache is safe
-const CACHE_DURATION_MS = 15 * 60 * 1000
+const CACHE_DURATION_MS = 5 * 60 * 1000 // 5 minutes cache
 let cachedEvents: EconomicEvent[] = []
 let cacheTimestamp = 0
 
-// Filter configuration
-const ALLOWED_COUNTRIES = ['US', 'JP', 'EU', 'GB', 'DE', 'FR']
-const COUNTRY_TO_CURRENCY: Record<string, string> = {
-    'US': 'USD',
-    'JP': 'JPY',
-    'EU': 'EUR',
-    'GB': 'GBP',
-    'DE': 'EUR',
-    'FR': 'EUR'
+// Configuration
+const FF_XML_URL = 'https://nfs.faireconomy.media/ff_calendar_thisweek.xml'
+
+// Helper to extract values from XML tags (handles CDATA and simple text)
+function getTagValue(xmlFragment: string, tagName: string): string {
+    // Match <tag><![CDATA[value]]></tag> OR <tag>value</tag>
+    const regex = new RegExp(`<${tagName}>(?:<!\\[CDATA\\[(.*?)\\]\\]>|([^<]*))<\\/${tagName}>`, 'i')
+    const match = xmlFragment.match(regex)
+    return match ? (match[1] || match[2] || '').trim() : ''
 }
 
 function convertImpactToStars(impact: string): number {
@@ -52,181 +38,140 @@ function convertImpactToStars(impact: string): number {
     }
 }
 
-function formatEventDate(date: Date): string {
-    return `${date.getMonth() + 1}/${date.getDate()}`
-}
+// ForexFactory XML time appears to be GMT based on analysis (e.g. Tankan 11:50pm = 8:50am JST)
+// JST is GMT+9
+function convertGMTtoJST(dateStr: string, timeStr: string): Date {
+    // dateStr: "12-14-2025" (MM-DD-YYYY)
+    // timeStr: "9:30pm" or "2:00am"
 
-function formatEventTime(date: Date): string {
-    const hours = date.getHours()
-    const minutes = date.getMinutes().toString().padStart(2, '0')
-    return `${hours.toString().padStart(2, '0')}:${minutes}`
-}
+    // Parse Date
+    const [month, day, year] = dateStr.split('-').map(Number)
 
-// Helper to convert FMP time (assumed EST/EDT) to JST
-function convertFMPDateToJST(dateString: string): Date {
-    // FMP usually returns Eastern Time (ET).
-    // Strategy: Parse as UTC (to preserve numbers), then add offset.
-    // EST (UTC-5) to JST (UTC+9) is +14 hours.
-    // EDT (UTC-4) to JST (UTC+9) is +13 hours.
-    // Ideally we check date for DST, but for MVP we assume Standard Time (+14) or average?
-    // Let's assume Standard Time (+14) for now as it's December/Winter.
-    const TIME_OFFSET_HOURS = 14
-
-    // Parse partial string "YYYY-MM-DD HH:MM:SS" as UTC to keep the hours/minutes "as is" in the object
-    const safeDateStr = dateString.replace(' ', 'T') + 'Z'
-    const utcDate = new Date(safeDateStr)
-
-    // Add offset
-    return new Date(utcDate.getTime() + TIME_OFFSET_HOURS * 60 * 60 * 1000)
-}
-
-async function fetchFromFMP(): Promise<{ events: EconomicEvent[], debug: any }> {
-    // Try FMP_API_KEY first, then fallback to FINNHUB_API_KEY just in case user reused the variable
-    const apiKey = process.env.FMP_API_KEY || process.env.FINNHUB_API_KEY
-
-    if (!apiKey) {
-        console.error('FMP_API_KEY is not set')
-        return { events: [], debug: { error: 'API Key missing' } }
+    // Parse Time
+    const timeMatch = timeStr.match(/(\d+):(\d+)(am|pm)/i)
+    if (!timeMatch) {
+        // Fallback if time is not parsable (e.g. "All Day"), return date at 00:00 GMT
+        return new Date(Date.UTC(year, month - 1, day, 0, 0, 0))
     }
 
-    const today = new Date()
-    const from = today.toISOString().split('T')[0]
-    // Get next 7 days
-    const nextWeek = new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000)
-    const to = nextWeek.toISOString().split('T')[0]
+    let hours = parseInt(timeMatch[1], 10)
+    const minutes = parseInt(timeMatch[2], 10)
+    const meridian = timeMatch[3].toLowerCase()
 
+    if (meridian === 'pm' && hours < 12) hours += 12
+    if (meridian === 'am' && hours === 12) hours = 0
+
+    // Create Date object in UTC (treating the parsed time as GMT)
+    const utcDate = new Date(Date.UTC(year, month - 1, day, hours, minutes))
+
+    // Add 9 hours for JST
+    // actually, if we create it as UTC, to display it in JST (frontend uses string),
+    // we just need to shift the timestamp by +9 hours.
+    return new Date(utcDate.getTime() + 9 * 60 * 60 * 1000)
+}
+
+async function fetchFromForexFactory(): Promise<{ events: EconomicEvent[], debug: any }> {
     let rawCount = 0
 
     try {
-        const url = `https://financialmodelingprep.com/api/v3/economic_calendar?from=${from}&to=${to}&apikey=${apiKey}`
-        const response = await fetch(url, { next: { revalidate: 900 } }) // 15 min revalidate
-
-        let events: FMPEvent[] = []
-        if (response.ok) {
-            events = await response.json()
-        } else {
-            return { events: [], debug: { error: `FMP API Error: ${response.status}` } }
+        const response = await fetch(FF_XML_URL, { next: { revalidate: 300 } })
+        if (!response.ok) {
+            throw new Error(`FF XML Error: ${response.status}`)
         }
-        rawCount = events.length
 
-        // Filter (Disabled for Debug)
-        let filteredEvents = events.filter(event => {
-            // Country check - Allow all for now
-            // if (!ALLOWED_COUNTRIES.includes(event.country)) return false
+        const xmlText = await response.text()
 
-            // Impact checks - Allow all for now
-            // const impact = event.impact?.toLowerCase()
-            // return impact === 'high' || impact === 'medium'
+        // Manual Simple Parsing using Regex
+        // Split by <event> tags
+        const eventFragments = xmlText.match(/<event>([\s\S]*?)<\/event>/g) || []
 
-            return true
+        rawCount = eventFragments.length
+        const events: EconomicEvent[] = []
+
+        eventFragments.forEach((fragment, index) => {
+            const title = getTagValue(fragment, 'title')
+            const country = getTagValue(fragment, 'country') // "USD", "JPY" etc
+            const dateStr = getTagValue(fragment, 'date')
+            const timeStr = getTagValue(fragment, 'time')
+            const impactStr = getTagValue(fragment, 'impact')
+            const forecast = getTagValue(fragment, 'forecast')
+            const previous = getTagValue(fragment, 'previous')
+
+            // Filter: Only Major Currencies
+            const ALLOWED_CURRENCIES = ['USD', 'JPY', 'EUR', 'GBP']
+            if (!ALLOWED_CURRENCIES.includes(country)) return
+
+            // Filter: Impact High/Medium (ForexFactory uses 'High', 'Medium', 'Low')
+            const importance = convertImpactToStars(impactStr)
+            if (importance < 3) return // Skip Low
+
+            // DateTime Conversion
+            // Handle "Tentative" or empty times if necessary (usually specific times in FF)
+            if (!dateStr.includes('-')) return // Invalid date
+
+            const jstDate = convertGMTtoJST(dateStr, timeStr)
+
+            // Format for Frontend
+            // date: "M/D"
+            // time: "HH:MM"
+            const formattedDate = `${jstDate.getUTCMonth() + 1}/${jstDate.getUTCDate()}`
+            const hours = jstDate.getUTCHours().toString().padStart(2, '0')
+            const mins = jstDate.getUTCMinutes().toString().padStart(2, '0')
+            const formattedTime = `${hours}:${mins}`
+
+            events.push({
+                id: `ff-${index}-${dateStr}`,
+                date: formattedDate,
+                time: formattedTime,
+                currency: country,
+                name: title,
+                importance: importance,
+                actual: undefined, // FF XML "thisweek" often doesn't have actuals populated instantly? Check <previous>?
+                forecast: forecast || undefined,
+                previous: previous || undefined
+            })
         })
 
-        // Transform
-        const finalEvents = filteredEvents.map((event, index) => {
-            const actual = event.actual !== null && event.actual !== undefined ? String(event.actual) : undefined
-            const estimate = event.estimate !== null && event.estimate !== undefined ? String(event.estimate) : undefined
-            const previous = event.previous !== null && event.previous !== undefined ? String(event.previous) : undefined
-
-            // Convert Time
-            const jstDate = convertFMPDateToJST(event.date)
-
-            return {
-                id: `${event.event}-${event.date}-${index}`,
-                date: formatEventDate(jstDate),
-                time: formatEventTime(jstDate),
-                currency: event.currency || COUNTRY_TO_CURRENCY[event.country] || event.country,
-                name: event.event,
-                importance: convertImpactToStars(event.impact),
-                actual,
-                forecast: estimate,
-                previous
-            }
-        }).sort((a, b) => {
-            // Sort by date/time string "MM/DD HH:MM"
-            // This works reasonably well for near-term
+        // Sort by Time
+        events.sort((a, b) => {
             if (a.date !== b.date) return a.date.localeCompare(b.date)
             return a.time.localeCompare(b.time)
         })
 
         return {
-            events: finalEvents,
+            events,
             debug: {
-                provider: 'FMP',
-                apiKeySet: true,
+                provider: 'ForexFactory(XML)',
                 rawCount,
-                filteredCount: finalEvents.length,
-                dateRange: { from, to },
-                availableCountries: Array.from(new Set(events.map(e => e.country))),
-                availableImpacts: Array.from(new Set(events.map(e => e.impact)))
+                filteredCount: events.length
             }
         }
 
     } catch (error) {
-        console.error('Error fetching from FMP:', error)
-        // Fallback to Mock Data
-        return getMockData()
+        console.error('Error fetching/parsing ForexFactory:', error)
+        return getMockData(error)
     }
 }
 
-function getMockData(): { events: EconomicEvent[], debug: any } {
-    console.log('Generating Mock Data')
+// Fallback Mock Data (Same as before)
+function getMockData(error?: any): { events: EconomicEvent[], debug: any } {
     const today = new Date()
     const mockEvents: EconomicEvent[] = []
 
     // Generate dates
-    const dates = [
-        new Date(today),
-        new Date(today.getTime() + 1 * 24 * 60 * 60 * 1000),
-        new Date(today.getTime() + 2 * 24 * 60 * 60 * 1000),
-        new Date(today.getTime() + 3 * 24 * 60 * 60 * 1000)
-    ]
+    const dates = [0, 1, 2].map(d => new Date(today.getTime() + d * 24 * 60 * 60 * 1000))
 
-    // Wednesday - FOMC / CPI type events
-    mockEvents.push({
-        id: 'mock-1',
-        date: formatEventDate(dates[0]),
-        time: '21:30',
-        currency: 'USD',
-        name: 'CPI (消費者物価指数) [Mock]',
-        importance: 5,
-        actual: '3.4%',
-        forecast: '3.2%',
-        previous: '3.1%'
-    })
-
-    // Thursday - Jobless Claims
-    mockEvents.push({
-        id: 'mock-2',
-        date: formatEventDate(dates[1]),
-        time: '21:30',
-        currency: 'USD',
-        name: '新規失業保険申請件数 [Mock]',
-        importance: 4,
-        actual: undefined,
-        forecast: '215K',
-        previous: '210K'
-    })
-
-    // Friday - BOJ or EU
-    mockEvents.push({
-        id: 'mock-3',
-        date: formatEventDate(dates[2]),
-        time: '15:30',
-        currency: 'JPY',
-        name: '日銀記者会見 [Mock]',
-        importance: 5,
-        actual: undefined,
-        forecast: undefined,
-        previous: undefined
-    })
+    mockEvents.push(
+        { id: 'm1', date: `${dates[0].getMonth() + 1}/${dates[0].getDate()}`, time: '21:30', currency: 'USD', name: 'CPI (消費者物価指数) [Mock]', importance: 5, forecast: '3.2%' },
+        { id: 'm2', date: `${dates[1].getMonth() + 1}/${dates[1].getDate()}`, time: '21:30', currency: 'USD', name: '失業保険申請件数 [Mock]', importance: 4, forecast: '210K' }
+    )
 
     return {
         events: mockEvents,
         debug: {
-            provider: 'Mock',
-            apiKeySet: !!process.env.FMP_API_KEY,
+            provider: 'Mock(Fallback)',
             isMock: true,
-            error: 'API Error (403/500), using mock data'
+            error: String(error)
         }
     }
 }
@@ -236,20 +181,16 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url)
     const force = searchParams.get('force')
 
-    // Check cache
     if (!force && cachedEvents.length > 0 && (now - cacheTimestamp) < CACHE_DURATION_MS) {
         return NextResponse.json({
             events: cachedEvents,
             cached: true,
-            cacheAge: Math.round((now - cacheTimestamp) / 1000),
             debug: { cached: true }
         })
     }
 
-    // Fetch fresh data
-    const { events, debug } = await fetchFromFMP()
+    const { events, debug } = await fetchFromForexFactory()
 
-    // Update cache
     if (events.length > 0) {
         cachedEvents = events
         cacheTimestamp = now
@@ -258,7 +199,6 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
         events: events.length > 0 ? events : cachedEvents,
         cached: false,
-        fetchedAt: new Date().toISOString(),
         debug
     })
 }
