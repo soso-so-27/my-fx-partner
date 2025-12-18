@@ -129,12 +129,13 @@ export function WeeklyCalendar({
                         className={cn(
                             "flex flex-col items-center p-1.5 rounded-lg transition-colors cursor-pointer min-h-[60px]",
                             isToday(day.date) && "ring-2 ring-solo-gold ring-offset-1 ring-offset-background",
-                            isSelected(day.date) && "bg-primary text-primary-foreground font-medium",
+                            // Match MonthlyCalendar style: bg-solo-gold/20 + ring
+                            isSelected(day.date) && "bg-solo-gold/20 ring-2 ring-solo-gold",
                             isFuture(day.date) && "opacity-40",
                             !day.hasTraded && !isFuture(day.date) && "bg-muted/30",
-                            day.hasTraded && day.pnl > 0 && "bg-green-500/10",
-                            day.hasTraded && day.pnl < 0 && "bg-red-500/10",
-                            day.hasTraded && day.pnl === 0 && "bg-muted/50"
+                            day.hasTraded && day.pnl > 0 && !isSelected(day.date) && "bg-green-500/10",
+                            day.hasTraded && day.pnl < 0 && !isSelected(day.date) && "bg-red-500/10",
+                            day.hasTraded && day.pnl === 0 && !isSelected(day.date) && "bg-muted/50"
                         )}
                         onClick={() => onDayClick?.(day.date, day.trades)}
                     >
@@ -145,10 +146,13 @@ export function WeeklyCalendar({
                             <>
                                 <span className={cn(
                                     "text-sm font-bold font-numbers",
+                                    // Remove special text color for selection to match Monthly style (keep default or pnl color)
                                     !isSelected(day.date) && day.pnl > 0 && "text-green-600 dark:text-green-400",
                                     !isSelected(day.date) && day.pnl < 0 && "text-red-600 dark:text-red-400",
                                     !isSelected(day.date) && day.pnl === 0 && "text-muted-foreground",
-                                    isSelected(day.date) && "text-primary-foreground" // Ensure text is visible on primary bg
+                                    isSelected(day.date) && day.pnl > 0 && "text-green-600 dark:text-green-400",
+                                    isSelected(day.date) && day.pnl < 0 && "text-red-600 dark:text-red-400",
+                                    isSelected(day.date) && day.pnl === 0 && "text-muted-foreground"
                                 )}>
                                     {day.pnl > 0 ? '+' : ''}{Math.round(day.pnl)}
                                 </span>

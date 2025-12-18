@@ -80,7 +80,7 @@ export default function Home() {
   const [currentMonth, setCurrentMonth] = useState(new Date())
   const [currentWeek, setCurrentWeek] = useState(new Date())
   const [calendarView, setCalendarView] = useState<'week' | 'month'>('week')
-  const [selectedDate, setSelectedDate] = useState<Date | null>(null)
+  const [selectedDate, setSelectedDate] = useState<Date | null>(new Date())
   const [selectedDayTrades, setSelectedDayTrades] = useState<Trade[]>([])
   const [dayDetailTab, setDayDetailTab] = useState<'market' | 'plan' | 'review'>('plan')
   const [isCapturing, setIsCapturing] = useState(false)
@@ -107,20 +107,26 @@ export default function Home() {
   useEffect(() => {
     const fetchStrategy = async () => {
       try {
-        const todayStr = format(new Date(), 'yyyy-MM-dd')
-        const res = await fetch(`/api/strategy?date=${todayStr}`)
+        const dateToUse = selectedDate || new Date()
+        const dateStr = format(dateToUse, 'yyyy-MM-dd')
+        const res = await fetch(`/api/strategy?date=${dateStr}`)
         if (res.ok) {
           const data = await res.json()
           if (data.strategy && data.strategy.plan) {
             setWeeklyPlan(data.strategy.plan)
+          } else {
+            setWeeklyPlan(null)
           }
+        } else {
+          setWeeklyPlan(null)
         }
       } catch (e) {
         console.error(e)
+        setWeeklyPlan(null)
       }
     }
     fetchStrategy()
-  }, [])
+  }, [selectedDate])
 
   const loadData = async () => {
     if (!session?.user?.email) return
