@@ -16,12 +16,23 @@ import { StrategyWizard } from "@/components/strategy/strategy-wizard"
 import { StrategyReview } from "@/components/strategy/strategy-review"
 import { WeeklyPlan } from "@/components/strategy/types"
 
-export default function StrategyPage() {
+import { useSearchParams } from 'next/navigation'
+import { Suspense } from "react"
+import { useToast } from "@/components/ui/use-toast"
+
+function StrategyPageContent() {
     const { status } = useSession()
+    const searchParams = useSearchParams()
+    const dateParam = searchParams.get('date')
+    // Default to today if no param
+    const targetDate = dateParam ? new Date(dateParam) : new Date()
+
     const [viewMode, setViewMode] = useState<'dashboard' | 'wizard'>('dashboard')
     const [weeklyPlan, setWeeklyPlan] = useState<WeeklyPlan | null>(null)
     const [economicEvents, setEconomicEvents] = useState<any[]>([])
     const [loading, setLoading] = useState(true)
+
+    const { toast } = useToast()
 
     // Initial Fetch
     useEffect(() => {
@@ -36,13 +47,11 @@ export default function StrategyPage() {
                 }
 
                 // 2. Fetch Strategy
-                const todayStr = format(new Date(), 'yyyy-MM-dd')
-                const stratRes = await fetch(`/api/strategy?date=${todayStr}`)
+                const dateStr = format(targetDate, 'yyyy-MM-dd')
+                const stratRes = await fetch(`/api/strategy?date=${dateStr}`)
                 if (stratRes.ok) {
                     const data = await stratRes.json()
                     if (data.strategy && data.strategy.plan) {
-                        // DB has plain JSON, ensuring it matches WeeklyPlan type
-                        // In real app, consider Zod validation
                         setWeeklyPlan(data.strategy.plan as WeeklyPlan)
                     }
                 }
@@ -53,7 +62,7 @@ export default function StrategyPage() {
             }
         }
         fetchData()
-    }, [])
+    }, [dateParam]) // eslint-disable-line react-hooks/exhaustive-deps
 
     const handleSavePlan = async (newPlan: WeeklyPlan) => {
         // Optimistic update
@@ -65,30 +74,36 @@ export default function StrategyPage() {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    date: format(new Date(), 'yyyy-MM-dd'),
+                    date: format(targetDate, 'yyyy-MM-dd'),
                     plan: newPlan
                 })
             })
+            toast({
+                title: "作戦を保存しました",
+                description: format(targetDate, 'yyyy/MM/dd') + " の週の作戦を更新しました。",
+            })
         } catch (error) {
             console.error("Failed to save plan:", error)
+            toast({
+                title: "保存に失敗しました",
+                description: "もう一度お試しください。",
+                variant: "destructive"
+            })
         }
     }
 
     const handleReviewComplete = async (reviewData: any) => {
-        // TODO: Save review to DB via API (not implemented fully in Phase 1 but placeholder called)
+        // TODO: Save review to DB via API
         console.log("Review completed:", reviewData)
-        // Transition to Plan tab or show success?
-        // For now just log
     }
 
     // Date calculations
-    const today = new Date()
-    const weekStart = startOfWeek(today, { weekStartsOn: 1 })
-    const weekEnd = endOfWeek(today, { weekStartsOn: 1 })
+    const weekStart = startOfWeek(targetDate, { weekStartsOn: 1 })
+    const weekEnd = endOfWeek(targetDate, { weekStartsOn: 1 })
 
     // Previous week logic for Review tab (optional)
-    const prevStart = startOfWeek(subWeeks(today, 1), { weekStartsOn: 1 })
-    const prevEnd = endOfWeek(subWeeks(today, 1), { weekStartsOn: 1 })
+    const prevStart = startOfWeek(subWeeks(targetDate, 1), { weekStartsOn: 1 })
+    const prevEnd = endOfWeek(subWeeks(targetDate, 1), { weekStartsOn: 1 })
 
     if (status === "loading" || loading) {
         return (
@@ -177,5 +192,17 @@ export default function StrategyPage() {
 
             </div>
         </ProtectedRoute>
+    )
+}
+
+export default function StrategyPage() {
+    return (
+        <Suspense fallback={
+            <div className="container mx-auto p-4 pb-20 flex justify-center py-12">
+                <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full" />
+            </div>
+        }>
+            <StrategyPageContent />
+        </Suspense>
     )
 }

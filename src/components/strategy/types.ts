@@ -22,16 +22,22 @@ export interface WeeklyReview {
     completedAt: string;
     score: number;
     badges: string[];
+    // Q1-Q5 Survey
     survey: {
-        is_followed: 'yes' | 'partial' | 'no';
-        break_factor: string;
-        next_change: string;
-        note: string;
+        compliance: 'yes' | 'partial' | 'no'; // Q1: 守れた？
+        violation_cause: string[]; // Q2: 主因 (Time, Currency, etc.)
+        chart_frequency: 'low' | 'mid' | 'high'; // Q3: チャート頻度
+        chart_frequency_reason: string;
+        next_priority_pairs: string[]; // Q4: 来週の優先通貨 (Max 3)
+        next_limit_focus: string; // Q5: 来週の上限フォーカス
+        note?: string; // Free text
     };
-    ai_feedback: {
-        good: string;
-        bad: string;
-        keep: string;
+    // AI Generated "Ordering" Output
+    output: {
+        prohibited_rules: string[]; // 来週の禁止ルール
+        caution_flags: string[]; // 注意フラグ
+        training_theme: string; // 来週の練習テーマ
+        motto: string; // 週の合言葉
     };
 }
 

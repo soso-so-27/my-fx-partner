@@ -108,8 +108,10 @@ export default function Home() {
   useEffect(() => {
     const fetchStrategy = async () => {
       try {
-        const dateToUse = selectedDate || new Date()
-        const dateStr = format(dateToUse, 'yyyy-MM-dd')
+        // Use currentWeek for strategy if we are in week view, otherwise prioritize selectedDate or fallback to today
+        // This ensures "Plan" tab matches the visible calendar week
+        const targetDate = calendarView === 'week' ? currentWeek : (selectedDate || new Date())
+        const dateStr = format(targetDate, 'yyyy-MM-dd')
         const res = await fetch(`/api/strategy?date=${dateStr}`)
         if (res.ok) {
           const data = await res.json()
@@ -130,7 +132,7 @@ export default function Home() {
     if (status === 'authenticated') {
       fetchStrategy()
     }
-  }, [selectedDate, status])
+  }, [selectedDate, status, currentWeek, calendarView])
 
 
 
@@ -603,7 +605,11 @@ export default function Home() {
                       variant="outline"
                       size="sm"
                       className="w-full text-xs"
-                      onClick={() => window.location.href = '/today'}
+                      onClick={() => {
+                        const targetDate = calendarView === 'week' ? currentWeek : (selectedDate || new Date())
+                        const dateStr = format(targetDate, 'yyyy-MM-dd')
+                        window.location.href = `/today?date=${dateStr}`
+                      }}
                     >
                       戦略を編集
                     </Button>
@@ -613,7 +619,11 @@ export default function Home() {
                 <Card className="border-dashed">
                   <CardContent className="p-4 text-center">
                     <p className="text-xs text-muted-foreground mb-2">まだ今週の作戦がありません</p>
-                    <Button size="sm" onClick={() => window.location.href = '/today'}>
+                    <Button size="sm" onClick={() => {
+                      const targetDate = calendarView === 'week' ? currentWeek : (selectedDate || new Date())
+                      const dateStr = format(targetDate, 'yyyy-MM-dd')
+                      window.location.href = `/today?date=${dateStr}`
+                    }}>
                       作戦を立てる
                     </Button>
                   </CardContent>
