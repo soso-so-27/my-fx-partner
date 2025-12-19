@@ -481,8 +481,8 @@ export default function Home() {
           </Card>
         </section>
 
-        {/* Day Detail Section */}
-        <section className="mt-4 space-y-2">
+        {/* Day Detail Section - タブとコンテンツを1つのカードに統合 */}
+        <Card className="mt-4 rounded-2xl shadow-sm border-0 bg-surface-1 overflow-hidden p-3">
           {/* Day Header */}
           <div className="flex items-center justify-between">
             <h3 className="text-sm font-bold">
@@ -533,119 +533,111 @@ export default function Home() {
             </TabsList>
 
             {/* Market Tab - Economic Events Only */}
-            <TabsContent value="market" className="space-y-2 mt-2">
-              <Card>
-                <CardContent className="p-3">
-                  <p className="text-xs font-medium mb-2 flex items-center gap-1">
-                    <Calendar className="h-3 w-3" />
-                    今週の重要指標（★3以上）
-                  </p>
-                  {(() => {
-                    const targetDateStr = selectedDate ? format(selectedDate, 'M/d') : ''
-                    const filteredEvents = economicEvents.filter(e => e.date === targetDateStr)
+            <TabsContent value="market" className="mt-3">
+              <p className="text-xs font-medium mb-2 flex items-center gap-1">
+                <Calendar className="h-3 w-3" />
+                今週の重要指標（★3以上）
+              </p>
+              {(() => {
+                const targetDateStr = selectedDate ? format(selectedDate, 'M/d') : ''
+                const filteredEvents = economicEvents.filter(e => e.date === targetDateStr)
 
-                    if (eventsLoading) {
-                      return (
-                        <p className="text-xs text-muted-foreground text-center py-4">
-                          経済指標を読み込み中...
-                        </p>
-                      )
-                    }
+                if (eventsLoading) {
+                  return (
+                    <p className="text-xs text-muted-foreground text-center py-4">
+                      経済指標を読み込み中...
+                    </p>
+                  )
+                }
 
-                    if (filteredEvents.length === 0) {
-                      return (
-                        <p className="text-xs text-muted-foreground text-center py-4">
-                          この日の重要指標はありません
-                        </p>
-                      )
-                    }
+                if (filteredEvents.length === 0) {
+                  return (
+                    <p className="text-xs text-muted-foreground text-center py-4">
+                      この日の重要指標はありません
+                    </p>
+                  )
+                }
 
-                    return (
-                      <div className="space-y-1.5">
-                        {filteredEvents.map((event: EconomicEvent, i: number) => (
-                          <div
-                            key={event.id || i}
-                            className="flex items-center justify-between text-xs py-1.5 border-t border-border/50 first:border-0"
-                          >
-                            <div className="flex items-center gap-2">
-                              <div className="text-center min-w-[40px]">
-                                <span className="text-muted-foreground">{event.time}</span>
-                              </div>
-                              <Badge variant="outline" className="text-[9px] px-1">
-                                {event.currency}
-                              </Badge>
-                              <span className="truncate max-w-[150px]">{event.name}</span>
-                            </div>
-                            <span className="text-yellow-500 text-[10px]">
-                              {'★'.repeat(Math.min(event.importance, 5))}
-                            </span>
+                return (
+                  <div className="space-y-1.5">
+                    {filteredEvents.map((event: EconomicEvent, i: number) => (
+                      <div
+                        key={event.id || i}
+                        className="flex items-center justify-between text-xs py-1.5 border-t border-border/50 first:border-0"
+                      >
+                        <div className="flex items-center gap-2">
+                          <div className="text-center min-w-[40px]">
+                            <span className="text-muted-foreground">{event.time}</span>
                           </div>
-                        ))}
+                          <Badge variant="outline" className="text-[9px] px-1">
+                            {event.currency}
+                          </Badge>
+                          <span className="truncate max-w-[150px]">{event.name}</span>
+                        </div>
+                        <span className="text-yellow-500 text-[10px]">
+                          {'★'.repeat(Math.min(event.importance, 5))}
+                        </span>
                       </div>
-                    )
-                  })()}
-                </CardContent>
-              </Card>
+                    ))}
+                  </div>
+                )
+              })()}
             </TabsContent>
 
             {/* Plan Tab */}
-            <TabsContent value="plan" className="space-y-3 mt-3">
+            <TabsContent value="plan" className="mt-3">
               {weeklyPlan ? (
-                <Card className="border-primary/20">
-                  <CardContent className="p-3 space-y-3">
-                    <div className="flex items-center gap-1.5 text-sm font-medium">
-                      <Target className="h-3.5 w-3.5" />
-                      今週の作戦: {weeklyPlan.theme.label}
-                    </div>
+                <div className="space-y-3">
+                  <div className="flex items-center gap-1.5 text-sm font-medium">
+                    <Target className="h-3.5 w-3.5" />
+                    今週の作戦: {weeklyPlan.theme.label}
+                  </div>
 
-                    <div className="p-2 bg-primary/5 rounded text-xs">
-                      {weeklyPlan.theme.condition || '条件なし'}
-                    </div>
+                  <div className="p-2 bg-primary/5 rounded text-xs">
+                    {weeklyPlan.theme.condition || '条件なし'}
+                  </div>
 
-                    <div className="space-y-1.5">
-                      <div className="flex items-center gap-2 text-xs p-1.5 bg-muted/50 rounded">
-                        <Target className="h-3 w-3 text-muted-foreground" />
-                        新規上限：{weeklyPlan.limits.trade_count}回
+                  <div className="space-y-1.5">
+                    <div className="flex items-center gap-2 text-xs p-1.5 bg-muted/50 rounded">
+                      <Target className="h-3 w-3 text-muted-foreground" />
+                      新規上限：{weeklyPlan.limits.trade_count}回
+                    </div>
+                    <div className="flex items-center gap-2 text-xs p-1.5 bg-muted/50 rounded">
+                      <AlertTriangle className="h-3 w-3 text-muted-foreground" />
+                      損失上限：{weeklyPlan.limits.loss_amount.toLocaleString()}円
+                    </div>
+                    {weeklyPlan.limits.consecutive_loss_stop !== 'none' && (
+                      <div className="flex items-center gap-2 text-xs p-1.5 bg-surface-2 rounded text-muted-foreground">
+                        <Shield className="h-3 w-3" />
+                        {weeklyPlan.limits.consecutive_loss_stop}連敗で停止
                       </div>
-                      <div className="flex items-center gap-2 text-xs p-1.5 bg-muted/50 rounded">
-                        <AlertTriangle className="h-3 w-3 text-muted-foreground" />
-                        損失上限：{weeklyPlan.limits.loss_amount.toLocaleString()}円
-                      </div>
-                      {weeklyPlan.limits.consecutive_loss_stop !== 'none' && (
-                        <div className="flex items-center gap-2 text-xs p-1.5 bg-red-500/10 rounded text-red-600 dark:text-red-400">
-                          <Shield className="h-3 w-3" />
-                          {weeklyPlan.limits.consecutive_loss_stop}連敗で停止
-                        </div>
-                      )}
-                    </div>
+                    )}
+                  </div>
 
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="w-full text-xs"
-                      onClick={() => {
-                        const targetDate = calendarView === 'week' ? currentWeek : (selectedDate || new Date())
-                        const dateStr = format(targetDate, 'yyyy-MM-dd')
-                        window.location.href = `/today?date=${dateStr}`
-                      }}
-                    >
-                      戦略を編集
-                    </Button>
-                  </CardContent>
-                </Card>
-              ) : (
-                <Card className="border-dashed">
-                  <CardContent className="p-4 text-center">
-                    <p className="text-xs text-muted-foreground mb-2">まだ今週の作戦がありません</p>
-                    <Button size="sm" onClick={() => {
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="w-full text-xs"
+                    onClick={() => {
                       const targetDate = calendarView === 'week' ? currentWeek : (selectedDate || new Date())
                       const dateStr = format(targetDate, 'yyyy-MM-dd')
                       window.location.href = `/today?date=${dateStr}`
-                    }}>
-                      作戦を立てる
-                    </Button>
-                  </CardContent>
-                </Card>
+                    }}
+                  >
+                    戦略を編集
+                  </Button>
+                </div>
+              ) : (
+                <div className="text-center py-4">
+                  <p className="text-xs text-muted-foreground mb-2">まだ今週の作戦がありません</p>
+                  <Button size="sm" onClick={() => {
+                    const targetDate = calendarView === 'week' ? currentWeek : (selectedDate || new Date())
+                    const dateStr = format(targetDate, 'yyyy-MM-dd')
+                    window.location.href = `/today?date=${dateStr}`
+                  }}>
+                    作戦を立てる
+                  </Button>
+                </div>
               )}
             </TabsContent>
 
@@ -788,7 +780,7 @@ export default function Home() {
               </Card>
             </TabsContent>
           </Tabs>
-        </section>
+        </Card>
 
         {/* Empty State - Demo Data */}
         {trades.length === 0 && (
