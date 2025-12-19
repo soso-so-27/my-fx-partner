@@ -114,9 +114,9 @@ export function TodayHub({
     }, [economicEvents, currentTime])
 
     const statusConfig = {
-        ok: { bg: 'bg-green-500', text: 'text-white', icon: CheckCircle2, label: 'GO' },
-        caution: { bg: 'bg-yellow-500', text: 'text-white', icon: AlertTriangle, label: '注意' },
-        ng: { bg: 'bg-red-500', text: 'text-white', icon: XCircle, label: 'STOP' }
+        ok: { bg: 'bg-success', text: 'text-white', icon: CheckCircle2, label: 'GO' },
+        caution: { bg: 'bg-warning', text: 'text-white', icon: AlertTriangle, label: '注意' },
+        ng: { bg: 'bg-danger', text: 'text-white', icon: XCircle, label: 'STOP' }
     }
     const config = statusConfig[signal.status]
     const Icon = config.icon
@@ -142,11 +142,11 @@ export function TodayHub({
                     <span className="text-muted-foreground">{signal.reason}</span>
                     {signal.stopReason === 'trade_limit' && (
                         <span className="font-bold">{tradesThisWeek}/{weeklyPlan.limits.trade_count}
-                            {tradeExceeded > 0 && <span className="text-red-500">(+{tradeExceeded})</span>}
+                            {tradeExceeded > 0 && <span className="text-danger">(+{tradeExceeded})</span>}
                         </span>
                     )}
                     {signal.stopReason === 'loss_limit' && (
-                        <span className="font-bold text-red-500">¥{(lossThisWeek / 1000).toFixed(0)}k</span>
+                        <span className="font-bold text-danger">¥{(lossThisWeek / 1000).toFixed(0)}k</span>
                     )}
                     {signal.stopReason === 'consecutive_loss' && (
                         <span className="font-bold">{consecutiveLosses}/{weeklyPlan.limits.consecutive_loss_stop}</span>
@@ -170,25 +170,25 @@ export function TodayHub({
             {/* 展開時：全項目表示 */}
             {isExpanded && (
                 <div className="grid grid-cols-4 gap-1.5 text-[10px] animate-in slide-in-from-top-1 duration-150">
-                    <div className={cn("p-1.5 rounded bg-muted/40", signal.stopReason === 'trade_limit' && "ring-1 ring-red-500/50")}>
+                    <div className={cn("p-1.5 rounded bg-surface-2", signal.stopReason === 'trade_limit' && "border border-danger")}>
                         <div className="flex justify-between">
                             <span className="text-muted-foreground">回数</span>
                             <span className="font-bold">{tradesThisWeek}/{weeklyPlan.limits.trade_count}</span>
                         </div>
                     </div>
-                    <div className={cn("p-1.5 rounded bg-muted/40", signal.stopReason === 'loss_limit' && "ring-1 ring-red-500/50")}>
+                    <div className={cn("p-1.5 rounded bg-surface-2", signal.stopReason === 'loss_limit' && "border border-danger")}>
                         <div className="flex justify-between">
                             <span className="text-muted-foreground">損失</span>
                             <span className="font-bold">¥{(lossThisWeek / 1000).toFixed(0)}k</span>
                         </div>
                     </div>
-                    <div className={cn("p-1.5 rounded bg-muted/40", signal.stopReason === 'consecutive_loss' && "ring-1 ring-red-500/50")}>
+                    <div className={cn("p-1.5 rounded bg-surface-2", signal.stopReason === 'consecutive_loss' && "border border-danger")}>
                         <div className="flex justify-between">
                             <span className="text-muted-foreground">連敗</span>
                             <span className="font-bold">{consecutiveLosses}/{weeklyPlan.limits.consecutive_loss_stop === 'none' ? '-' : weeklyPlan.limits.consecutive_loss_stop}</span>
                         </div>
                     </div>
-                    <div className={cn("p-1.5 rounded bg-muted/40", signal.stopReason === 'event' && "ring-1 ring-yellow-500/50")}>
+                    <div className={cn("p-1.5 rounded bg-surface-2", signal.stopReason === 'event' && "border border-warning")}>
                         <div className="flex justify-between">
                             <span className="text-muted-foreground">リスク</span>
                             <span className="font-medium">{nextEvent ? nextEvent.countdown : 'なし'}</span>
