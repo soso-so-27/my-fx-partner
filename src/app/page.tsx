@@ -408,8 +408,8 @@ export default function Home() {
           />
         )}
 
-        {/* Main Calendar Section */}
-        <section ref={calendarRef} className="mt-4 space-y-2">
+        {/* Main Calendar Section - mt-6 (24px rhythm after status) */}
+        <section ref={calendarRef} className="mt-6 space-y-2">
           {/* Stats + View Toggle - merged into one row */}
           <div className="flex items-center justify-between px-1">
             {monthlyStats && (
@@ -453,9 +453,9 @@ export default function Home() {
             </div>
           </div>
 
-          {/* Calendar - Level B: weaker shadow */}
-          <Card className="border border-border bg-surface-2 rounded-lg">
-            <CardContent className="p-3 pb-2">
+          {/* Calendar - Level B: neutral panel, rounded-2xl */}
+          <Card className="border-0 rounded-2xl overflow-hidden">
+            <CardContent className="p-2">
               {calendarView === 'week' ? (
                 <WeeklyCalendar
                   trades={trades}

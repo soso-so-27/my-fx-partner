@@ -111,11 +111,11 @@ export function TodayHub({
         return null
     }, [economicEvents, currentTime])
 
-    // ステータス設定 - STOPのみ強い色、他はミュート
+    // ステータス設定 - 背景帯で領域を分ける
     const statusConfig = {
-        ok: { bg: 'bg-success', text: 'text-white', icon: CheckCircle2, label: 'GO', cardBorder: 'border-border' },
-        caution: { bg: 'bg-warning', text: 'text-white', icon: AlertTriangle, label: '注意', cardBorder: 'border-warning' },
-        ng: { bg: 'bg-danger', text: 'text-white', icon: XCircle, label: 'STOP', cardBorder: 'border-danger' }
+        ok: { bg: 'bg-success', text: 'text-white', icon: CheckCircle2, label: 'GO', cardBg: 'bg-success-weak', cardBorder: 'border-success-border' },
+        caution: { bg: 'bg-warning', text: 'text-white', icon: AlertTriangle, label: '注意', cardBg: 'bg-warning-weak', cardBorder: 'border-warning-border' },
+        ng: { bg: 'bg-danger', text: 'text-white', icon: XCircle, label: 'STOP', cardBg: 'bg-danger-weak', cardBorder: 'border-danger' }
     }
     const config = statusConfig[signal.status]
     const Icon = config.icon
@@ -125,12 +125,12 @@ export function TodayHub({
 
     return (
         <div className={cn(className)}>
-            {/* === Level A: ステータスカード（主役） === */}
+            {/* === Level A: ステータス帯（主役・背景で領域を分ける） === */}
             <div
                 className={cn(
-                    "p-3 rounded-lg border-2 bg-surface-1 cursor-pointer transition-all",
-                    config.cardBorder,
-                    signal.status === 'ng' && "shadow-sm"
+                    "p-3 rounded-lg border cursor-pointer transition-all",
+                    config.cardBg,
+                    config.cardBorder
                 )}
                 onClick={() => setIsExpanded(!isExpanded)}
             >
