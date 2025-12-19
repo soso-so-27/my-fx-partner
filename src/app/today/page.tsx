@@ -154,9 +154,6 @@ function StrategyPageContent() {
                     <TabsContent value="plan" className="space-y-4">
                         {viewMode === 'wizard' ? (
                             <StrategyWizard
-                                currentWeek={weekStart}
-                                existingPlan={weeklyPlan || undefined}
-                                events={economicEvents}
                                 onSave={handleSavePlan}
                                 onCancel={() => setViewMode('dashboard')}
                             />
@@ -165,6 +162,7 @@ function StrategyPageContent() {
                                 {weeklyPlan ? (
                                     <StrategyDashboard
                                         plan={weeklyPlan}
+                                        economicEvents={economicEvents}
                                         onEdit={() => setViewMode('wizard')}
                                     />
                                 ) : (
