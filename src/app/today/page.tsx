@@ -34,6 +34,8 @@ function StrategyPageContent() {
 
     const { toast } = useToast()
 
+    const [debugInfo, setDebugInfo] = useState({ fetchStatus: '-', hasStrategy: false, error: '-', fetchUrl: '-' })
+
     // Initial Fetch
     useEffect(() => {
         const fetchData = async () => {
@@ -49,15 +51,13 @@ function StrategyPageContent() {
                 // 2. Fetch Strategy
                 const dateStr = format(targetDate, 'yyyy-MM-dd')
                 const uniqueUrl = `/api/strategy?date=${dateStr}&t=${Date.now()}`
-                const stratRes = await fetch(uniqueUrl, { cache: 'no-store' }); // Added semicolon
+                const stratRes = await fetch(uniqueUrl, { cache: 'no-store' });
 
-                // For Debug
-                (window as any)._debug_fetch_url = uniqueUrl;
-                (window as any)._debug_fetch_status = stratRes.status;
+                setDebugInfo(prev => ({ ...prev, fetchStatus: String(stratRes.status), fetchUrl: uniqueUrl }))
 
                 if (stratRes.ok) {
-                    const data = await stratRes.json(); // Added semicolon
-                    (window as any)._debug_has_strategy = !!data.strategy;
+                    const data = await stratRes.json();
+                    setDebugInfo(prev => ({ ...prev, hasStrategy: !!data.strategy }))
 
                     if (data.strategy && data.strategy.plan) {
                         setWeeklyPlan(data.strategy.plan as WeeklyPlan)
@@ -65,7 +65,7 @@ function StrategyPageContent() {
                 }
             } catch (error) {
                 console.error("Failed to load data:", error);
-                (window as any)._debug_error = String(error);
+                setDebugInfo(prev => ({ ...prev, error: String(error) }))
             } finally {
                 setLoading(false)
             }
@@ -154,6 +154,9 @@ function StrategyPageContent() {
                     <TabsContent value="plan" className="space-y-4">
                         {viewMode === 'wizard' ? (
                             <StrategyWizard
+                                currentWeek={weekStart}
+                                existingPlan={weeklyPlan || undefined}
+                                events={economicEvents}
                                 onSave={handleSavePlan}
                                 onCancel={() => setViewMode('dashboard')}
                             />
@@ -162,7 +165,6 @@ function StrategyPageContent() {
                                 {weeklyPlan ? (
                                     <StrategyDashboard
                                         plan={weeklyPlan}
-                                        economicEvents={economicEvents}
                                         onEdit={() => setViewMode('wizard')}
                                     />
                                 ) : (
