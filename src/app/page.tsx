@@ -1169,18 +1169,21 @@ export default function Home() {
           </div>
         )}
 
-        {/* FAB Button */}
+        {/* FAB Button with label */}
         <Button
           className={cn(
-            "h-14 w-14 rounded-full shadow-lg transition-transform",
-            isFabOpen ? "rotate-45 bg-muted" : "bg-primary"
+            "rounded-full shadow-lg transition-all flex items-center gap-2",
+            isFabOpen ? "h-12 w-12 rotate-45 bg-muted" : "h-12 px-4 bg-primary"
           )}
           onClick={() => setIsFabOpen(!isFabOpen)}
         >
           {isFabOpen ? (
-            <X className="h-6 w-6" />
+            <X className="h-5 w-5" />
           ) : (
-            <Plus className="h-6 w-6" />
+            <>
+              <Plus className="h-5 w-5" />
+              <span className="text-sm font-medium">記録</span>
+            </>
           )}
         </Button>
       </div>

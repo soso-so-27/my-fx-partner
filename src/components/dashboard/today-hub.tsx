@@ -3,7 +3,7 @@
 import { useMemo, useState, useEffect } from "react"
 import { format, differenceInMinutes } from "date-fns"
 import { cn } from "@/lib/utils"
-import { CheckCircle2, XCircle, AlertTriangle, Clock, Shield } from "lucide-react"
+import { CheckCircle2, XCircle, AlertTriangle, Clock } from "lucide-react"
 import { WeeklyPlan } from "@/components/strategy/types"
 import { Badge } from "@/components/ui/badge"
 
@@ -33,7 +33,6 @@ export function TodayHub({
         return () => clearInterval(interval)
     }, [])
 
-    // 判定ロジック
     const signal = useMemo(() => {
         const now = currentTime
         const currentTimeStr = format(now, 'HH:mm')
@@ -43,21 +42,21 @@ export function TodayHub({
             let isNoLook = start > end
                 ? currentTimeStr >= start || currentTimeStr <= end
                 : currentTimeStr >= start && currentTimeStr <= end
-            if (isNoLook) return { status: 'ng' as SignalStatus, reason: '見ない時間帯', nextOkTime: end }
+            if (isNoLook) return { status: 'ng' as SignalStatus, reason: '見ない時間', nextOkTime: end }
         }
 
         if (tradesThisWeek >= weeklyPlan.limits.trade_count) {
-            return { status: 'ng' as SignalStatus, reason: '週間上限到達' }
+            return { status: 'ng' as SignalStatus, reason: '上限到達' }
         }
 
         if (lossThisWeek >= weeklyPlan.limits.loss_amount) {
-            return { status: 'ng' as SignalStatus, reason: '損失上限到達' }
+            return { status: 'ng' as SignalStatus, reason: '損失上限' }
         }
 
         if (weeklyPlan.limits.consecutive_loss_stop !== 'none') {
             const stopCount = parseInt(weeklyPlan.limits.consecutive_loss_stop)
             if (consecutiveLosses >= stopCount) {
-                return { status: 'ng' as SignalStatus, reason: '連敗停止発動' }
+                return { status: 'ng' as SignalStatus, reason: '連敗停止' }
             }
         }
 
@@ -73,16 +72,15 @@ export function TodayHub({
                 if (Math.abs(diffMinutes) <= windowMinutes) {
                     return {
                         status: 'caution' as SignalStatus,
-                        reason: diffMinutes > 0 ? `指標まで${Math.round(diffMinutes)}分` : '指標発表直後'
+                        reason: `指標${Math.round(Math.abs(diffMinutes))}分`
                     }
                 }
             }
         }
 
-        return { status: 'ok' as SignalStatus, reason: '全条件クリア' }
+        return { status: 'ok' as SignalStatus, reason: 'クリア' }
     }, [weeklyPlan, economicEvents, tradesThisWeek, lossThisWeek, consecutiveLosses, currentTime])
 
-    // 次の重要指標
     const nextEvent = useMemo(() => {
         const now = currentTime.getTime()
         for (const event of economicEvents) {
@@ -105,97 +103,76 @@ export function TodayHub({
     }, [economicEvents, currentTime])
 
     const statusConfig = {
-        ok: { bg: 'bg-green-500/15', border: 'border-green-500/30', text: 'text-green-600 dark:text-green-400', icon: CheckCircle2, label: 'エントリー可' },
-        caution: { bg: 'bg-yellow-500/15', border: 'border-yellow-500/30', text: 'text-yellow-600 dark:text-yellow-400', icon: AlertTriangle, label: '注意' },
-        ng: { bg: 'bg-red-500/15', border: 'border-red-500/30', text: 'text-red-600 dark:text-red-400', icon: XCircle, label: 'エントリー禁止' }
+        ok: { bg: 'bg-green-500', text: 'text-white', icon: CheckCircle2 },
+        caution: { bg: 'bg-yellow-500', text: 'text-white', icon: AlertTriangle },
+        ng: { bg: 'bg-red-500', text: 'text-white', icon: XCircle }
     }
     const config = statusConfig[signal.status]
     const Icon = config.icon
 
-    // Progress with cap at 100% and color gradient
     const tradeProgress = Math.min(100, (tradesThisWeek / weeklyPlan.limits.trade_count) * 100)
     const lossProgress = Math.min(100, (lossThisWeek / weeklyPlan.limits.loss_amount) * 100)
-    const getProgressColor = (percent: number) => {
-        if (percent >= 100) return 'bg-red-500'
-        if (percent >= 80) return 'bg-yellow-500'
-        return 'bg-blue-500'
-    }
+    const getBarColor = (p: number) => p >= 100 ? 'bg-red-500' : p >= 80 ? 'bg-yellow-500' : 'bg-blue-500'
 
     return (
         <div className={cn("space-y-2", className)}>
-            {/* 判定 - 大きく中央 */}
-            <div className={cn(
-                "p-4 rounded-xl border text-center",
-                config.bg, config.border
-            )}>
-                <div className="flex items-center justify-center gap-2">
-                    <Icon className={cn("h-6 w-6", config.text)} />
-                    <span className={cn("text-xl font-bold", config.text)}>{config.label}</span>
+            {/* 判定 - コンパクト横並び */}
+            <div className="flex items-center gap-2">
+                <div className={cn("flex items-center gap-1.5 px-3 py-1.5 rounded-full", config.bg)}>
+                    <Icon className={cn("h-4 w-4", config.text)} />
+                    <span className={cn("text-sm font-bold", config.text)}>
+                        {signal.status === 'ok' ? 'GO' : signal.status === 'caution' ? '注意' : 'STOP'}
+                    </span>
                 </div>
-                <p className="text-xs text-muted-foreground mt-1">{signal.reason}</p>
+                <span className="text-xs text-muted-foreground">{signal.reason}</span>
                 {signal.nextOkTime && (
-                    <p className="text-xs text-muted-foreground flex items-center justify-center gap-1 mt-1">
-                        <Clock className="h-3 w-3" />{signal.nextOkTime}〜 解除
-                    </p>
+                    <span className="text-xs text-muted-foreground flex items-center gap-0.5 ml-auto">
+                        <Clock className="h-3 w-3" />{signal.nextOkTime}〜
+                    </span>
                 )}
             </div>
 
-            {/* リミット + リスク - 横2列 */}
-            <div className="grid grid-cols-2 gap-2">
-                {/* 左: リミット */}
-                <div className="p-3 rounded-lg bg-muted/40">
-                    <p className="text-[10px] text-muted-foreground mb-2 flex items-center gap-1">
-                        <Shield className="h-3 w-3" />リミット
-                    </p>
-                    <div className="space-y-1.5">
-                        <div>
-                            <div className="flex justify-between text-[10px] mb-0.5">
-                                <span>回数</span>
-                                <span className="font-medium">{tradesThisWeek}/{weeklyPlan.limits.trade_count}</span>
-                            </div>
-                            <div className="h-1.5 bg-muted rounded-full overflow-hidden">
-                                <div className={cn("h-full rounded-full transition-all", getProgressColor(tradeProgress))} style={{ width: `${tradeProgress}%` }} />
-                            </div>
-                        </div>
-                        <div>
-                            <div className="flex justify-between text-[10px] mb-0.5">
-                                <span>損失</span>
-                                <span className="font-medium">¥{(lossThisWeek / 1000).toFixed(0)}k</span>
-                            </div>
-                            <div className="h-1.5 bg-muted rounded-full overflow-hidden">
-                                <div className={cn("h-full rounded-full transition-all", getProgressColor(lossProgress))} style={{ width: `${lossProgress}%` }} />
-                            </div>
-                        </div>
-                        {weeklyPlan.limits.consecutive_loss_stop !== 'none' && (
-                            <div className="flex justify-between text-[10px]">
-                                <span>連敗</span>
-                                <span className="font-medium">{consecutiveLosses}/{weeklyPlan.limits.consecutive_loss_stop}</span>
-                            </div>
-                        )}
+            {/* リミット + リスク - 4列グリッド */}
+            <div className="grid grid-cols-4 gap-2 text-[11px]">
+                {/* 回数 */}
+                <div className="p-2 rounded-md bg-muted/40">
+                    <div className="flex justify-between mb-1">
+                        <span className="text-muted-foreground">回数</span>
+                        <span className="font-bold">{tradesThisWeek}/{weeklyPlan.limits.trade_count}</span>
+                    </div>
+                    <div className="h-1 bg-muted rounded-full overflow-hidden">
+                        <div className={cn("h-full rounded-full", getBarColor(tradeProgress))} style={{ width: `${tradeProgress}%` }} />
                     </div>
                 </div>
 
-                {/* 右: リスク */}
-                <div className="p-3 rounded-lg bg-muted/40">
-                    <p className="text-[10px] text-muted-foreground mb-2 flex items-center gap-1">
-                        <AlertTriangle className="h-3 w-3" />リスク
-                    </p>
+                {/* 損失 */}
+                <div className="p-2 rounded-md bg-muted/40">
+                    <div className="flex justify-between mb-1">
+                        <span className="text-muted-foreground">損失</span>
+                        <span className="font-bold">¥{(lossThisWeek / 1000).toFixed(0)}k</span>
+                    </div>
+                    <div className="h-1 bg-muted rounded-full overflow-hidden">
+                        <div className={cn("h-full rounded-full", getBarColor(lossProgress))} style={{ width: `${lossProgress}%` }} />
+                    </div>
+                </div>
+
+                {/* 連敗 */}
+                <div className="p-2 rounded-md bg-muted/40">
+                    <div className="flex justify-between">
+                        <span className="text-muted-foreground">連敗</span>
+                        <span className="font-bold">{consecutiveLosses}/{weeklyPlan.limits.consecutive_loss_stop === 'none' ? '-' : weeklyPlan.limits.consecutive_loss_stop}</span>
+                    </div>
+                </div>
+
+                {/* リスク */}
+                <div className="p-2 rounded-md bg-muted/40">
+                    <div className="flex justify-between mb-0.5">
+                        <span className="text-muted-foreground">リスク</span>
+                    </div>
                     {nextEvent ? (
-                        <div className="space-y-1">
-                            <p className="text-xs font-medium truncate">{nextEvent.name}</p>
-                            <div className="flex items-center gap-1 flex-wrap">
-                                <Badge variant="secondary" className="text-[10px] px-1.5 py-0">{nextEvent.time}</Badge>
-                                <Badge variant="outline" className="text-[10px] px-1.5 py-0">残{nextEvent.countdown}</Badge>
-                            </div>
-                            {weeklyPlan.eventSettings.use_stop_window && (
-                                <p className="text-[10px] text-muted-foreground">停止窓 ±{weeklyPlan.eventSettings.stop_window}分</p>
-                            )}
-                        </div>
+                        <Badge variant="secondary" className="text-[9px] px-1 py-0">{nextEvent.countdown}</Badge>
                     ) : (
-                        <div className="flex items-center gap-1 text-xs text-green-600 dark:text-green-400">
-                            <CheckCircle2 className="h-3 w-3" />
-                            <span>指標なし</span>
-                        </div>
+                        <span className="text-green-600 dark:text-green-400 font-medium">なし</span>
                     )}
                 </div>
             </div>
