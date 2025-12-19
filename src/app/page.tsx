@@ -453,8 +453,8 @@ export default function Home() {
             </div>
           </div>
 
-          {/* Calendar - Level B: neutral panel, rounded-2xl */}
-          <Card className="border-0 rounded-2xl overflow-hidden">
+          {/* Calendar - surface-1 (white/bright) with subtle shadow */}
+          <Card className="border-0 rounded-2xl overflow-hidden bg-surface-1 shadow-sm">
             <CardContent className="p-2">
               {calendarView === 'week' ? (
                 <WeeklyCalendar
@@ -481,8 +481,8 @@ export default function Home() {
           </Card>
         </section>
 
-        {/* Day Detail Section - タブとコンテンツを1つのカードに統合 */}
-        <Card className="mt-4 rounded-2xl shadow-sm border-0 bg-surface-1 overflow-hidden p-3">
+        {/* Day Detail Section - 横幅いっぱいのsurface-2シート */}
+        <div className="-mx-3 mt-4 px-3 py-3 bg-surface-2 border-t border-slate-200 dark:border-slate-800">
           {/* Day Header */}
           <div className="flex items-center justify-between">
             <h3 className="text-sm font-bold">
@@ -780,7 +780,7 @@ export default function Home() {
               </Card>
             </TabsContent>
           </Tabs>
-        </Card>
+        </div>
 
         {/* Empty State - Demo Data */}
         {trades.length === 0 && (

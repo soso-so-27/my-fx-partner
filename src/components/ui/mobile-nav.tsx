@@ -20,8 +20,15 @@ export function MobileNav() {
     if (pathname === '/login') return null
 
     return (
-        <nav className="fixed bottom-0 left-0 right-0 border-t border-border bg-background md:hidden z-50">
-            <div className="grid grid-cols-4 h-14 items-center pb-[env(safe-area-inset-bottom)]">
+        <nav className={cn(
+            "fixed bottom-0 left-0 right-0 md:hidden z-50",
+            // 髪の毛線 + 上向き薄い影でソフトに分離
+            "border-t border-slate-200 dark:border-slate-800",
+            "shadow-[0_-4px_16px_rgba(0,0,0,0.04)] dark:shadow-[0_-4px_16px_rgba(0,0,0,0.2)]",
+            // ナビだけ1段ズラした背景
+            "bg-surface-1"
+        )}>
+            <div className="grid grid-cols-4 h-16 items-center pb-[env(safe-area-inset-bottom)]">
                 {navItems.map((item) => {
                     const Icon = item.icon
                     const isActive = pathname === item.href || pathname.startsWith(item.href + '/')
@@ -31,12 +38,26 @@ export function MobileNav() {
                             key={item.href}
                             href={item.href}
                             className={cn(
-                                "flex flex-col items-center justify-center w-full h-full min-h-[44px] gap-0.5",
-                                isActive ? "text-primary" : "text-muted-foreground"
+                                "flex flex-col items-center justify-center w-full h-full min-h-[44px] gap-0.5 relative transition-colors",
+                                // 選択中: primary色 + テキスト色
+                                // 非選択: 徹底的に薄く
+                                isActive
+                                    ? "text-primary"
+                                    : "text-muted-foreground hover:text-foreground/70"
                             )}
                         >
-                            <Icon className="h-6 w-6" />
-                            <span className="text-[10px] font-medium">{item.label}</span>
+                            <Icon className={cn(
+                                "h-5 w-5 transition-transform",
+                                isActive && "scale-110"
+                            )} />
+                            <span className={cn(
+                                "text-[10px]",
+                                isActive ? "font-bold" : "font-medium"
+                            )}>{item.label}</span>
+                            {/* 選択中インジケーター（ドット） */}
+                            {isActive && (
+                                <span className="absolute top-1.5 w-1 h-1 rounded-full bg-primary" />
+                            )}
                         </Link>
                     )
                 })}
@@ -44,4 +65,3 @@ export function MobileNav() {
         </nav>
     )
 }
-
