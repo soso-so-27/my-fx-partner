@@ -1,16 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { getServerSession } from 'next-auth'
+import { authOptions } from '@/lib/auth-options'
+import { getSupabaseAdmin } from '@/lib/supabase-admin'
 import { startOfWeek, endOfWeek, format } from 'date-fns'
 
 export async function GET(request: NextRequest) {
-    const supabase = await createClient()
+    const session = await getServerSession(authOptions)
     const { searchParams } = new URL(request.url)
 
-    // User Auth
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
-    if (authError || !user) {
+    // User Auth - using NextAuth session
+    if (!session?.user?.email) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
+
+    const supabase = getSupabaseAdmin()
 
     // Determine target week
     let date = new Date()
@@ -30,7 +33,7 @@ export async function GET(request: NextRequest) {
     const startDateStr = format(weekStart, 'yyyy-MM-dd')
 
     console.log('[API Strategy GET]', {
-        requester: user.email,
+        requester: session.user.email,
         paramDate: dateParam,
         parsedDate: date.toISOString(),
         calculatedStart: startDateStr
@@ -40,7 +43,7 @@ export async function GET(request: NextRequest) {
         const { data, error } = await supabase
             .from('weekly_strategies')
             .select('*')
-            .eq('user_id', user.email)
+            .eq('user_id', session.user.email)
             .eq('start_date', startDateStr)
             .single()
 
@@ -62,13 +65,14 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
-    const supabase = await createClient()
+    const session = await getServerSession(authOptions)
 
-    // User Auth
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
-    if (authError || !user) {
+    // User Auth - using NextAuth session
+    if (!session?.user?.email) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
+
+    const supabase = getSupabaseAdmin()
 
     try {
         const body = await request.json()
@@ -86,7 +90,7 @@ export async function POST(request: NextRequest) {
         const endDateStr = format(weekEnd, 'yyyy-MM-dd')
 
         const upsertData: any = {
-            user_id: user.email,
+            user_id: session.user.email,
             start_date: startDateStr,
             end_date: endDateStr,
         }
