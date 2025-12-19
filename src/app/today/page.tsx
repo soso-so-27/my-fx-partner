@@ -48,7 +48,7 @@ function StrategyPageContent() {
 
                 // 2. Fetch Strategy
                 const dateStr = format(targetDate, 'yyyy-MM-dd')
-                const stratRes = await fetch(`/api/strategy?date=${dateStr}`)
+                const stratRes = await fetch(`/api/strategy?date=${dateStr}`, { cache: 'no-store' })
                 if (stratRes.ok) {
                     const data = await stratRes.json()
                     if (data.strategy && data.strategy.plan) {

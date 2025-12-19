@@ -106,25 +106,44 @@ export default function Home() {
   const [weeklyPlan, setWeeklyPlan] = useState<WeeklyPlan | null>(null)
 
   useEffect(() => {
+    console.log("🔄 useEffect triggered by:", {
+      selectedDate: selectedDate ? format(selectedDate, 'yyyy-MM-dd') : 'null',
+      status,
+      currentWeek: format(currentWeek, 'yyyy-MM-dd'),
+      calendarView
+    });
+
     const fetchStrategy = async () => {
+      // ... (existing code)
       try {
         // Use currentWeek for strategy if we are in week view, otherwise prioritize selectedDate or fallback to today
         // This ensures "Plan" tab matches the visible calendar week
         const targetDate = calendarView === 'week' ? currentWeek : (selectedDate || new Date())
         const dateStr = format(targetDate, 'yyyy-MM-dd')
-        const res = await fetch(`/api/strategy?date=${dateStr}`)
+
+        console.log("🔍 Fetching Strategy for:", {
+          calendarView,
+          currentWeek: format(currentWeek, 'yyyy-MM-dd'),
+          selectedDate: selectedDate ? format(selectedDate, 'yyyy-MM-dd') : 'null',
+          targetDate: dateStr
+        });
+
+        const res = await fetch(`/api/strategy?date=${dateStr}`, { cache: 'no-store' })
         if (res.ok) {
           const data = await res.json()
+          console.log("✅ Strategy Response:", data);
           if (data.strategy && data.strategy.plan) {
             setWeeklyPlan(data.strategy.plan)
           } else {
+            console.warn("⚠️ No strategy plan found in response");
             setWeeklyPlan(null)
           }
         } else {
+          console.error("❌ Fetch failed:", res.status);
           setWeeklyPlan(null)
         }
       } catch (e) {
-        console.error(e)
+        console.error("❌ Fetch error:", e)
         setWeeklyPlan(null)
       }
     }
@@ -1169,7 +1188,15 @@ export default function Home() {
           )}
         </Button>
       </div>
+
+      {/* TEMPORARY DEBUG INFO */}
+      <div className="fixed bottom-0 left-0 right-0 bg-black/80 text-white text-[10px] p-1 z-50 pointer-events-none opacity-50 font-mono">
+        Date: {format(calendarView === 'week' ? currentWeek : (selectedDate || new Date()), 'yyyy-MM-dd')} |
+        View: {calendarView} |
+        Plan: {weeklyPlan ? 'FOUND' : 'NULL'} |
+        Status: {status}
+      </div>
+
     </ProtectedRoute>
   )
 }
-

@@ -29,6 +29,13 @@ export async function GET(request: NextRequest) {
 
     const startDateStr = format(weekStart, 'yyyy-MM-dd')
 
+    console.log('[API Strategy GET]', {
+        requester: user.email,
+        paramDate: dateParam,
+        parsedDate: date.toISOString(),
+        calculatedStart: startDateStr
+    });
+
     try {
         const { data, error } = await supabase
             .from('weekly_strategies')
@@ -36,6 +43,8 @@ export async function GET(request: NextRequest) {
             .eq('user_id', user.email)
             .eq('start_date', startDateStr)
             .single()
+
+        console.log('[API Strategy DB Result]', { found: !!data, error: error?.code });
 
         if (error && error.code !== 'PGRST116') { // PGRST116 = No rows found
             throw error
