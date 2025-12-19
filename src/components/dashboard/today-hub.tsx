@@ -1,11 +1,12 @@
 "use client"
 
 import { useMemo, useState, useEffect } from "react"
-import { format, differenceInMinutes, differenceInHours, nextMonday, startOfWeek } from "date-fns"
+import { format, differenceInMinutes, differenceInHours, nextMonday } from "date-fns"
 import { cn } from "@/lib/utils"
-import { CheckCircle2, XCircle, AlertTriangle, Clock, RotateCcw } from "lucide-react"
+import { CheckCircle2, XCircle, AlertTriangle, Clock, RotateCcw, ChevronDown, ChevronUp } from "lucide-react"
 import { WeeklyPlan } from "@/components/strategy/types"
 import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
 
 interface TodayHubProps {
     weeklyPlan: WeeklyPlan
@@ -17,6 +18,7 @@ interface TodayHubProps {
 }
 
 type SignalStatus = 'ok' | 'caution' | 'ng'
+type StopReason = 'trade_limit' | 'loss_limit' | 'consecutive_loss' | 'event' | 'no_look' | null
 
 export function TodayHub({
     weeklyPlan,
@@ -27,26 +29,24 @@ export function TodayHub({
     className
 }: TodayHubProps) {
     const [currentTime, setCurrentTime] = useState(new Date())
+    const [isExpanded, setIsExpanded] = useState(false)
 
     useEffect(() => {
         const interval = setInterval(() => setCurrentTime(new Date()), 60000)
         return () => clearInterval(interval)
     }, [])
 
-    // 週次リセットまでの時間を計算
+    // 週次リセットまでの時間
     const timeToReset = useMemo(() => {
-        const now = currentTime
-        const monday = nextMonday(now)
+        const monday = nextMonday(currentTime)
         monday.setHours(0, 0, 0, 0)
-        const hoursLeft = differenceInHours(monday, now)
+        const hoursLeft = differenceInHours(monday, currentTime)
         const daysLeft = Math.floor(hoursLeft / 24)
         const remainingHours = hoursLeft % 24
-        if (daysLeft > 0) {
-            return `${daysLeft}日${remainingHours}h`
-        }
-        return `${remainingHours}h`
+        return daysLeft > 0 ? `${daysLeft}d${remainingHours}h` : `${remainingHours}h`
     }, [currentTime])
 
+    // 判定ロジック
     const signal = useMemo(() => {
         const now = currentTime
         const currentTimeStr = format(now, 'HH:mm')
@@ -56,22 +56,24 @@ export function TodayHub({
             let isNoLook = start > end
                 ? currentTimeStr >= start || currentTimeStr <= end
                 : currentTimeStr >= start && currentTimeStr <= end
-            if (isNoLook) return { status: 'ng' as SignalStatus, reason: '見ない時間', nextOkTime: end, isTimeLimit: true }
+            if (isNoLook) {
+                return { status: 'ng' as SignalStatus, reason: '見ない時間', stopReason: 'no_look' as StopReason, nextOkTime: end }
+            }
         }
 
-        const tradeExceeded = tradesThisWeek - weeklyPlan.limits.trade_count
-        if (tradeExceeded >= 0) {
-            return { status: 'ng' as SignalStatus, reason: '上限超過', exceeded: tradeExceeded, isWeekLimit: true }
+        if (tradesThisWeek >= weeklyPlan.limits.trade_count) {
+            const exceeded = tradesThisWeek - weeklyPlan.limits.trade_count
+            return { status: 'ng' as SignalStatus, reason: `回数超過`, exceeded, stopReason: 'trade_limit' as StopReason }
         }
 
         if (lossThisWeek >= weeklyPlan.limits.loss_amount) {
-            return { status: 'ng' as SignalStatus, reason: '損失超過', isWeekLimit: true }
+            return { status: 'ng' as SignalStatus, reason: '損失超過', stopReason: 'loss_limit' as StopReason }
         }
 
         if (weeklyPlan.limits.consecutive_loss_stop !== 'none') {
             const stopCount = parseInt(weeklyPlan.limits.consecutive_loss_stop)
             if (consecutiveLosses >= stopCount) {
-                return { status: 'ng' as SignalStatus, reason: '連敗停止', isWeekLimit: true }
+                return { status: 'ng' as SignalStatus, reason: '連敗停止', stopReason: 'consecutive_loss' as StopReason }
             }
         }
 
@@ -85,17 +87,15 @@ export function TodayHub({
                 eventDate.setHours(h, m, 0, 0)
                 const diffMinutes = (eventDate.getTime() - nowMs) / (1000 * 60)
                 if (Math.abs(diffMinutes) <= windowMinutes) {
-                    return {
-                        status: 'caution' as SignalStatus,
-                        reason: `指標${Math.round(Math.abs(diffMinutes))}分`
-                    }
+                    return { status: 'caution' as SignalStatus, reason: `指標${Math.round(Math.abs(diffMinutes))}分`, stopReason: 'event' as StopReason }
                 }
             }
         }
 
-        return { status: 'ok' as SignalStatus, reason: 'クリア' }
+        return { status: 'ok' as SignalStatus, reason: 'クリア', stopReason: null }
     }, [weeklyPlan, economicEvents, tradesThisWeek, lossThisWeek, consecutiveLosses, currentTime])
 
+    // 次の指標
     const nextEvent = useMemo(() => {
         const now = currentTime.getTime()
         for (const event of economicEvents) {
@@ -107,100 +107,95 @@ export function TodayHub({
                 const diffMins = differenceInMinutes(eventDate, currentTime)
                 const hours = Math.floor(diffMins / 60)
                 const mins = diffMins % 60
-                return {
-                    name: event.name,
-                    time: event.time,
-                    countdown: hours > 0 ? `${hours}h${mins}m` : `${mins}m`
-                }
+                return { name: event.name, countdown: hours > 0 ? `${hours}h${mins}m` : `${mins}m` }
             }
         }
         return null
     }, [economicEvents, currentTime])
 
     const statusConfig = {
-        ok: { bg: 'bg-green-500', text: 'text-white', icon: CheckCircle2 },
-        caution: { bg: 'bg-yellow-500', text: 'text-white', icon: AlertTriangle },
-        ng: { bg: 'bg-red-500', text: 'text-white', icon: XCircle }
+        ok: { bg: 'bg-green-500', text: 'text-white', icon: CheckCircle2, label: 'GO' },
+        caution: { bg: 'bg-yellow-500', text: 'text-white', icon: AlertTriangle, label: '注意' },
+        ng: { bg: 'bg-red-500', text: 'text-white', icon: XCircle, label: 'STOP' }
     }
     const config = statusConfig[signal.status]
     const Icon = config.icon
 
-    const tradeProgress = Math.min(100, (tradesThisWeek / weeklyPlan.limits.trade_count) * 100)
-    const lossProgress = Math.min(100, (lossThisWeek / weeklyPlan.limits.loss_amount) * 100)
-    const getBarColor = (p: number) => p >= 100 ? 'bg-red-500' : p >= 80 ? 'bg-yellow-500' : 'bg-blue-500'
     const tradeExceeded = tradesThisWeek > weeklyPlan.limits.trade_count ? tradesThisWeek - weeklyPlan.limits.trade_count : 0
+    const showWeeklyReset = signal.status === 'ng' && ['trade_limit', 'loss_limit', 'consecutive_loss'].includes(signal.stopReason || '')
 
     return (
-        <div className={cn("space-y-2", className)}>
-            {/* 判定 - コンパクト横並び */}
-            <div className="flex items-center gap-2 flex-wrap">
-                <div className={cn("flex items-center gap-1.5 px-3 py-1.5 rounded-full", config.bg)}>
-                    <Icon className={cn("h-4 w-4", config.text)} />
-                    <span className={cn("text-sm font-bold", config.text)}>
-                        {signal.status === 'ok' ? 'GO' : signal.status === 'caution' ? '注意' : 'STOP'}
-                    </span>
+        <div className={cn("space-y-1", className)}>
+            {/* メイン行：状態 + 原因 + アクション */}
+            <div
+                className="flex items-center gap-2 cursor-pointer"
+                onClick={() => setIsExpanded(!isExpanded)}
+            >
+                {/* 状態バッジ */}
+                <div className={cn("flex items-center gap-1 px-2.5 py-1 rounded-full", config.bg)}>
+                    <Icon className={cn("h-3.5 w-3.5", config.text)} />
+                    <span className={cn("text-xs font-bold", config.text)}>{config.label}</span>
                 </div>
-                <span className="text-xs text-muted-foreground">{signal.reason}</span>
-                {signal.nextOkTime && (
-                    <span className="text-xs text-muted-foreground flex items-center gap-0.5">
-                        <Clock className="h-3 w-3" />{signal.nextOkTime}〜
-                    </span>
-                )}
-                {/* 週次リセットまでの時間（週間上限系のSTOP時のみ） */}
-                {signal.status === 'ng' && 'isWeekLimit' in signal && signal.isWeekLimit && (
-                    <span className="text-xs text-muted-foreground flex items-center gap-0.5 ml-auto">
-                        <RotateCcw className="h-3 w-3" />リセット {timeToReset}
-                    </span>
-                )}
-            </div>
 
-            {/* リミット + リスク - 4列グリッド */}
-            <div className="grid grid-cols-4 gap-2 text-[11px]">
-                {/* 回数 */}
-                <div className="p-2 rounded-md bg-muted/40">
-                    <div className="flex justify-between mb-1">
-                        <span className="text-muted-foreground">回数</span>
-                        <span className="font-bold">
-                            {tradesThisWeek}/{weeklyPlan.limits.trade_count}
-                            {tradeExceeded > 0 && <span className="text-red-500 ml-0.5">(+{tradeExceeded})</span>}
+                {/* 原因 + 詳細 */}
+                <div className="flex items-center gap-1.5 text-xs">
+                    <span className="text-muted-foreground">{signal.reason}</span>
+                    {signal.stopReason === 'trade_limit' && (
+                        <span className="font-bold">{tradesThisWeek}/{weeklyPlan.limits.trade_count}
+                            {tradeExceeded > 0 && <span className="text-red-500">(+{tradeExceeded})</span>}
                         </span>
-                    </div>
-                    <div className="h-1 bg-muted rounded-full overflow-hidden">
-                        <div className={cn("h-full rounded-full", getBarColor(tradeProgress))} style={{ width: `${tradeProgress}%` }} />
-                    </div>
-                </div>
-
-                {/* 損失 */}
-                <div className="p-2 rounded-md bg-muted/40">
-                    <div className="flex justify-between mb-1">
-                        <span className="text-muted-foreground">損失</span>
-                        <span className="font-bold">¥{(lossThisWeek / 1000).toFixed(0)}k</span>
-                    </div>
-                    <div className="h-1 bg-muted rounded-full overflow-hidden">
-                        <div className={cn("h-full rounded-full", getBarColor(lossProgress))} style={{ width: `${lossProgress}%` }} />
-                    </div>
-                </div>
-
-                {/* 連敗 */}
-                <div className="p-2 rounded-md bg-muted/40">
-                    <div className="flex justify-between">
-                        <span className="text-muted-foreground">連敗</span>
-                        <span className="font-bold">{consecutiveLosses}/{weeklyPlan.limits.consecutive_loss_stop === 'none' ? '-' : weeklyPlan.limits.consecutive_loss_stop}</span>
-                    </div>
-                </div>
-
-                {/* リスク */}
-                <div className="p-2 rounded-md bg-muted/40">
-                    <div className="flex justify-between mb-0.5">
-                        <span className="text-muted-foreground">リスク</span>
-                    </div>
-                    {nextEvent ? (
-                        <Badge variant="secondary" className="text-[9px] px-1 py-0 bg-yellow-500/20 text-yellow-700 dark:text-yellow-400">{nextEvent.countdown}</Badge>
-                    ) : (
-                        <span className="text-muted-foreground font-medium">なし</span>
+                    )}
+                    {signal.stopReason === 'loss_limit' && (
+                        <span className="font-bold text-red-500">¥{(lossThisWeek / 1000).toFixed(0)}k</span>
+                    )}
+                    {signal.stopReason === 'consecutive_loss' && (
+                        <span className="font-bold">{consecutiveLosses}/{weeklyPlan.limits.consecutive_loss_stop}</span>
+                    )}
+                    {signal.nextOkTime && (
+                        <span className="flex items-center gap-0.5"><Clock className="h-3 w-3" />{signal.nextOkTime}〜</span>
                     )}
                 </div>
+
+                {/* 右端：リセット or 展開ボタン */}
+                <div className="ml-auto flex items-center gap-2">
+                    {showWeeklyReset && (
+                        <span className="text-[10px] text-muted-foreground flex items-center gap-0.5">
+                            <RotateCcw className="h-3 w-3" />{timeToReset}
+                        </span>
+                    )}
+                    {isExpanded ? <ChevronUp className="h-4 w-4 text-muted-foreground" /> : <ChevronDown className="h-4 w-4 text-muted-foreground" />}
+                </div>
             </div>
+
+            {/* 展開時：全項目表示 */}
+            {isExpanded && (
+                <div className="grid grid-cols-4 gap-1.5 text-[10px] animate-in slide-in-from-top-1 duration-150">
+                    <div className={cn("p-1.5 rounded bg-muted/40", signal.stopReason === 'trade_limit' && "ring-1 ring-red-500/50")}>
+                        <div className="flex justify-between">
+                            <span className="text-muted-foreground">回数</span>
+                            <span className="font-bold">{tradesThisWeek}/{weeklyPlan.limits.trade_count}</span>
+                        </div>
+                    </div>
+                    <div className={cn("p-1.5 rounded bg-muted/40", signal.stopReason === 'loss_limit' && "ring-1 ring-red-500/50")}>
+                        <div className="flex justify-between">
+                            <span className="text-muted-foreground">損失</span>
+                            <span className="font-bold">¥{(lossThisWeek / 1000).toFixed(0)}k</span>
+                        </div>
+                    </div>
+                    <div className={cn("p-1.5 rounded bg-muted/40", signal.stopReason === 'consecutive_loss' && "ring-1 ring-red-500/50")}>
+                        <div className="flex justify-between">
+                            <span className="text-muted-foreground">連敗</span>
+                            <span className="font-bold">{consecutiveLosses}/{weeklyPlan.limits.consecutive_loss_stop === 'none' ? '-' : weeklyPlan.limits.consecutive_loss_stop}</span>
+                        </div>
+                    </div>
+                    <div className={cn("p-1.5 rounded bg-muted/40", signal.stopReason === 'event' && "ring-1 ring-yellow-500/50")}>
+                        <div className="flex justify-between">
+                            <span className="text-muted-foreground">リスク</span>
+                            <span className="font-medium">{nextEvent ? nextEvent.countdown : 'なし'}</span>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     )
 }
