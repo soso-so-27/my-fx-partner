@@ -203,10 +203,10 @@ function StrategyPageContent() {
             </div>
 
             {/* TEMPORARY DEBUG INFO */}
-            <div className="fixed bottom-14 left-0 right-0 bg-black/80 text-white text-[10px] p-1 z-50 pointer-events-none opacity-50 font-mono">
-                Date: {format(targetDate, 'yyyy-MM-dd')} |
-                Plan: {weeklyPlan ? 'FOUND' : 'NULL'} |
-                Status: {status}
+            <div className="fixed bottom-14 left-0 right-0 bg-black/80 text-white text-[10px] p-1 z-50 pointer-events-none opacity-50 font-mono break-all leading-tight">
+                Date: {format(targetDate, 'yyyy-MM-dd')} <br />
+                Plan: {weeklyPlan ? 'FOUND' : 'NULL'} | Status: {status} <br />
+                Fetch: {debugInfo.fetchStatus} | Err: {debugInfo.error}
             </div>
         </ProtectedRoute>
     )
