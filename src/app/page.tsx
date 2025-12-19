@@ -410,54 +410,40 @@ export default function Home() {
 
         {/* Main Calendar Section */}
         <section ref={calendarRef} className="space-y-2">
-          {/* Compact Stats Bar */}
-          {monthlyStats && (
-            <div className="flex items-center justify-between px-1">
-              {/* Main P&L */}
-              <div
-                className="flex items-center gap-1.5 cursor-pointer"
-                onClick={() => setPnlUnit(pnlUnit === 'pips' ? 'amount' : 'pips')}
-              >
-                <div className={cn(
-                  "h-5 w-5 rounded-full flex items-center justify-center",
-                  (pnlUnit === 'pips' ? monthlyStats.totalPnlPips : monthlyStats.totalPnl) >= 0
-                    ? "bg-green-500/20"
-                    : "bg-red-500/20"
-                )}>
-                  {(pnlUnit === 'pips' ? monthlyStats.totalPnlPips : monthlyStats.totalPnl) >= 0
-                    ? <TrendingUp className="h-2.5 w-2.5 text-green-600" />
-                    : <TrendingDown className="h-2.5 w-2.5 text-red-600" />
-                  }
+          {/* Stats + View Toggle - merged into one row */}
+          <div className="flex items-center justify-between px-1">
+            {/* Left: P&L and Win/Loss */}
+            {monthlyStats && (
+              <div className="flex items-center gap-3">
+                <div
+                  className="flex items-center gap-1 cursor-pointer"
+                  onClick={() => setPnlUnit(pnlUnit === 'pips' ? 'amount' : 'pips')}
+                >
+                  <span className={cn(
+                    "text-sm font-bold font-numbers",
+                    (pnlUnit === 'pips' ? monthlyStats.totalPnlPips : monthlyStats.totalPnl) >= 0
+                      ? "text-green-600 dark:text-green-400"
+                      : "text-red-600 dark:text-red-400"
+                  )}>
+                    {(pnlUnit === 'pips' ? monthlyStats.totalPnlPips : monthlyStats.totalPnl) >= 0 ? '+' : ''}
+                    {pnlUnit === 'amount' ? '¥' : ''}
+                    {(pnlUnit === 'pips' ? monthlyStats.totalPnlPips : monthlyStats.totalPnl).toLocaleString()}
+                    <span className="text-[10px] ml-0.5">{pnlUnit === 'pips' ? 'pips' : ''}</span>
+                  </span>
                 </div>
-                <span className={cn(
-                  "text-sm font-bold font-numbers",
-                  (pnlUnit === 'pips' ? monthlyStats.totalPnlPips : monthlyStats.totalPnl) >= 0
-                    ? "text-green-600 dark:text-green-400"
-                    : "text-red-600 dark:text-red-400"
-                )}>
-                  {(pnlUnit === 'pips' ? monthlyStats.totalPnlPips : monthlyStats.totalPnl) >= 0 ? '+' : ''}
-                  {pnlUnit === 'amount' ? '¥' : ''}
-                  {(pnlUnit === 'pips' ? monthlyStats.totalPnlPips : monthlyStats.totalPnl).toLocaleString()}
-                  <span className="text-[10px] ml-0.5">{pnlUnit === 'pips' ? 'pips' : ''}</span>
-                </span>
+                <div className="flex items-center gap-1.5 text-[11px]">
+                  <span className="text-green-600 dark:text-green-400 font-bold font-numbers">{monthlyStats.wins}W</span>
+                  <span className="text-red-600 dark:text-red-400 font-bold font-numbers">{monthlyStats.losses}L</span>
+                </div>
               </div>
+            )}
 
-              {/* Win/Loss Count */}
-              <div className="flex items-center gap-2 text-xs">
-                <span className="text-green-600 dark:text-green-400 font-bold font-numbers">{monthlyStats.wins}W</span>
-                <span className="text-red-600 dark:text-red-400 font-bold font-numbers">{monthlyStats.losses}L</span>
-                <span className="font-bold font-numbers">{monthlyStats.winRate}%</span>
-              </div>
-            </div>
-          )}
-
-          {/* View Toggle */}
-          <div className="flex justify-center">
-            <div className="inline-flex rounded-lg bg-muted p-0.5">
+            {/* Right: View Toggle */}
+            <div className="inline-flex rounded-md bg-muted p-0.5">
               <Button
                 variant={calendarView === 'week' ? 'default' : 'ghost'}
                 size="sm"
-                className="h-7 px-3 text-xs"
+                className="h-6 px-2.5 text-[11px]"
                 onClick={() => setCalendarView('week')}
               >
                 週
@@ -465,7 +451,7 @@ export default function Home() {
               <Button
                 variant={calendarView === 'month' ? 'default' : 'ghost'}
                 size="sm"
-                className="h-7 px-3 text-xs"
+                className="h-6 px-2.5 text-[11px]"
                 onClick={() => setCalendarView('month')}
               >
                 月
