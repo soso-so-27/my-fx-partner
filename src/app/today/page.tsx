@@ -49,23 +49,23 @@ function StrategyPageContent() {
                 // 2. Fetch Strategy
                 const dateStr = format(targetDate, 'yyyy-MM-dd')
                 const uniqueUrl = `/api/strategy?date=${dateStr}&t=${Date.now()}`
-                const stratRes = await fetch(uniqueUrl, { cache: 'no-store' })
+                const stratRes = await fetch(uniqueUrl, { cache: 'no-store' }); // Added semicolon
 
-                    // For Debug
-                    (window as any)._debug_fetch_url = uniqueUrl;
+                // For Debug
+                (window as any)._debug_fetch_url = uniqueUrl;
                 (window as any)._debug_fetch_status = stratRes.status;
 
                 if (stratRes.ok) {
-                    const data = await stratRes.json()
-                        (window as any)._debug_has_strategy = !!data.strategy;
+                    const data = await stratRes.json(); // Added semicolon
+                    (window as any)._debug_has_strategy = !!data.strategy;
 
                     if (data.strategy && data.strategy.plan) {
                         setWeeklyPlan(data.strategy.plan as WeeklyPlan)
                     }
                 }
             } catch (error) {
-                console.error("Failed to load data:", error)
-                    (window as any)._debug_error = String(error);
+                console.error("Failed to load data:", error);
+                (window as any)._debug_error = String(error);
             } finally {
                 setLoading(false)
             }
@@ -73,13 +73,35 @@ function StrategyPageContent() {
         fetchData()
     }, [dateParam]) // eslint-disable-line react-hooks/exhaustive-deps
 
-    date: format(targetDate, 'yyyy-MM-dd'),
-        plan: newPlan
-})
-        })
-toast({
+    const handleSavePlan = async (newPlan: WeeklyPlan) => {
+        // Optimistic update
+        setWeeklyPlan(newPlan)
+        setViewMode('dashboard')
+
+        try {
+            await fetch('/api/strategy', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    date: format(targetDate, 'yyyy-MM-dd'),
+                    plan: newPlan
+                })
+            })
+            toast({
+                title: "作戦を保存しました",
+                description: format(targetDate, 'yyyy/MM/dd') + " の週の作戦を更新しました。",
+            })
+        } catch (error) {
+            console.error("Failed to save plan:", error)
+            toast({
+                title: "保存に失敗しました",
+                description: "もう一度お試しください。",
+                variant: "destructive"
+            })
+        }
+    }
     title: "作戦を保存しました",
-    description: format(targetDate, 'yyyy/MM/dd') + " の週の作戦を更新しました。",
+        description: format(targetDate, 'yyyy/MM/dd') + " の週の作戦を更新しました。",
 })
     } catch (error) {
     console.error("Failed to save plan:", error)
