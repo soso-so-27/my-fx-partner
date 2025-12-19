@@ -418,21 +418,16 @@ export default function Home() {
                   className="flex items-center gap-1 cursor-pointer"
                   onClick={() => setPnlUnit(pnlUnit === 'pips' ? 'amount' : 'pips')}
                 >
-                  <span className={cn(
-                    "text-sm font-bold font-numbers",
-                    (pnlUnit === 'pips' ? monthlyStats.totalPnlPips : monthlyStats.totalPnl) >= 0
-                      ? "text-green-600 dark:text-green-400"
-                      : "text-red-600 dark:text-red-400"
-                  )}>
+                  <span className="text-sm font-bold font-numbers text-muted-foreground">
                     {(pnlUnit === 'pips' ? monthlyStats.totalPnlPips : monthlyStats.totalPnl) >= 0 ? '+' : ''}
                     {pnlUnit === 'amount' ? '¥' : ''}
                     {(pnlUnit === 'pips' ? monthlyStats.totalPnlPips : monthlyStats.totalPnl).toLocaleString()}
                     <span className="text-[10px] ml-0.5">{pnlUnit === 'pips' ? 'pips' : ''}</span>
                   </span>
                 </div>
-                <div className="flex items-center gap-2 text-xs">
-                  <span className="text-green-600 dark:text-green-400 font-bold font-numbers">{monthlyStats.wins}W</span>
-                  <span className="text-red-600 dark:text-red-400 font-bold font-numbers">{monthlyStats.losses}L</span>
+                <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                  <span className="font-bold font-numbers">{monthlyStats.wins}W</span>
+                  <span className="font-bold font-numbers">{monthlyStats.losses}L</span>
                 </div>
               </div>
             )}
@@ -458,8 +453,8 @@ export default function Home() {
             </div>
           </div>
 
-          {/* Calendar */}
-          <Card className="border border-border shadow-lg bg-surface-2 rounded-xl">
+          {/* Calendar - Level B: weaker shadow */}
+          <Card className="border border-border bg-surface-2 rounded-lg">
             <CardContent className="p-3 pb-2">
               {calendarView === 'week' ? (
                 <WeeklyCalendar
@@ -485,11 +480,9 @@ export default function Home() {
             </CardContent>
           </Card>
         </section>
-        {/* Divider */}
-        <hr className="border-border my-2" />
 
         {/* Day Detail Section */}
-        <section className="space-y-2">
+        <section className="mt-4 space-y-2">
           {/* Day Header */}
           <div className="flex items-center justify-between">
             <h3 className="text-sm font-bold">
@@ -513,18 +506,27 @@ export default function Home() {
             )}
           </div>
 
-          {/* Tabs */}
+          {/* Tabs - improved selection visibility */}
           <Tabs value={dayDetailTab} onValueChange={(v) => setDayDetailTab(v as 'market' | 'plan' | 'review')}>
-            <TabsList className="grid w-full grid-cols-3 h-9">
-              <TabsTrigger value="market" className="text-xs">
+            <TabsList className="grid w-full grid-cols-3 h-10 bg-surface-2 p-1 gap-1">
+              <TabsTrigger
+                value="market"
+                className="text-xs data-[state=active]:bg-surface-1 data-[state=active]:text-foreground data-[state=active]:shadow-sm data-[state=inactive]:text-muted-foreground rounded-md"
+              >
                 <Calendar className="h-3.5 w-3.5 mr-1" />
                 相場環境
               </TabsTrigger>
-              <TabsTrigger value="plan" className="text-xs">
+              <TabsTrigger
+                value="plan"
+                className="text-xs data-[state=active]:bg-surface-1 data-[state=active]:text-foreground data-[state=active]:shadow-sm data-[state=inactive]:text-muted-foreground rounded-md"
+              >
                 <Target className="h-3.5 w-3.5 mr-1" />
                 プラン
               </TabsTrigger>
-              <TabsTrigger value="review" className="text-xs">
+              <TabsTrigger
+                value="review"
+                className="text-xs data-[state=active]:bg-surface-1 data-[state=active]:text-foreground data-[state=active]:shadow-sm data-[state=inactive]:text-muted-foreground rounded-md"
+              >
                 <CheckCircle2 className="h-3.5 w-3.5 mr-1" />
                 振り返り
               </TabsTrigger>

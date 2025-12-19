@@ -5,8 +5,6 @@ import { format, differenceInMinutes, differenceInHours, nextMonday } from "date
 import { cn } from "@/lib/utils"
 import { CheckCircle2, XCircle, AlertTriangle, Clock, RotateCcw, ChevronDown, ChevronUp } from "lucide-react"
 import { WeeklyPlan } from "@/components/strategy/types"
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
 
 interface TodayHubProps {
     weeklyPlan: WeeklyPlan
@@ -113,10 +111,11 @@ export function TodayHub({
         return null
     }, [economicEvents, currentTime])
 
+    // ステータス設定 - STOPのみ強い色、他はミュート
     const statusConfig = {
-        ok: { bg: 'bg-success', text: 'text-white', icon: CheckCircle2, label: 'GO' },
-        caution: { bg: 'bg-warning', text: 'text-white', icon: AlertTriangle, label: '注意' },
-        ng: { bg: 'bg-danger', text: 'text-white', icon: XCircle, label: 'STOP' }
+        ok: { bg: 'bg-success', text: 'text-white', icon: CheckCircle2, label: 'GO', cardBorder: 'border-border' },
+        caution: { bg: 'bg-warning', text: 'text-white', icon: AlertTriangle, label: '注意', cardBorder: 'border-warning' },
+        ng: { bg: 'bg-danger', text: 'text-white', icon: XCircle, label: 'STOP', cardBorder: 'border-danger' }
     }
     const config = statusConfig[signal.status]
     const Icon = config.icon
@@ -125,77 +124,76 @@ export function TodayHub({
     const showWeeklyReset = signal.status === 'ng' && ['trade_limit', 'loss_limit', 'consecutive_loss'].includes(signal.stopReason || '')
 
     return (
-        <div className={cn("space-y-1", className)}>
-            {/* メイン行：状態 + 原因 + アクション */}
+        <div className={cn(className)}>
+            {/* === Level A: ステータスカード（主役） === */}
             <div
-                className="flex items-center gap-2 cursor-pointer"
+                className={cn(
+                    "p-3 rounded-lg border-2 bg-surface-1 cursor-pointer transition-all",
+                    config.cardBorder,
+                    signal.status === 'ng' && "shadow-sm"
+                )}
                 onClick={() => setIsExpanded(!isExpanded)}
             >
-                {/* 状態バッジ */}
-                <div className={cn("flex items-center gap-1 px-2.5 py-1 rounded-full", config.bg)}>
-                    <Icon className={cn("h-3.5 w-3.5", config.text)} />
-                    <span className={cn("text-xs font-bold", config.text)}>{config.label}</span>
+                {/* メイン行：状態 + 原因 + リセット */}
+                <div className="flex items-center gap-3">
+                    {/* 状態バッジ */}
+                    <div className={cn("flex items-center gap-1.5 px-3 py-1.5 rounded-full", config.bg)}>
+                        <Icon className={cn("h-4 w-4", config.text)} />
+                        <span className={cn("text-sm font-bold", config.text)}>{config.label}</span>
+                    </div>
+
+                    {/* 原因 + 詳細 */}
+                    <div className="flex items-center gap-2 text-sm">
+                        <span className="font-medium">{signal.reason}</span>
+                        {signal.stopReason === 'trade_limit' && (
+                            <span className="font-bold">{tradesThisWeek}/{weeklyPlan.limits.trade_count}
+                                {tradeExceeded > 0 && <span className="text-danger ml-0.5">(+{tradeExceeded})</span>}
+                            </span>
+                        )}
+                        {signal.stopReason === 'loss_limit' && (
+                            <span className="font-bold text-danger">¥{(lossThisWeek / 1000).toFixed(0)}k</span>
+                        )}
+                        {signal.stopReason === 'consecutive_loss' && (
+                            <span className="font-bold">{consecutiveLosses}/{weeklyPlan.limits.consecutive_loss_stop}</span>
+                        )}
+                        {signal.nextOkTime && (
+                            <span className="flex items-center gap-0.5 text-muted-foreground"><Clock className="h-3.5 w-3.5" />{signal.nextOkTime}〜</span>
+                        )}
+                    </div>
+
+                    {/* 右端：リセット + 展開 */}
+                    <div className="ml-auto flex items-center gap-2">
+                        {showWeeklyReset && (
+                            <span className="text-xs text-muted-foreground flex items-center gap-1">
+                                <RotateCcw className="h-3.5 w-3.5" />{timeToReset}
+                            </span>
+                        )}
+                        {isExpanded ? <ChevronUp className="h-4 w-4 text-muted-foreground" /> : <ChevronDown className="h-4 w-4 text-muted-foreground" />}
+                    </div>
                 </div>
 
-                {/* 原因 + 詳細 */}
-                <div className="flex items-center gap-1.5 text-xs">
-                    <span className="text-muted-foreground">{signal.reason}</span>
-                    {signal.stopReason === 'trade_limit' && (
-                        <span className="font-bold">{tradesThisWeek}/{weeklyPlan.limits.trade_count}
-                            {tradeExceeded > 0 && <span className="text-danger">(+{tradeExceeded})</span>}
-                        </span>
-                    )}
-                    {signal.stopReason === 'loss_limit' && (
-                        <span className="font-bold text-danger">¥{(lossThisWeek / 1000).toFixed(0)}k</span>
-                    )}
-                    {signal.stopReason === 'consecutive_loss' && (
-                        <span className="font-bold">{consecutiveLosses}/{weeklyPlan.limits.consecutive_loss_stop}</span>
-                    )}
-                    {signal.nextOkTime && (
-                        <span className="flex items-center gap-0.5"><Clock className="h-3 w-3" />{signal.nextOkTime}〜</span>
-                    )}
-                </div>
-
-                {/* 右端：リセット or 展開ボタン */}
-                <div className="ml-auto flex items-center gap-2">
-                    {showWeeklyReset && (
-                        <span className="text-[10px] text-muted-foreground flex items-center gap-0.5">
-                            <RotateCcw className="h-3 w-3" />{timeToReset}
-                        </span>
-                    )}
-                    {isExpanded ? <ChevronUp className="h-4 w-4 text-muted-foreground" /> : <ChevronDown className="h-4 w-4 text-muted-foreground" />}
-                </div>
+                {/* 展開時：KPI詳細（Level C: サブ面） */}
+                {isExpanded && (
+                    <div className="grid grid-cols-4 gap-2 mt-3 text-xs animate-in slide-in-from-top-1 duration-150">
+                        <div className={cn("p-2 rounded bg-surface-2", signal.stopReason === 'trade_limit' && "ring-1 ring-danger")}>
+                            <div className="text-muted-foreground text-[10px]">回数</div>
+                            <div className="font-bold">{tradesThisWeek}/{weeklyPlan.limits.trade_count}</div>
+                        </div>
+                        <div className={cn("p-2 rounded bg-surface-2", signal.stopReason === 'loss_limit' && "ring-1 ring-danger")}>
+                            <div className="text-muted-foreground text-[10px]">損失</div>
+                            <div className="font-bold">¥{(lossThisWeek / 1000).toFixed(0)}k</div>
+                        </div>
+                        <div className="p-2 rounded bg-surface-2">
+                            <div className="text-muted-foreground text-[10px]">連敗</div>
+                            <div className="font-bold">{consecutiveLosses}/{weeklyPlan.limits.consecutive_loss_stop === 'none' ? '-' : weeklyPlan.limits.consecutive_loss_stop}</div>
+                        </div>
+                        <div className={cn("p-2 rounded bg-surface-2", signal.stopReason === 'event' && "ring-1 ring-warning")}>
+                            <div className="text-muted-foreground text-[10px]">リスク</div>
+                            <div className="font-medium text-muted-foreground">{nextEvent ? nextEvent.countdown : 'なし'}</div>
+                        </div>
+                    </div>
+                )}
             </div>
-
-            {/* 展開時：全項目表示 */}
-            {isExpanded && (
-                <div className="grid grid-cols-4 gap-1.5 text-[10px] animate-in slide-in-from-top-1 duration-150">
-                    <div className={cn("p-1.5 rounded bg-surface-2", signal.stopReason === 'trade_limit' && "border border-danger")}>
-                        <div className="flex justify-between">
-                            <span className="text-muted-foreground">回数</span>
-                            <span className="font-bold">{tradesThisWeek}/{weeklyPlan.limits.trade_count}</span>
-                        </div>
-                    </div>
-                    <div className={cn("p-1.5 rounded bg-surface-2", signal.stopReason === 'loss_limit' && "border border-danger")}>
-                        <div className="flex justify-between">
-                            <span className="text-muted-foreground">損失</span>
-                            <span className="font-bold">¥{(lossThisWeek / 1000).toFixed(0)}k</span>
-                        </div>
-                    </div>
-                    <div className={cn("p-1.5 rounded bg-surface-2", signal.stopReason === 'consecutive_loss' && "border border-danger")}>
-                        <div className="flex justify-between">
-                            <span className="text-muted-foreground">連敗</span>
-                            <span className="font-bold">{consecutiveLosses}/{weeklyPlan.limits.consecutive_loss_stop === 'none' ? '-' : weeklyPlan.limits.consecutive_loss_stop}</span>
-                        </div>
-                    </div>
-                    <div className={cn("p-1.5 rounded bg-surface-2", signal.stopReason === 'event' && "border border-warning")}>
-                        <div className="flex justify-between">
-                            <span className="text-muted-foreground">リスク</span>
-                            <span className="font-medium">{nextEvent ? nextEvent.countdown : 'なし'}</span>
-                        </div>
-                    </div>
-                </div>
-            )}
         </div>
     )
 }
