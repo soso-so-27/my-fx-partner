@@ -31,7 +31,7 @@ import { insightService } from "@/lib/insight-service"
 import { RelatedKnowledge } from "@/components/trade/related-knowledge"
 import { Badge } from "@/components/ui/badge"
 import { WeeklyPlan } from "@/components/strategy/types"
-import { EntryStatusIndicator } from "@/components/strategy/entry-status-indicator"
+import { TodayHub } from "@/components/dashboard/today-hub"
 
 // 30秒振り返りの質問選択肢
 const MISTAKE_OPTIONS = [
@@ -399,6 +399,15 @@ export default function Home() {
           </div>
         </header>
 
+        {/* Today Hub - 今日のダッシュボード */}
+        {weeklyPlan && (
+          <TodayHub
+            weeklyPlan={weeklyPlan}
+            economicEvents={economicEvents}
+            tradesThisWeek={monthlyStats?.totalTrades ?? 0}
+          />
+        )}
+
         {/* Main Calendar Section */}
         <section ref={calendarRef} className="space-y-2">
           {/* Compact Stats Bar */}
@@ -489,17 +498,6 @@ export default function Home() {
                 />
               )}
             </CardContent>
-            {/* Entry Status - integrated into calendar card */}
-            {weeklyPlan && (
-              <div className="px-2 pb-2">
-                <EntryStatusIndicator
-                  weeklyPlan={weeklyPlan}
-                  economicEvents={economicEvents}
-                  tradesThisWeek={monthlyStats?.totalTrades ?? 0}
-                  className="mt-1"
-                />
-              </div>
-            )}
           </Card>
         </section>
 
