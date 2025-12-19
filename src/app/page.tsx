@@ -409,7 +409,7 @@ export default function Home() {
         )}
 
         {/* Main Calendar Section */}
-        <section ref={calendarRef} className="space-y-2">
+        <section ref={calendarRef} className="mt-4 space-y-2">
           {/* Stats + View Toggle - merged into one row */}
           <div className="flex items-center justify-between px-1">
             {/* Left: P&L and Win/Loss */}
@@ -488,7 +488,7 @@ export default function Home() {
         </section>
 
         {/* Day Detail Section */}
-        <section className="space-y-3">
+        <section className="mt-6 space-y-3">
           {/* Day Header */}
           <div className="flex items-center justify-between">
             <h3 className="text-sm font-bold">
