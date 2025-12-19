@@ -48,15 +48,24 @@ function StrategyPageContent() {
 
                 // 2. Fetch Strategy
                 const dateStr = format(targetDate, 'yyyy-MM-dd')
-                const stratRes = await fetch(`/api/strategy?date=${dateStr}`, { cache: 'no-store' })
+                const uniqueUrl = `/api/strategy?date=${dateStr}&t=${Date.now()}`
+                const stratRes = await fetch(uniqueUrl, { cache: 'no-store' })
+
+                    // For Debug
+                    (window as any)._debug_fetch_url = uniqueUrl;
+                (window as any)._debug_fetch_status = stratRes.status;
+
                 if (stratRes.ok) {
                     const data = await stratRes.json()
+                        (window as any)._debug_has_strategy = !!data.strategy;
+
                     if (data.strategy && data.strategy.plan) {
                         setWeeklyPlan(data.strategy.plan as WeeklyPlan)
                     }
                 }
             } catch (error) {
                 console.error("Failed to load data:", error)
+                    (window as any)._debug_error = String(error);
             } finally {
                 setLoading(false)
             }
@@ -64,142 +73,156 @@ function StrategyPageContent() {
         fetchData()
     }, [dateParam]) // eslint-disable-line react-hooks/exhaustive-deps
 
-    const handleSavePlan = async (newPlan: WeeklyPlan) => {
-        // Optimistic update
-        setWeeklyPlan(newPlan)
-        setViewMode('dashboard')
+    // ... (rest of code)
 
-        try {
-            await fetch('/api/strategy', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    date: format(targetDate, 'yyyy-MM-dd'),
-                    plan: newPlan
-                })
+    // Update Debug Info
+    // At the bottom of the file
+    {/* TEMPORARY DEBUG INFO */ }
+    <div className="fixed bottom-14 left-0 right-0 bg-black/80 text-white text-[10px] p-1 z-50 pointer-events-none opacity-50 font-mono break-all leading-tight">
+        Date: {format(targetDate, 'yyyy-MM-dd')} <br />
+        Plan: {weeklyPlan ? 'FOUND' : 'NULL'} | Status: {status} <br />
+        Fetch: {(window as any)._debug_fetch_status || '-'} | Hash: {(weeklyPlan as any)?.id?.slice(0, 4) || '-'}
+    </div>
+        </ProtectedRoute >
+    )
+}
+
+const handleSavePlan = async (newPlan: WeeklyPlan) => {
+    // Optimistic update
+    setWeeklyPlan(newPlan)
+    setViewMode('dashboard')
+
+    try {
+        await fetch('/api/strategy', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                date: format(targetDate, 'yyyy-MM-dd'),
+                plan: newPlan
             })
-            toast({
-                title: "作戦を保存しました",
-                description: format(targetDate, 'yyyy/MM/dd') + " の週の作戦を更新しました。",
-            })
-        } catch (error) {
-            console.error("Failed to save plan:", error)
-            toast({
-                title: "保存に失敗しました",
-                description: "もう一度お試しください。",
-                variant: "destructive"
-            })
-        }
+        })
+        toast({
+            title: "作戦を保存しました",
+            description: format(targetDate, 'yyyy/MM/dd') + " の週の作戦を更新しました。",
+        })
+    } catch (error) {
+        console.error("Failed to save plan:", error)
+        toast({
+            title: "保存に失敗しました",
+            description: "もう一度お試しください。",
+            variant: "destructive"
+        })
     }
+}
 
-    const handleReviewComplete = async (reviewData: any) => {
-        // TODO: Save review to DB via API
-        console.log("Review completed:", reviewData)
-    }
+const handleReviewComplete = async (reviewData: any) => {
+    // TODO: Save review to DB via API
+    console.log("Review completed:", reviewData)
+}
 
-    // Date calculations
-    const weekStart = startOfWeek(targetDate, { weekStartsOn: 1 })
-    const weekEnd = endOfWeek(targetDate, { weekStartsOn: 1 })
+// Date calculations
+const weekStart = startOfWeek(targetDate, { weekStartsOn: 1 })
+const weekEnd = endOfWeek(targetDate, { weekStartsOn: 1 })
 
-    // Previous week logic for Review tab (optional)
-    const prevStart = startOfWeek(subWeeks(targetDate, 1), { weekStartsOn: 1 })
-    const prevEnd = endOfWeek(subWeeks(targetDate, 1), { weekStartsOn: 1 })
+// Previous week logic for Review tab (optional)
+const prevStart = startOfWeek(subWeeks(targetDate, 1), { weekStartsOn: 1 })
+const prevEnd = endOfWeek(subWeeks(targetDate, 1), { weekStartsOn: 1 })
 
-    if (status === "loading" || loading) {
-        return (
-            <ProtectedRoute>
-                <div className="container mx-auto p-4 pb-20 flex justify-center py-12">
-                    <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full" />
-                </div>
-            </ProtectedRoute>
-        )
-    }
-
+if (status === "loading" || loading) {
     return (
         <ProtectedRoute>
-            <div className="container mx-auto p-4 pb-24 space-y-4">
-
-                {/* Header */}
-                <header className="flex items-center justify-between pt-[env(safe-area-inset-top)]">
-                    <div className="flex items-center gap-2">
-                        <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center">
-                            <Target className="h-5 w-5 text-primary" />
-                        </div>
-                        <div>
-                            <h1 className="text-lg font-bold">週間戦略</h1>
-                            <p className="text-xs text-muted-foreground">
-                                {format(weekStart, 'M/d', { locale: ja })} - {format(weekEnd, 'M/d', { locale: ja })}
-                            </p>
-                        </div>
-                    </div>
-                </header>
-
-                <Tabs defaultValue="plan" className="w-full">
-                    <TabsList className="grid w-full grid-cols-2 mb-4">
-                        <TabsTrigger value="plan">今週の作戦 (Plan)</TabsTrigger>
-                        <TabsTrigger value="review">先週の振り返り (Review)</TabsTrigger>
-                    </TabsList>
-
-                    {/* PLAN TAB */}
-                    <TabsContent value="plan" className="space-y-4">
-                        {viewMode === 'wizard' ? (
-                            <StrategyWizard
-                                onSave={handleSavePlan}
-                                onCancel={() => setViewMode('dashboard')}
-                            />
-                        ) : (
-                            <>
-                                {weeklyPlan ? (
-                                    <StrategyDashboard
-                                        plan={weeklyPlan}
-                                        economicEvents={economicEvents}
-                                        onEdit={() => setViewMode('wizard')}
-                                    />
-                                ) : (
-                                    // Empty State (No plan yet)
-                                    <Card className="border-dashed border-2">
-                                        <CardContent className="p-6 text-center space-y-4">
-                                            <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center mx-auto">
-                                                <Target className="h-6 w-6 text-primary" />
-                                            </div>
-                                            <div>
-                                                <h3 className="font-bold">今週の作戦を立てる</h3>
-                                                <p className="text-xs text-muted-foreground mt-1">
-                                                    質問に答えるだけで、<br />あなただけの「行動ルール」を作成します。
-                                                </p>
-                                            </div>
-                                            <Button onClick={() => setViewMode('wizard')} className="w-full">
-                                                作戦を立てる (30秒)
-                                                <ChevronRight className="h-4 w-4 ml-1" />
-                                            </Button>
-                                        </CardContent>
-                                    </Card>
-                                )}
-                            </>
-                        )}
-                    </TabsContent>
-
-                    {/* REVIEW TAB */}
-                    <TabsContent value="review">
-                        <div className="mb-4 text-center">
-                            <h3 className="text-sm font-bold text-muted-foreground">
-                                {format(prevStart, 'M/d')} - {format(prevEnd, 'M/d')} の振り返り
-                            </h3>
-                        </div>
-                        <StrategyReview onComplete={handleReviewComplete} />
-                    </TabsContent>
-                </Tabs>
-
-            </div>
-
-            {/* TEMPORARY DEBUG INFO */}
-            <div className="fixed bottom-14 left-0 right-0 bg-black/80 text-white text-[10px] p-1 z-50 pointer-events-none opacity-50 font-mono">
-                Date: {format(targetDate, 'yyyy-MM-dd')} |
-                Plan: {weeklyPlan ? 'FOUND' : 'NULL'} |
-                Status: {status}
+            <div className="container mx-auto p-4 pb-20 flex justify-center py-12">
+                <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full" />
             </div>
         </ProtectedRoute>
     )
+}
+
+return (
+    <ProtectedRoute>
+        <div className="container mx-auto p-4 pb-24 space-y-4">
+
+            {/* Header */}
+            <header className="flex items-center justify-between pt-[env(safe-area-inset-top)]">
+                <div className="flex items-center gap-2">
+                    <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center">
+                        <Target className="h-5 w-5 text-primary" />
+                    </div>
+                    <div>
+                        <h1 className="text-lg font-bold">週間戦略</h1>
+                        <p className="text-xs text-muted-foreground">
+                            {format(weekStart, 'M/d', { locale: ja })} - {format(weekEnd, 'M/d', { locale: ja })}
+                        </p>
+                    </div>
+                </div>
+            </header>
+
+            <Tabs defaultValue="plan" className="w-full">
+                <TabsList className="grid w-full grid-cols-2 mb-4">
+                    <TabsTrigger value="plan">今週の作戦 (Plan)</TabsTrigger>
+                    <TabsTrigger value="review">先週の振り返り (Review)</TabsTrigger>
+                </TabsList>
+
+                {/* PLAN TAB */}
+                <TabsContent value="plan" className="space-y-4">
+                    {viewMode === 'wizard' ? (
+                        <StrategyWizard
+                            onSave={handleSavePlan}
+                            onCancel={() => setViewMode('dashboard')}
+                        />
+                    ) : (
+                        <>
+                            {weeklyPlan ? (
+                                <StrategyDashboard
+                                    plan={weeklyPlan}
+                                    economicEvents={economicEvents}
+                                    onEdit={() => setViewMode('wizard')}
+                                />
+                            ) : (
+                                // Empty State (No plan yet)
+                                <Card className="border-dashed border-2">
+                                    <CardContent className="p-6 text-center space-y-4">
+                                        <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center mx-auto">
+                                            <Target className="h-6 w-6 text-primary" />
+                                        </div>
+                                        <div>
+                                            <h3 className="font-bold">今週の作戦を立てる</h3>
+                                            <p className="text-xs text-muted-foreground mt-1">
+                                                質問に答えるだけで、<br />あなただけの「行動ルール」を作成します。
+                                            </p>
+                                        </div>
+                                        <Button onClick={() => setViewMode('wizard')} className="w-full">
+                                            作戦を立てる (30秒)
+                                            <ChevronRight className="h-4 w-4 ml-1" />
+                                        </Button>
+                                    </CardContent>
+                                </Card>
+                            )}
+                        </>
+                    )}
+                </TabsContent>
+
+                {/* REVIEW TAB */}
+                <TabsContent value="review">
+                    <div className="mb-4 text-center">
+                        <h3 className="text-sm font-bold text-muted-foreground">
+                            {format(prevStart, 'M/d')} - {format(prevEnd, 'M/d')} の振り返り
+                        </h3>
+                    </div>
+                    <StrategyReview onComplete={handleReviewComplete} />
+                </TabsContent>
+            </Tabs>
+
+        </div>
+
+        {/* TEMPORARY DEBUG INFO */}
+        <div className="fixed bottom-14 left-0 right-0 bg-black/80 text-white text-[10px] p-1 z-50 pointer-events-none opacity-50 font-mono">
+            Date: {format(targetDate, 'yyyy-MM-dd')} |
+            Plan: {weeklyPlan ? 'FOUND' : 'NULL'} |
+            Status: {status}
+        </div>
+    </ProtectedRoute>
+)
 }
 
 
