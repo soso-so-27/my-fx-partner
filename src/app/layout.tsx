@@ -44,8 +44,8 @@ export const viewport: Viewport = {
   userScalable: false,
   viewportFit: "cover",
   themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#F8F8FA" },
-    { media: "(prefers-color-scheme: dark)", color: "#0F1419" }
+    { media: "(prefers-color-scheme: light)", color: "#F7F8FB" },
+    { media: "(prefers-color-scheme: dark)", color: "#0B1220" }
   ],
 };
 
@@ -59,8 +59,8 @@ export default function RootLayout({
       <head>
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-        <meta name="theme-color" content="#F8F8FA" media="(prefers-color-scheme: light)" />
-        <meta name="theme-color" content="#0F1419" media="(prefers-color-scheme: dark)" />
+        <meta name="theme-color" content="#F7F8FB" media="(prefers-color-scheme: light)" />
+        <meta name="theme-color" content="#0B1220" media="(prefers-color-scheme: dark)" />
       </head>
       <body
         className={`${notoSansJP.variable} ${jetBrainsMono.variable} antialiased pb-16 md:pb-0 md:pt-16`}
