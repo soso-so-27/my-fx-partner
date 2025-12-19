@@ -34,8 +34,6 @@ function StrategyPageContent() {
 
     const { toast } = useToast()
 
-    const [debugInfo, setDebugInfo] = useState({ fetchStatus: '-', hasStrategy: false, error: '-', fetchUrl: '-' })
-
     // Initial Fetch
     useEffect(() => {
         const fetchData = async () => {
@@ -53,11 +51,8 @@ function StrategyPageContent() {
                 const uniqueUrl = `/api/strategy?date=${dateStr}&t=${Date.now()}`
                 const stratRes = await fetch(uniqueUrl, { cache: 'no-store' });
 
-                setDebugInfo(prev => ({ ...prev, fetchStatus: String(stratRes.status), fetchUrl: uniqueUrl }))
-
                 if (stratRes.ok) {
                     const data = await stratRes.json();
-                    setDebugInfo(prev => ({ ...prev, hasStrategy: !!data.strategy }))
 
                     if (data.strategy && data.strategy.plan) {
                         setWeeklyPlan(data.strategy.plan as WeeklyPlan)
@@ -65,7 +60,6 @@ function StrategyPageContent() {
                 }
             } catch (error) {
                 console.error("Failed to load data:", error);
-                setDebugInfo(prev => ({ ...prev, error: String(error) }))
             } finally {
                 setLoading(false)
             }
@@ -200,13 +194,6 @@ function StrategyPageContent() {
                     </TabsContent>
                 </Tabs>
 
-            </div>
-
-            {/* TEMPORARY DEBUG INFO */}
-            <div className="fixed bottom-14 left-0 right-0 bg-black/80 text-white text-[10px] p-1 z-50 pointer-events-none opacity-50 font-mono break-all leading-tight">
-                Date: {format(targetDate, 'yyyy-MM-dd')} <br />
-                Plan: {weeklyPlan ? 'FOUND' : 'NULL'} | Status: {status} <br />
-                Fetch: {debugInfo.fetchStatus} | Err: {debugInfo.error}
             </div>
         </ProtectedRoute>
     )

@@ -31,6 +31,7 @@ import { insightService } from "@/lib/insight-service"
 import { RelatedKnowledge } from "@/components/trade/related-knowledge"
 import { Badge } from "@/components/ui/badge"
 import { WeeklyPlan } from "@/components/strategy/types"
+import { EntryStatusIndicator } from "@/components/strategy/entry-status-indicator"
 
 // 30秒振り返りの質問選択肢
 const MISTAKE_OPTIONS = [
@@ -490,6 +491,15 @@ export default function Home() {
             </CardContent>
           </Card>
         </section>
+
+        {/* Entry Status Indicator */}
+        {weeklyPlan && (
+          <EntryStatusIndicator
+            weeklyPlan={weeklyPlan}
+            economicEvents={economicEvents}
+            tradesThisWeek={monthlyStats?.totalTrades ?? 0}
+          />
+        )}
 
         {/* Day Detail Section */}
         <section className="space-y-3">
