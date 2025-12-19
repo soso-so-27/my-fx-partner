@@ -1,9 +1,9 @@
 "use client"
 
 import { useMemo, useState, useEffect } from "react"
-import { format, differenceInMinutes } from "date-fns"
+import { format, differenceInMinutes, differenceInHours, nextMonday, startOfWeek } from "date-fns"
 import { cn } from "@/lib/utils"
-import { CheckCircle2, XCircle, AlertTriangle, Clock } from "lucide-react"
+import { CheckCircle2, XCircle, AlertTriangle, Clock, RotateCcw } from "lucide-react"
 import { WeeklyPlan } from "@/components/strategy/types"
 import { Badge } from "@/components/ui/badge"
 
@@ -33,6 +33,20 @@ export function TodayHub({
         return () => clearInterval(interval)
     }, [])
 
+    // 週次リセットまでの時間を計算
+    const timeToReset = useMemo(() => {
+        const now = currentTime
+        const monday = nextMonday(now)
+        monday.setHours(0, 0, 0, 0)
+        const hoursLeft = differenceInHours(monday, now)
+        const daysLeft = Math.floor(hoursLeft / 24)
+        const remainingHours = hoursLeft % 24
+        if (daysLeft > 0) {
+            return `${daysLeft}日${remainingHours}h`
+        }
+        return `${remainingHours}h`
+    }, [currentTime])
+
     const signal = useMemo(() => {
         const now = currentTime
         const currentTimeStr = format(now, 'HH:mm')
@@ -42,21 +56,22 @@ export function TodayHub({
             let isNoLook = start > end
                 ? currentTimeStr >= start || currentTimeStr <= end
                 : currentTimeStr >= start && currentTimeStr <= end
-            if (isNoLook) return { status: 'ng' as SignalStatus, reason: '見ない時間', nextOkTime: end }
+            if (isNoLook) return { status: 'ng' as SignalStatus, reason: '見ない時間', nextOkTime: end, isTimeLimit: true }
         }
 
-        if (tradesThisWeek >= weeklyPlan.limits.trade_count) {
-            return { status: 'ng' as SignalStatus, reason: '上限到達' }
+        const tradeExceeded = tradesThisWeek - weeklyPlan.limits.trade_count
+        if (tradeExceeded >= 0) {
+            return { status: 'ng' as SignalStatus, reason: '上限超過', exceeded: tradeExceeded, isWeekLimit: true }
         }
 
         if (lossThisWeek >= weeklyPlan.limits.loss_amount) {
-            return { status: 'ng' as SignalStatus, reason: '損失上限' }
+            return { status: 'ng' as SignalStatus, reason: '損失超過', isWeekLimit: true }
         }
 
         if (weeklyPlan.limits.consecutive_loss_stop !== 'none') {
             const stopCount = parseInt(weeklyPlan.limits.consecutive_loss_stop)
             if (consecutiveLosses >= stopCount) {
-                return { status: 'ng' as SignalStatus, reason: '連敗停止' }
+                return { status: 'ng' as SignalStatus, reason: '連敗停止', isWeekLimit: true }
             }
         }
 
@@ -113,11 +128,12 @@ export function TodayHub({
     const tradeProgress = Math.min(100, (tradesThisWeek / weeklyPlan.limits.trade_count) * 100)
     const lossProgress = Math.min(100, (lossThisWeek / weeklyPlan.limits.loss_amount) * 100)
     const getBarColor = (p: number) => p >= 100 ? 'bg-red-500' : p >= 80 ? 'bg-yellow-500' : 'bg-blue-500'
+    const tradeExceeded = tradesThisWeek > weeklyPlan.limits.trade_count ? tradesThisWeek - weeklyPlan.limits.trade_count : 0
 
     return (
         <div className={cn("space-y-2", className)}>
             {/* 判定 - コンパクト横並び */}
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
                 <div className={cn("flex items-center gap-1.5 px-3 py-1.5 rounded-full", config.bg)}>
                     <Icon className={cn("h-4 w-4", config.text)} />
                     <span className={cn("text-sm font-bold", config.text)}>
@@ -126,8 +142,14 @@ export function TodayHub({
                 </div>
                 <span className="text-xs text-muted-foreground">{signal.reason}</span>
                 {signal.nextOkTime && (
-                    <span className="text-xs text-muted-foreground flex items-center gap-0.5 ml-auto">
+                    <span className="text-xs text-muted-foreground flex items-center gap-0.5">
                         <Clock className="h-3 w-3" />{signal.nextOkTime}〜
+                    </span>
+                )}
+                {/* 週次リセットまでの時間（週間上限系のSTOP時のみ） */}
+                {signal.status === 'ng' && 'isWeekLimit' in signal && signal.isWeekLimit && (
+                    <span className="text-xs text-muted-foreground flex items-center gap-0.5 ml-auto">
+                        <RotateCcw className="h-3 w-3" />リセット {timeToReset}
                     </span>
                 )}
             </div>
@@ -138,7 +160,10 @@ export function TodayHub({
                 <div className="p-2 rounded-md bg-muted/40">
                     <div className="flex justify-between mb-1">
                         <span className="text-muted-foreground">回数</span>
-                        <span className="font-bold">{tradesThisWeek}/{weeklyPlan.limits.trade_count}</span>
+                        <span className="font-bold">
+                            {tradesThisWeek}/{weeklyPlan.limits.trade_count}
+                            {tradeExceeded > 0 && <span className="text-red-500 ml-0.5">(+{tradeExceeded})</span>}
+                        </span>
                     </div>
                     <div className="h-1 bg-muted rounded-full overflow-hidden">
                         <div className={cn("h-full rounded-full", getBarColor(tradeProgress))} style={{ width: `${tradeProgress}%` }} />
@@ -170,9 +195,9 @@ export function TodayHub({
                         <span className="text-muted-foreground">リスク</span>
                     </div>
                     {nextEvent ? (
-                        <Badge variant="secondary" className="text-[9px] px-1 py-0">{nextEvent.countdown}</Badge>
+                        <Badge variant="secondary" className="text-[9px] px-1 py-0 bg-yellow-500/20 text-yellow-700 dark:text-yellow-400">{nextEvent.countdown}</Badge>
                     ) : (
-                        <span className="text-green-600 dark:text-green-400 font-medium">なし</span>
+                        <span className="text-muted-foreground font-medium">なし</span>
                     )}
                 </div>
             </div>
