@@ -412,9 +412,8 @@ export default function Home() {
         <section ref={calendarRef} className="mt-4 space-y-2">
           {/* Stats + View Toggle - merged into one row */}
           <div className="flex items-center justify-between px-1">
-            {/* Left: P&L and Win/Loss */}
             {monthlyStats && (
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-4">
                 <div
                   className="flex items-center gap-1 cursor-pointer"
                   onClick={() => setPnlUnit(pnlUnit === 'pips' ? 'amount' : 'pips')}
@@ -431,7 +430,7 @@ export default function Home() {
                     <span className="text-[10px] ml-0.5">{pnlUnit === 'pips' ? 'pips' : ''}</span>
                   </span>
                 </div>
-                <div className="flex items-center gap-1.5 text-[11px]">
+                <div className="flex items-center gap-2 text-xs">
                   <span className="text-green-600 dark:text-green-400 font-bold font-numbers">{monthlyStats.wins}W</span>
                   <span className="text-red-600 dark:text-red-400 font-bold font-numbers">{monthlyStats.losses}L</span>
                 </div>
@@ -486,9 +485,11 @@ export default function Home() {
             </CardContent>
           </Card>
         </section>
+        {/* Divider */}
+        <hr className="border-border my-2" />
 
         {/* Day Detail Section */}
-        <section className="mt-6 space-y-3">
+        <section className="space-y-2">
           {/* Day Header */}
           <div className="flex items-center justify-between">
             <h3 className="text-sm font-bold">
@@ -530,7 +531,7 @@ export default function Home() {
             </TabsList>
 
             {/* Market Tab - Economic Events Only */}
-            <TabsContent value="market" className="space-y-3 mt-3">
+            <TabsContent value="market" className="space-y-2 mt-2">
               <Card>
                 <CardContent className="p-3">
                   <p className="text-xs font-medium mb-2 flex items-center gap-1">
