@@ -459,8 +459,8 @@ export default function Home() {
           </div>
 
           {/* Calendar */}
-          <Card className="border-0 shadow-sm">
-            <CardContent className="p-2 pb-0">
+          <Card className="border-0 shadow-lg bg-slate-50 dark:bg-slate-900/80 rounded-xl">
+            <CardContent className="p-3 pb-2">
               {calendarView === 'week' ? (
                 <WeeklyCalendar
                   trades={trades}
