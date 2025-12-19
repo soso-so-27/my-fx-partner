@@ -166,24 +166,22 @@ export function EntryStatusIndicator({
 
     return (
         <div className={cn(
-            "flex items-center gap-2 px-3 py-2 rounded-lg border",
+            "flex items-center gap-1.5 px-2 py-1.5 rounded-md",
             config.bg,
             className
         )}>
-            <Icon className={cn("h-4 w-4 shrink-0", config.text)} />
-            <div className="flex-1 min-w-0">
-                <span className={cn("text-sm font-medium", config.text)}>
-                    {config.label}
-                </span>
-                <span className="text-xs text-muted-foreground ml-2">
-                    {signal.reason}
-                </span>
-            </div>
+            <Icon className={cn("h-3.5 w-3.5 shrink-0", config.text)} />
+            <span className={cn("text-xs font-medium", config.text)}>
+                {config.label}
+            </span>
+            <span className="text-[10px] text-muted-foreground">
+                {signal.reason}
+            </span>
             {signal.nextOkTime && (
-                <div className="flex items-center gap-1 text-xs text-muted-foreground shrink-0">
-                    <Clock className="h-3 w-3" />
-                    <span>{signal.nextOkTime}〜</span>
-                </div>
+                <span className="text-[10px] text-muted-foreground ml-auto flex items-center gap-0.5">
+                    <Clock className="h-2.5 w-2.5" />
+                    {signal.nextOkTime}〜
+                </span>
             )}
         </div>
     )

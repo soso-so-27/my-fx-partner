@@ -465,8 +465,8 @@ export default function Home() {
           </div>
 
           {/* Calendar */}
-          <Card>
-            <CardContent className="p-2">
+          <Card className="border-0 shadow-sm">
+            <CardContent className="p-2 pb-0">
               {calendarView === 'week' ? (
                 <WeeklyCalendar
                   trades={trades}
@@ -489,17 +489,19 @@ export default function Home() {
                 />
               )}
             </CardContent>
+            {/* Entry Status - integrated into calendar card */}
+            {weeklyPlan && (
+              <div className="px-2 pb-2">
+                <EntryStatusIndicator
+                  weeklyPlan={weeklyPlan}
+                  economicEvents={economicEvents}
+                  tradesThisWeek={monthlyStats?.totalTrades ?? 0}
+                  className="mt-1"
+                />
+              </div>
+            )}
           </Card>
         </section>
-
-        {/* Entry Status Indicator */}
-        {weeklyPlan && (
-          <EntryStatusIndicator
-            weeklyPlan={weeklyPlan}
-            economicEvents={economicEvents}
-            tradesThisWeek={monthlyStats?.totalTrades ?? 0}
-          />
-        )}
 
         {/* Day Detail Section */}
         <section className="space-y-3">
