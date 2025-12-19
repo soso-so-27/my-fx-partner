@@ -73,46 +73,22 @@ function StrategyPageContent() {
         fetchData()
     }, [dateParam]) // eslint-disable-line react-hooks/exhaustive-deps
 
-    // ... (rest of code)
-
-    // Update Debug Info
-    // At the bottom of the file
-    {/* TEMPORARY DEBUG INFO */ }
-    <div className="fixed bottom-14 left-0 right-0 bg-black/80 text-white text-[10px] p-1 z-50 pointer-events-none opacity-50 font-mono break-all leading-tight">
-        Date: {format(targetDate, 'yyyy-MM-dd')} <br />
-        Plan: {weeklyPlan ? 'FOUND' : 'NULL'} | Status: {status} <br />
-        Fetch: {(window as any)._debug_fetch_status || '-'} | Hash: {(weeklyPlan as any)?.id?.slice(0, 4) || '-'}
-    </div>
-        </ProtectedRoute >
-    )
-}
-
-const handleSavePlan = async (newPlan: WeeklyPlan) => {
-    // Optimistic update
-    setWeeklyPlan(newPlan)
-    setViewMode('dashboard')
-
-    try {
-        await fetch('/api/strategy', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                date: format(targetDate, 'yyyy-MM-dd'),
-                plan: newPlan
-            })
+    date: format(targetDate, 'yyyy-MM-dd'),
+        plan: newPlan
+})
         })
-        toast({
-            title: "作戦を保存しました",
-            description: format(targetDate, 'yyyy/MM/dd') + " の週の作戦を更新しました。",
-        })
+toast({
+    title: "作戦を保存しました",
+    description: format(targetDate, 'yyyy/MM/dd') + " の週の作戦を更新しました。",
+})
     } catch (error) {
-        console.error("Failed to save plan:", error)
-        toast({
-            title: "保存に失敗しました",
-            description: "もう一度お試しください。",
-            variant: "destructive"
-        })
-    }
+    console.error("Failed to save plan:", error)
+    toast({
+        title: "保存に失敗しました",
+        description: "もう一度お試しください。",
+        variant: "destructive"
+    })
+}
 }
 
 const handleReviewComplete = async (reviewData: any) => {
